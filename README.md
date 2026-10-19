@@ -1,8 +1,10 @@
-# 🏎️ Velocita - Next-Gen Full-Stack MERN Ride Sharing Platform
+# Ride-Sharing-App-YatraGo-
 
-> **Hackathon Submission Ready** | Built with React, Node.js, Express, MongoDB, Socket.io, Three.js WebGL & Leaflet.
+# 🏎️ YatraGo (Velocita) - Next-Gen Full-Stack MERN Ride Sharing Platform
 
-Velocita is a full-stack, highly responsive ride-sharing web application engineered for modern urban mobility. It combines real-time socket tracking, 3D WebGL destination previews, AI-assisted stranger ride pooling, automated in-app cost splitting, verified user/guider profiles, real-time group chat, and localized emergency SOS safety broadcasts.
+> **Hackathon Submission Ready** | Built with React, Node.js, Express, MongoDB, Socket.io, Three.js WebGL & Google Maps / Leaflet.
+
+YatraGo is a full-stack, highly responsive ride-sharing web application engineered for modern urban mobility. It combines real-time socket tracking, 3D WebGL destination previews, AI-assisted stranger ride pooling, automated in-app cost splitting, verified user/guider profiles, real-time group chat, and localized emergency SOS safety broadcasts.
 
 ---
 

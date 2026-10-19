@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 import { useAuth } from '../context/AuthContext';
+import yatraGoLogo from '../logo/YatraGo Roadway Logo.png';
 
 export default function CostSplitter({ ride }) {
   const { user } = useAuth();
@@ -643,15 +644,20 @@ export default function CostSplitter({ ride }) {
                 </button>
               </>
             ) : (
-              /* Digital Invoice Slip */
+              /* Digital Invoice Slip with YatraGo Official Branding */
               <div className="space-y-4 text-center py-1 animate-fadeIn">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto ring-4 ring-emerald-500/30">
-                  <Check size={28} />
+                <div className="flex items-center justify-center gap-3">
+                  <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-cyan-500/30 p-1.5 shadow-lg flex items-center justify-center">
+                    <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center ring-4 ring-emerald-500/30">
+                    <Check size={22} />
+                  </div>
                 </div>
                 
                 <div>
                   <h4 className="text-lg font-black text-white">Payment Authorized & Settled</h4>
-                  <p className="text-xs text-slate-400 mt-0.5">Official In-App Split Receipt</p>
+                  <p className="text-xs text-emerald-400 font-semibold mt-0.5">Official YatraGo Settle Receipt</p>
                 </div>
 
                 <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-left space-y-2 font-mono divide-y divide-slate-800">

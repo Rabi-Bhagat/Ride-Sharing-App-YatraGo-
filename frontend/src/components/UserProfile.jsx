@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
+import yatraGoLogo from '../logo/YatraGo Roadway Logo.png';
 
 export default function UserProfile({ onClose }) {
   const { user, toggleVerification, switchRole, updateUserProfile } = useAuth();
@@ -399,14 +400,19 @@ export default function UserProfile({ onClose }) {
           {activeTab === 'wallet' && (
             <div className="space-y-5 animate-fadeIn">
               
-              {/* Virtual Holographic Velocita Black Card */}
+              {/* Virtual Holographic YatraGo Black Card */}
               <div className="relative p-6 rounded-2xl bg-gradient-to-tr from-slate-900 via-slate-800 to-cyan-950 border border-cyan-500/40 shadow-2xl overflow-hidden">
                 <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
                 
                 <div className="flex items-center justify-between mb-6">
-                  <div>
-                    <span className="text-[10px] tracking-widest uppercase font-extrabold text-cyan-400">Velocita Black Card</span>
-                    <h4 className="text-white font-extrabold text-lg">In-App Mobility Credit</h4>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-slate-950 p-1 border border-cyan-500/40 shadow-md">
+                      <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] tracking-widest uppercase font-extrabold text-cyan-400">YatraGo Black Card</span>
+                      <h4 className="text-white font-extrabold text-lg">In-App Mobility Credit</h4>
+                    </div>
                   </div>
                   <CreditCard size={28} className="text-cyan-400" />
                 </div>
@@ -678,7 +684,10 @@ export default function UserProfile({ onClose }) {
 
         {/* Modal Bottom Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between text-xs text-slate-400 shrink-0">
-          <span className="font-mono text-[11px]">Member ID: {user.id || 'usr_verified_1'} • Velocita v2.4</span>
+          <div className="flex items-center gap-2">
+            <img src={yatraGoLogo} alt="YatraGo" className="w-4 h-4 object-contain" />
+            <span className="font-mono text-[11px]">Member ID: {user.id || 'usr_verified_1'} • YatraGo Pro v2.5</span>
+          </div>
           <button
             onClick={onClose}
             className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs transition-all"

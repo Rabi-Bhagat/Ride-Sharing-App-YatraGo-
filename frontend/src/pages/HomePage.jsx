@@ -4,49 +4,66 @@ import {
   ShieldCheck, ArrowRight, Sparkles, MapPin, Zap, CheckCircle2 
 } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
+import yatraGoLogo from '../logo/YatraGo Roadway Logo.png';
 
 export default function HomePage({ onNavigate, user }) {
   return (
     <div className="space-y-8 animate-fadeIn">
       
       {/* Hero Section */}
-      <div className="relative rounded-3xl overflow-hidden glass-panel border border-cyan-500/30 p-8 sm:p-12">
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/10 via-blue-600/10 to-violet-600/10 rounded-full blur-3xl pointer-events-none"></div>
+      <div className="relative rounded-3xl overflow-hidden glass-panel border border-cyan-500/30 p-6 sm:p-10 lg:p-12">
+        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/10 via-emerald-600/10 to-blue-600/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        <div className="max-w-3xl space-y-6 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold">
-            <Sparkles size={14} />
-            <span>Next-Gen Urban Mobility Platform</span>
+        <div className="flex flex-col lg:flex-row items-center justify-between gap-8 relative z-10">
+          <div className="max-w-2xl space-y-5">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold">
+              <Sparkles size={14} className="text-emerald-400" />
+              <span>YatraGo — Smart Urban Ride Sharing & 3D Mobility</span>
+            </div>
+
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-tight">
+              Ride Smarter. <br />
+              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
+                Share Costs. Explore 3D.
+              </span>
+            </h1>
+
+            <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-xl">
+              YatraGo blends AI stranger pooling, automated multi-passenger fare splitting, interactive 3D satellite previews, certified travel guiders, and verified passenger SOS safety into one cohesive mobility experience.
+            </p>
+
+            <div className="flex flex-wrap items-center gap-4 pt-2">
+              <button
+                onClick={() => onNavigate('book')}
+                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-emerald-500 text-white font-extrabold text-sm shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 active:scale-95 transition-all"
+              >
+                <Car size={18} />
+                <span>Book Ride Now</span>
+                <ArrowRight size={18} />
+              </button>
+
+              <button
+                onClick={() => onNavigate('preview-3d')}
+                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-900/90 text-slate-200 border border-slate-700 font-extrabold text-sm hover:bg-slate-800 hover:border-cyan-500 transition-all"
+              >
+                <Box size={18} className="text-cyan-400" />
+                <span>Explore 3D Destinations</span>
+              </button>
+            </div>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-            Ride Smarter. <br />
-            <span className="bg-gradient-to-r from-cyan-400 via-blue-400 to-violet-400 bg-clip-text text-transparent">
-              Share Costs. Explore 3D.
+          {/* Hero Branding Showcase */}
+          <div className="shrink-0 flex flex-col items-center p-6 rounded-3xl bg-slate-900/80 border border-cyan-500/30 shadow-2xl backdrop-blur-xl relative group">
+            <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl p-3 bg-gradient-to-b from-slate-950/80 to-slate-900 flex items-center justify-center border border-slate-700/80 group-hover:border-cyan-400/50 transition-all shadow-inner">
+              <img
+                src={yatraGoLogo}
+                alt="YatraGo Roadway Brand"
+                className="w-full h-full object-contain drop-shadow-2xl group-hover:scale-105 transition-transform"
+              />
+            </div>
+            <span className="text-xs font-black text-cyan-300 uppercase tracking-widest mt-3">
+              Official Platform Emblem
             </span>
-          </h1>
-
-          <p className="text-sm sm:text-base text-slate-300 leading-relaxed max-w-2xl">
-            Velocita combines AI-assisted stranger ride pooling, automated cost splitting, interactive 3D destination previews, verified travel guiders, and localized emergency safety alerts in one unified platform.
-          </p>
-
-          <div className="flex flex-wrap items-center gap-4 pt-2">
-            <button
-              onClick={() => onNavigate('book')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-blue-600 to-violet-600 text-white font-extrabold text-sm shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 active:scale-95 transition-all"
-            >
-              <Car size={18} />
-              <span>Book Ride Now</span>
-              <ArrowRight size={18} />
-            </button>
-
-            <button
-              onClick={() => onNavigate('preview-3d')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-900/90 text-slate-200 border border-slate-700 font-extrabold text-sm hover:bg-slate-800 hover:border-cyan-500 transition-all"
-            >
-              <Box size={18} className="text-cyan-400" />
-              <span>Explore 3D Destinations</span>
-            </button>
           </div>
         </div>
       </div>

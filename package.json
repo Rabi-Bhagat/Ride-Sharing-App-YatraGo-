@@ -1,0 +1,16 @@
+{
+  "name": "velocita-ride-sharing",
+  "version": "1.0.0",
+  "description": "Full-stack MERN Ride Sharing Platform with 3D Destination Previews, Stranger Matching, Cost Splitting, Verified Guiders, Socket Chat, and Emergency SOS",
+  "main": "backend/server.js",
+  "scripts": {
+    "start": "node backend/server.js",
+    "backend": "node backend/server.js",
+    "frontend": "npm --prefix frontend run dev",
+    "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
+    "seed": "node backend/seed.js"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

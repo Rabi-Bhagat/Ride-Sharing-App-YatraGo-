@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 import { useAuth } from '../context/AuthContext';
-import yatraGoLogo from '../logo/YatraGo Roadway Logo.png';
+import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
 
 export default function CostSplitter({ ride }) {
   const { user } = useAuth();

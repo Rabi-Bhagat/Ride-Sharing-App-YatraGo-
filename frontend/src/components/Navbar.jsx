@@ -6,7 +6,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import VerificationBadge from './VerificationBadge';
-import yatraGoLogo from '../logo/YatraGo Roadway Logo.png';
+import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
 
 export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat, onOpenProfile }) {
   const { user } = useAuth();

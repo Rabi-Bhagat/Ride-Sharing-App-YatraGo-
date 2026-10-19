@@ -4,7 +4,7 @@ import {
   ShieldCheck, ArrowRight, Sparkles, MapPin, Zap, CheckCircle2 
 } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
-import yatraGoLogo from '../logo/YatraGo Roadway Logo.png';
+import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
 
 export default function HomePage({ onNavigate, user }) {
   return (

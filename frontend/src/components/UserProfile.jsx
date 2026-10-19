@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
-import yatraGoLogo from '../logo/YatraGo Roadway Logo.png';
+import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
 
 export default function UserProfile({ onClose }) {
   const { user, toggleVerification, switchRole, updateUserProfile } = useAuth();

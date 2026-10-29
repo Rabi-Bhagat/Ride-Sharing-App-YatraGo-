@@ -6,7 +6,7 @@ dotenv.config({ path: path.join(__dirname, '..', '..', '.env') });
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
-  const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/velocita_rideshare';
+  const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/yatrago_rideshare';
   try {
     const conn = await mongoose.connect(MONGO_URI, {
       serverSelectionTimeoutMS: 10000

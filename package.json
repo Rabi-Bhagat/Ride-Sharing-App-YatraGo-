@@ -1,7 +1,7 @@
 {
-  "name": "velocita-ride-sharing",
+  "name": "yatrago-ride-sharing",
   "version": "1.0.0",
-  "description": "Full-stack MERN Ride Sharing Platform with 3D Destination Previews, Stranger Matching, Cost Splitting, Verified Guiders, Socket Chat, and Emergency SOS",
+  "description": "Full-stack MERN Ride Sharing Platform with 3D Destination Previews, Stranger Matching, Cost Splitting, Verified Guiders, Socket Chat, and Emergency SOS - YatraGo",
   "main": "backend/server.js",
   "scripts": {
     "start": "node backend/server.js",

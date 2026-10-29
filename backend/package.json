@@ -1,7 +1,7 @@
 {
-  "name": "velocita-backend",
+  "name": "yatrago-backend",
   "version": "1.0.0",
-  "description": "Express Node backend with MongoDB Mongoose & Socket.io for Velocita",
+  "description": "Express Node backend with MongoDB Mongoose & Socket.io for YatraGo",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

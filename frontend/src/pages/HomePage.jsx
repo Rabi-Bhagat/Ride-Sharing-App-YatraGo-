@@ -1,12 +1,21 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import { 
   Car, Users, DollarSign, Box, Compass, AlertTriangle, 
-  ShieldCheck, ArrowRight, Sparkles, MapPin, Zap, CheckCircle2 
+  ShieldCheck, ArrowRight, Sparkles, MapPin, Zap, CheckCircle2, Bike
 } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
-import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
+import yatraGoLogo from '../logo/yatrago-logo.png';
+import Interactive3DRideScene from '../components/Interactive3DRideScene';
 
 export default function HomePage({ onNavigate, user }) {
+  const simRef = useRef(null);
+
+  const scrollToSimulator = () => {
+    if (simRef.current) {
+      simRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   return (
     <div className="space-y-8 animate-fadeIn">
       
@@ -43,22 +52,30 @@ export default function HomePage({ onNavigate, user }) {
               </button>
 
               <button
+                onClick={scrollToSimulator}
+                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-gradient-to-r from-slate-900 to-cyan-950/80 text-cyan-300 border border-cyan-500/40 font-extrabold text-sm hover:bg-slate-800 hover:border-cyan-400 shadow-lg shadow-cyan-500/10 hover:scale-105 transition-all"
+              >
+                <Bike size={18} className="text-emerald-400" />
+                <span>Ride 3D Bike Simulator</span>
+              </button>
+
+              <button
                 onClick={() => onNavigate('preview-3d')}
-                className="flex items-center gap-2 px-6 py-3.5 rounded-2xl bg-slate-900/90 text-slate-200 border border-slate-700 font-extrabold text-sm hover:bg-slate-800 hover:border-cyan-500 transition-all"
+                className="flex items-center gap-2 px-5 py-3.5 rounded-2xl bg-slate-900/90 text-slate-300 border border-slate-700 font-extrabold text-sm hover:bg-slate-800 hover:text-white hover:border-slate-600 transition-all"
               >
                 <Box size={18} className="text-cyan-400" />
-                <span>Explore 3D Destinations</span>
+                <span>Explore 3D Cities</span>
               </button>
             </div>
           </div>
 
           {/* Hero Branding Showcase */}
           <div className="shrink-0 flex flex-col items-center p-6 rounded-3xl bg-slate-900/80 border border-cyan-500/30 shadow-2xl backdrop-blur-xl relative group">
-            <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl p-3 bg-gradient-to-b from-slate-950/80 to-slate-900 flex items-center justify-center border border-slate-700/80 group-hover:border-cyan-400/50 transition-all shadow-inner">
+            <div className="w-48 h-48 sm:w-56 sm:h-56 rounded-2xl p-4 bg-white flex items-center justify-center border border-cyan-500/40 group-hover:border-cyan-400/70 transition-all shadow-xl shadow-cyan-500/10">
               <img
                 src={yatraGoLogo}
                 alt="YatraGo Roadway Brand"
-                className="w-full h-full object-contain drop-shadow-2xl group-hover:scale-105 transition-transform"
+                className="w-full h-full object-contain drop-shadow group-hover:scale-105 transition-transform"
               />
             </div>
             <span className="text-xs font-black text-cyan-300 uppercase tracking-widest mt-3">
@@ -66,6 +83,40 @@ export default function HomePage({ onNavigate, user }) {
             </span>
           </div>
         </div>
+      </div>
+
+      {/* 3D Real-Time Ride Simulator Feature Showcase */}
+      <div ref={simRef} className="space-y-4 pt-2">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 glass-panel p-5 rounded-2xl border border-cyan-500/30">
+          <div>
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+                <Bike size={20} />
+              </div>
+              <h2 className="text-xl sm:text-2xl font-black text-white">
+                Live 3D Highway Ride & Vehicle Simulator
+              </h2>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-extrabold border border-cyan-500/30">
+                Interactive WebGL
+              </span>
+            </div>
+            <p className="text-xs text-slate-400 mt-1">
+              Watch real-time ride progression along our 3D smart roadway. Switch between Cyber Bike and Tesla EV, toggle rider cameras, or ignite Nitro Boost!
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <span className="text-[11px] font-mono text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+              <span>60 FPS WebGL Engine Active</span>
+            </span>
+          </div>
+        </div>
+
+        {/* 3D Scene View */}
+        <Interactive3DRideScene 
+          onBookRideWithRoute={() => onNavigate('book')}
+        />
       </div>
 
       {/* Quick Stats Grid */}

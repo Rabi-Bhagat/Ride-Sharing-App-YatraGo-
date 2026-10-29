@@ -10,6 +10,8 @@ import EmergencySosPage from './pages/EmergencySosPage';
 import GroupChatPage from './pages/GroupChatPage';
 import UserProfile from './components/UserProfile';
 import ErrorBoundary from './components/ErrorBoundary';
+import RideTransitionOverlay from './components/RideTransitionOverlay';
+import FloatingRideTracker from './components/FloatingRideTracker';
 
 import { DESTINATIONS_3D } from './data/mockData';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -18,6 +20,20 @@ import { Sparkles } from 'lucide-react';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState('home'); // 'home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat'
+  const [isTransitioning, setIsTransitioning] = useState(false);
+  const [transitionFromTab, setTransitionFromTab] = useState('home');
+  const [transitionToTab, setTransitionToTab] = useState('home');
+
+  const handleNavigateWithTransition = (targetTab) => {
+    if (targetTab === activeTab) return;
+    setTransitionFromTab(activeTab);
+    setTransitionToTab(targetTab);
+    setIsTransitioning(true);
+    setTimeout(() => {
+      setActiveTab(targetTab);
+    }, 280);
+  };
+
   const [pickupLocation, setPickupLocation] = useState({
     name: 'Innovation Tech Park, SF',
     lat: 37.7749,
@@ -174,12 +190,12 @@ function MainApp() {
       {/* Navigation Header */}
       <Navbar
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleNavigateWithTransition}
         onOpenProfile={() => setShowProfileModal(true)}
       />
 
-      {/* Main Content Page Container */}
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Main Content Page Container with kinetic entrance animation */}
+      <main key={activeTab} className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter-kinetic">
         
         {/* Co-Rider Match Notification Banner */}
         {strangerAlertNotification && (
@@ -189,7 +205,7 @@ function MainApp() {
               <span>{strangerAlertNotification.message}</span>
             </div>
             <button
-              onClick={() => setActiveTab('cost-split')}
+              onClick={() => handleNavigateWithTransition('cost-split')}
               className="px-3.5 py-1.5 rounded-xl bg-emerald-500 text-slate-950 font-bold hover:scale-105 transition-all"
             >
               View Split Fare
@@ -199,7 +215,7 @@ function MainApp() {
 
         {/* Dedicated Page Router */}
         {activeTab === 'home' && (
-          <HomePage onNavigate={setActiveTab} user={user} />
+          <HomePage onNavigate={handleNavigateWithTransition} user={user} />
         )}
 
         {activeTab === 'book' && (
@@ -213,7 +229,7 @@ function MainApp() {
             onOpen3DPreview={(destId) => {
               const dest = DESTINATIONS_3D.find(d => d.id === destId);
               if (dest) setSelectedDestination(dest);
-              setActiveTab('preview-3d');
+              handleNavigateWithTransition('preview-3d');
             }}
             activeRide={activeRide}
           />
@@ -252,8 +268,22 @@ function MainApp() {
 
       {/* Footer */}
       <footer className="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-400">
-        <p>© 2026 Velocita Mobility • Next-Generation Ride Sharing</p>
+        <p>© 2026 YatraGo Mobility • Next-Generation Ride Sharing</p>
       </footer>
+
+      {/* 3D Ride Kinetic Page Transition Overlay */}
+      <RideTransitionOverlay
+        isTransitioning={isTransitioning}
+        fromTab={transitionFromTab}
+        toTab={transitionToTab}
+        onTransitionComplete={() => setIsTransitioning(false)}
+      />
+
+      {/* Persistent Floating 3D Ride Companion */}
+      <FloatingRideTracker
+        onNavigate={handleNavigateWithTransition}
+        activeRide={activeRide}
+      />
 
       {/* Profile Modal */}
       {showProfileModal && <UserProfile onClose={() => setShowProfileModal(false)} />}

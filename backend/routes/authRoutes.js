@@ -6,7 +6,7 @@ const User = require('../models/User');
 let memoryUser = {
   id: 'usr_verified_1',
   name: 'Alex Rivera',
-  email: 'alex.rivera@velocita.app',
+  email: 'alex.rivera@yatrago.com',
   phone: '+1 (555) 234-8901',
   role: 'rider',
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',

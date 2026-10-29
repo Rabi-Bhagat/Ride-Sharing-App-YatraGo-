@@ -1,6 +1,6 @@
 # Ride-Sharing-App-YatraGo-
 
-# 🏎️ YatraGo (Velocita) - Next-Gen Full-Stack MERN Ride Sharing Platform
+# 🏎️ YatraGo - Next-Gen Full-Stack MERN Ride Sharing Platform
 
 > **Hackathon Submission Ready** | Built with React, Node.js, Express, MongoDB, Socket.io, Three.js WebGL & Google Maps / Leaflet.
 

@@ -53,7 +53,7 @@ app.use('/api/sos', sosRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'OK', message: 'Velocita Ride-Sharing Engine Online', timestamp: new Date() });
+  res.json({ status: 'OK', message: 'YatraGo Ride-Sharing Engine Online', timestamp: new Date() });
 });
 
 // Socket.io Setup
@@ -68,5 +68,5 @@ setupSocketHandlers(io);
 
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
-  console.log(`🚀 Velocita Backend & Socket.io Server running on port ${PORT}`);
+  console.log(`🚀 YatraGo Backend & Socket.io Server running on port ${PORT}`);
 });

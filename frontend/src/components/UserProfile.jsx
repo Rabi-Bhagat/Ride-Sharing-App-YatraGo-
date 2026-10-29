@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
-import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
+import yatraGoLogo from '../logo/yatrago-logo.png';
 
 export default function UserProfile({ onClose }) {
   const { user, toggleVerification, switchRole, updateUserProfile } = useAuth();
@@ -62,7 +62,7 @@ export default function UserProfile({ onClose }) {
     const updated = walletBalance + amount;
     setWalletBalance(updated);
     updateUserProfile({ walletBalance: updated });
-    showToast(`Added $${amount}.00 to Velocita Wallet balance!`);
+    showToast(`Added $${amount}.00 to YatraGo Wallet balance!`);
   };
 
   const handleAddEmergencyContact = () => {
@@ -244,7 +244,7 @@ export default function UserProfile({ onClose }) {
               {/* Role Mode Selector */}
               <div className="space-y-2">
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
-                  Active Velocita Profile Mode
+                  Active YatraGo Profile Mode
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   {[
@@ -685,7 +685,9 @@ export default function UserProfile({ onClose }) {
         {/* Modal Bottom Footer */}
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between text-xs text-slate-400 shrink-0">
           <div className="flex items-center gap-2">
-            <img src={yatraGoLogo} alt="YatraGo" className="w-4 h-4 object-contain" />
+            <div className="w-5 h-5 rounded-md bg-white p-0.5 flex items-center justify-center shrink-0">
+              <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
+            </div>
             <span className="font-mono text-[11px]">Member ID: {user.id || 'usr_verified_1'} • YatraGo Pro v2.5</span>
           </div>
           <button

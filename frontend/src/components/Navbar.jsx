@@ -6,7 +6,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import VerificationBadge from './VerificationBadge';
-import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
+import yatraGoLogo from '../logo/yatrago-logo.png';
 
 export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat, onOpenProfile }) {
   const { user } = useAuth();
@@ -29,7 +29,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat,
           
           {/* Brand Logo */}
           <div className="flex items-center gap-3 cursor-pointer group" onClick={() => setActiveTab('home')}>
-            <div className="relative w-11 h-11 rounded-2xl p-1 bg-gradient-to-tr from-cyan-500/20 via-slate-900 to-emerald-500/20 border border-cyan-500/30 shadow-lg shadow-cyan-500/20 flex items-center justify-center group-hover:scale-105 group-hover:border-cyan-400 transition-all overflow-hidden shrink-0">
+            <div className="relative w-11 h-11 rounded-2xl p-1 bg-white border border-cyan-500/40 shadow-lg shadow-cyan-500/20 flex items-center justify-center group-hover:scale-105 group-hover:border-cyan-400 transition-all overflow-hidden shrink-0">
               <img
                 src={yatraGoLogo}
                 alt="YatraGo Logo"

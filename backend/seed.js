@@ -12,7 +12,7 @@ const Ride = require('./models/Ride');
 const SosAlert = require('./models/SosAlert');
 const Message = require('./models/Message');
 
-const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/velocita_rideshare';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/yatrago_rideshare';
 
 const seedData = async () => {
   try {
@@ -32,7 +32,7 @@ const seedData = async () => {
     const users = await User.create([
       {
         name: 'Alex Rivera',
-        email: 'alex.rivera@velocita.app',
+        email: 'alex.rivera@yatrago.com',
         phone: '+1 (555) 234-8901',
         role: 'rider',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
@@ -63,7 +63,7 @@ const seedData = async () => {
       },
       {
         name: 'Marcus Vance',
-        email: 'marcus.vance@velocitadriver.com',
+        email: 'marcus.vance@yatragodriver.com',
         phone: '+1 (555) 888-2311',
         role: 'driver',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',

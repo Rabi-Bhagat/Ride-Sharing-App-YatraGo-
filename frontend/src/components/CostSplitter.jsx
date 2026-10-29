@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 import { useAuth } from '../context/AuthContext';
-import yatraGoLogo from '../logo/YatraGo Travel Logo Presentation.png';
+import yatraGoLogo from '../logo/yatrago-logo.png';
 
 export default function CostSplitter({ ride }) {
   const { user } = useAuth();
@@ -186,7 +186,7 @@ export default function CostSplitter({ ride }) {
 
   // Copy Split Link
   const handleCopySplitLink = () => {
-    navigator.clipboard.writeText(`https://velocita.app/split/${ride?.id || 'ride_live_772'}`);
+    navigator.clipboard.writeText(`https://yatrago.app/split/${ride?.id || 'ride_live_772'}`);
     setCopiedLink(true);
     setTimeout(() => setCopiedLink(false), 2500);
   };
@@ -497,7 +497,7 @@ export default function CostSplitter({ ride }) {
                         onClick={() => {
                           setActivePaymentModalRider(rider);
                           setPaymentReceipt({
-                            txnId: 'TXN_VELO_EXIST_' + Math.floor(100000 + Math.random() * 900000),
+                            txnId: 'TXN_YATRA_EXIST_' + Math.floor(100000 + Math.random() * 900000),
                             amount: riderShare,
                             riderName: rider.name,
                             method: 'UPI / INSTANT',
@@ -574,7 +574,7 @@ export default function CostSplitter({ ride }) {
                     {[
                       { id: 'upi', label: 'UPI / QR', icon: QrCode },
                       { id: 'card', label: 'Card', icon: CreditCard },
-                      { id: 'wallet', label: 'Velocita Wallet', icon: DollarSign }
+                      { id: 'wallet', label: 'YatraGo Wallet', icon: DollarSign }
                     ].map(m => {
                       const Icon = m.icon;
                       return (
@@ -602,7 +602,7 @@ export default function CostSplitter({ ride }) {
                       <QrCode size={80} className="text-slate-950" />
                     </div>
                     <span className="text-[11px] font-mono text-cyan-300 block">
-                      upi://pay?pa=velocita@icici&pn=RideShare&am={getRiderShare(activePaymentModalRider)}
+                      upi://pay?pa=yatrago@icici&pn=YatraGoRideShare&am={getRiderShare(activePaymentModalRider)}
                     </span>
                     <p className="text-[10px] text-slate-400">Scan using GPay, PhonePe, Paytm, or BHIM</p>
                   </div>
@@ -621,7 +621,7 @@ export default function CostSplitter({ ride }) {
                 {paymentMethod === 'wallet' && (
                   <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] text-slate-400 block">Velocita Wallet Balance</span>
+                      <span className="text-[10px] text-slate-400 block">YatraGo Wallet Balance</span>
                       <strong className="text-white text-sm">${(user?.walletBalance || 145.50).toFixed(2)}</strong>
                     </div>
                     <span className="text-[10px] text-emerald-400 font-bold">Sufficient Funds ✓</span>
@@ -647,7 +647,7 @@ export default function CostSplitter({ ride }) {
               /* Digital Invoice Slip with YatraGo Official Branding */
               <div className="space-y-4 text-center py-1 animate-fadeIn">
                 <div className="flex items-center justify-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-slate-900 border border-cyan-500/30 p-1.5 shadow-lg flex items-center justify-center">
+                  <div className="w-12 h-12 rounded-2xl bg-white border border-cyan-500/30 p-1.5 shadow-lg flex items-center justify-center">
                     <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
                   </div>
                   <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center ring-4 ring-emerald-500/30">

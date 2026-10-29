@@ -9,7 +9,7 @@ export const DESTINATIONS_3D = [
     description: 'Ultra-modern glass skyscrapers with elevated skywalks, ambient neon lighting, and tech startup centers.',
     colorTheme: '#06b6d4',
     skyColor: '#0b132b',
-    landmarks: ['Cyber Tower One', 'Quantum Square', 'Velocita Hub']
+    landmarks: ['Cyber Tower One', 'Quantum Square', 'YatraGo Hub']
   },
   {
     id: 'ocean',

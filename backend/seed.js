@@ -7,6 +7,7 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 
 const mongoose = require('mongoose');
 const User = require('./models/User');
+const { hashPassword } = require('./utils/authHelper');
 const Guider = require('./models/Guider');
 const Ride = require('./models/Ride');
 const SosAlert = require('./models/SosAlert');
@@ -33,7 +34,11 @@ const seedData = async () => {
       {
         name: 'Alex Rivera',
         email: 'alex.rivera@yatrago.com',
+        password: hashPassword('password123'),
         phone: '+1 (555) 234-8901',
+        address: 'Innovation Tech Park, SF',
+        homeAddress: '450 Mission St, San Francisco, CA',
+        workAddress: '1 Market St, San Francisco, CA',
         role: 'rider',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
         isVerified: true,
@@ -49,7 +54,11 @@ const seedData = async () => {
       {
         name: 'Sarah Jenkins',
         email: 'sarah.jenkins@biotechlabs.org',
+        password: hashPassword('password123'),
         phone: '+1 (555) 345-6789',
+        address: 'Oceanfront Bay Pier, SF',
+        homeAddress: '88 King St, San Francisco, CA',
+        workAddress: 'Mission Bay Biotech Hub',
         role: 'rider',
         avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
         isVerified: true,
@@ -64,7 +73,11 @@ const seedData = async () => {
       {
         name: 'Marcus Vance',
         email: 'marcus.vance@yatragodriver.com',
+        password: hashPassword('password123'),
         phone: '+1 (555) 888-2311',
+        address: 'Downtown Hub, SF',
+        homeAddress: '200 Van Ness Ave, San Francisco, CA',
+        workAddress: 'Downtown Cyber Hub',
         role: 'driver',
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
         isVerified: true,

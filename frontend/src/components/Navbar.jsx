@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Car, Users, Box, Compass, MessageSquare, AlertTriangle, 
-  ShieldCheck, User, Menu, X, DollarSign, Home, Globe 
+  ShieldCheck, User, Menu, X, DollarSign, Home, Globe, 
+  LogIn, UserPlus, LogOut, Sparkles
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -9,7 +10,7 @@ import VerificationBadge from './VerificationBadge';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 
 export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat, onOpenProfile }) {
-  const { user } = useAuth();
+  const { user, isAuthenticated, openAuthModal, logout } = useAuth();
   const { messages } = useSocket();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -78,7 +79,7 @@ export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat,
             })}
           </nav>
 
-          {/* Right Action Icons & Profile */}
+          {/* Right Action Icons & Profile / Auth */}
           <div className="flex items-center gap-2.5">
             
             {/* Dedicated Emergency SOS Button */}
@@ -94,6 +95,8 @@ export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat,
               <AlertTriangle size={15} className="text-red-400 animate-pulse" />
               <span className="hidden sm:inline">SOS</span>
             </button>
+
+            {/* Chat Icon */}
             <button
               onClick={() => setActiveTab('chat')}
               className="relative p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 border border-slate-700/80 transition-all hover:scale-105 active:scale-95"
@@ -107,24 +110,44 @@ export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat,
               )}
             </button>
 
-            {/* Verified User Profile Button */}
-            <button
-              onClick={onOpenProfile}
-              className="flex items-center gap-2.5 p-1.5 pl-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 transition-all group"
-            >
-              <div className="flex flex-col items-end hidden sm:flex">
-                <div className="flex items-center gap-1.5 text-xs font-extrabold text-white">
-                  <span>{user.name}</span>
-                  {user.isVerified && <VerificationBadge type={user.verificationBadgeType} size="sm" />}
+            {/* User Logged In Profile Button OR Sign In / Sign Up triggers */}
+            {user ? (
+              <button
+                onClick={onOpenProfile}
+                className="flex items-center gap-2.5 p-1.5 pl-3 rounded-xl bg-slate-900/80 hover:bg-slate-800 border border-slate-700/80 transition-all group"
+                title="Click to view & edit your profile, address, photo, or password"
+              >
+                <div className="flex flex-col items-end hidden sm:flex">
+                  <div className="flex items-center gap-1.5 text-xs font-extrabold text-white">
+                    <span>{user.name}</span>
+                    {user.isVerified && <VerificationBadge type={user.verificationBadgeType || 'Government ID'} size="sm" />}
+                  </div>
+                  <span className="text-[10px] text-cyan-400 capitalize font-medium">{user.role || 'rider'}</span>
                 </div>
-                <span className="text-[10px] text-cyan-400 capitalize font-medium">{user.role}</span>
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-8 h-8 rounded-lg object-cover ring-2 ring-cyan-500/40 group-hover:ring-cyan-400 transition-all"
+                />
+              </button>
+            ) : (
+              <div className="flex items-center gap-1.5">
+                <button
+                  onClick={() => openAuthModal('login')}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 text-xs font-bold transition-all flex items-center gap-1.5"
+                >
+                  <LogIn size={13} className="text-cyan-400" />
+                  <span>Log In</span>
+                </button>
+                <button
+                  onClick={() => openAuthModal('signup')}
+                  className="hidden sm:flex px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-extrabold text-xs shadow-md shadow-cyan-500/20 hover:scale-105 transition-all items-center gap-1.5"
+                >
+                  <Sparkles size={13} />
+                  <span>Sign Up</span>
+                </button>
               </div>
-              <img
-                src={user.avatar}
-                alt={user.name}
-                className="w-8 h-8 rounded-lg object-cover ring-2 ring-cyan-500/40 group-hover:ring-cyan-400 transition-all"
-              />
-            </button>
+            )}
 
             {/* Mobile Menu Toggle */}
             <button
@@ -140,7 +163,57 @@ export default function Navbar({ activeTab, setActiveTab, onOpenSos, onOpenChat,
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden bg-slate-950/95 border-b border-slate-800 px-4 pt-2 pb-4 space-y-2 backdrop-blur-xl">
+        <div className="lg:hidden bg-slate-950/95 border-b border-slate-800 px-4 pt-2 pb-4 space-y-2 backdrop-blur-xl animate-slideDown">
+          
+          {/* User Card in Mobile Drawer */}
+          {user ? (
+            <div className="p-3 mb-2 rounded-2xl bg-slate-900/90 border border-slate-800 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <img
+                  src={user.avatar}
+                  alt={user.name}
+                  className="w-10 h-10 rounded-xl object-cover ring-2 ring-cyan-500/40"
+                />
+                <div>
+                  <strong className="text-white text-xs block font-bold">{user.name}</strong>
+                  <span className="text-[10px] text-cyan-400 capitalize">{user.role} • {user.phone}</span>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  onOpenProfile();
+                }}
+                className="px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-bold"
+              >
+                Profile & Edit
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 mb-3">
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal('login');
+                }}
+                className="py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs border border-slate-700 flex items-center justify-center gap-1.5"
+              >
+                <LogIn size={14} className="text-cyan-400" />
+                <span>Log In</span>
+              </button>
+              <button
+                onClick={() => {
+                  setMobileMenuOpen(false);
+                  openAuthModal('signup');
+                }}
+                className="py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5"
+              >
+                <Sparkles size={14} />
+                <span>Sign Up</span>
+              </button>
+            </div>
+          )}
+
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeTab === item.id;

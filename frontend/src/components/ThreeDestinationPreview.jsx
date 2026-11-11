@@ -23,8 +23,8 @@ export default function ThreeDestinationPreview({ initialDestinationId = 'downto
     const container = mountRef.current;
     if (!container) return;
 
-    const width = container.clientWidth;
-    const height = container.clientHeight || 450;
+    const width = Math.max(container.clientWidth || 600, 320);
+    const height = Math.max(container.clientHeight || 450, 300);
 
     const scene = new THREE.Scene();
     const currentSkyColor = skyColorMap[skyTheme] || destObj.skyColor;
@@ -154,8 +154,8 @@ export default function ThreeDestinationPreview({ initialDestinationId = 'downto
 
     const handleResize = () => {
       if (!container) return;
-      const w = container.clientWidth;
-      const h = container.clientHeight || 450;
+      const w = Math.max(container.clientWidth || 600, 320);
+      const h = Math.max(container.clientHeight || 450, 300);
       camera.aspect = w / h;
       camera.updateProjectionMatrix();
       renderer.setSize(w, h);
@@ -166,8 +166,13 @@ export default function ThreeDestinationPreview({ initialDestinationId = 'downto
     return () => {
       cancelAnimationFrame(animationFrameId);
       window.removeEventListener('resize', handleResize);
-      if (renderer.domElement && renderer.domElement.parentNode) {
-        renderer.domElement.parentNode.removeChild(renderer.domElement);
+      if (renderer) {
+        try {
+          renderer.dispose();
+          if (renderer.domElement && renderer.domElement.parentNode) {
+            renderer.domElement.parentNode.removeChild(renderer.domElement);
+          }
+        } catch (e) {}
       }
     };
   }, [selectedDestId, skyTheme, rotationSpeed]);

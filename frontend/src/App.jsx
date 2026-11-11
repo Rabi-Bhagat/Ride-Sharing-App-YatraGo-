@@ -9,6 +9,7 @@ import GuiderDirectoryPage from './pages/GuiderDirectoryPage';
 import EmergencySosPage from './pages/EmergencySosPage';
 import GroupChatPage from './pages/GroupChatPage';
 import UserProfile from './components/UserProfile';
+import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import RideTransitionOverlay from './components/RideTransitionOverlay';
 import FloatingRideTracker from './components/FloatingRideTracker';
@@ -44,7 +45,17 @@ function MainApp() {
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   const { strangerAlertNotification } = useSocket();
-  const { user } = useAuth();
+  const { user, authModalOpen, closeAuthModal, openAuthModal } = useAuth();
+
+  // Sync user's saved pickup address if available
+  React.useEffect(() => {
+    if (user && user.address) {
+      setPickupLocation(prev => ({
+        ...prev,
+        name: user.address
+      }));
+    }
+  }, [user?.address]);
 
   const [activeRide, setActiveRide] = useState({
     _id: 'ride_101',
@@ -214,55 +225,55 @@ function MainApp() {
         )}
 
         {/* Dedicated Page Router */}
-        {activeTab === 'home' && (
-          <HomePage onNavigate={handleNavigateWithTransition} user={user} />
-        )}
+        <ErrorBoundary>
+          {activeTab === 'home' && (
+            <HomePage onNavigate={handleNavigateWithTransition} user={user} />
+          )}
 
-        {activeTab === 'book' && (
-          <BookRidePage
-            onBookRide={handleBookRide}
-            pickup={pickupLocation}
-            setPickup={setPickupLocation}
-            selectedDestination={selectedDestination}
-            setSelectedDestination={setSelectedDestination}
-            selectedGuider={selectedGuider}
-            onOpen3DPreview={(destId) => {
-              const dest = DESTINATIONS_3D.find(d => d.id === destId);
-              if (dest) setSelectedDestination(dest);
-              handleNavigateWithTransition('preview-3d');
-            }}
-            activeRide={activeRide}
-          />
-        )}
+          {activeTab === 'book' && (
+            <BookRidePage
+              onBookRide={handleBookRide}
+              pickup={pickupLocation}
+              setPickup={setPickupLocation}
+              selectedDestination={selectedDestination}
+              setSelectedDestination={setSelectedDestination}
+              selectedGuider={selectedGuider}
+              onOpen3DPreview={(destId) => {
+                const dest = DESTINATIONS_3D.find(d => d.id === destId);
+                if (dest) setSelectedDestination(dest);
+                handleNavigateWithTransition('preview-3d');
+              }}
+              activeRide={activeRide}
+            />
+          )}
 
-        {activeTab === 'stranger' && (
-          <StrangerMatcherPage onCombineSuccess={handleCombineSuccess} activeRide={activeRide} />
-        )}
+          {activeTab === 'stranger' && (
+            <StrangerMatcherPage onCombineSuccess={handleCombineSuccess} activeRide={activeRide} />
+          )}
 
-        {activeTab === 'cost-split' && (
-          <CostSplitterPage ride={activeRide} />
-        )}
+          {activeTab === 'cost-split' && (
+            <CostSplitterPage ride={activeRide} />
+          )}
 
-        {activeTab === 'preview-3d' && (
-          <ErrorBoundary>
+          {activeTab === 'preview-3d' && (
             <ThreeDestinationPage
               initialDestinationId={selectedDestination?.id || 'downtown'}
               onSelectLocationForRide={handleSelectLocationForRide}
             />
-          </ErrorBoundary>
-        )}
+          )}
 
-        {activeTab === 'guiders' && (
-          <GuiderDirectoryPage selectedGuider={selectedGuider} onSelectGuider={setSelectedGuider} />
-        )}
+          {activeTab === 'guiders' && (
+            <GuiderDirectoryPage selectedGuider={selectedGuider} onSelectGuider={setSelectedGuider} />
+          )}
 
-        {activeTab === 'sos' && (
-          <EmergencySosPage />
-        )}
+          {activeTab === 'sos' && (
+            <EmergencySosPage />
+          )}
 
-        {activeTab === 'chat' && (
-          <GroupChatPage />
-        )}
+          {activeTab === 'chat' && (
+            <GroupChatPage />
+          )}
+        </ErrorBoundary>
 
       </main>
 
@@ -286,7 +297,22 @@ function MainApp() {
       />
 
       {/* Profile Modal */}
-      {showProfileModal && <UserProfile onClose={() => setShowProfileModal(false)} />}
+      {showProfileModal && (
+        <UserProfile
+          onClose={() => setShowProfileModal(false)}
+          onSelectPickupForRide={(loc) => {
+            setPickupLocation(loc);
+            setActiveRide(prev => ({ ...prev, pickup: loc }));
+            setActiveTab('book');
+          }}
+        />
+      )}
+
+      {/* Authentication Modal (Login / Sign Up / Forgot Password) */}
+      <AuthModal
+        isOpen={authModalOpen}
+        onClose={closeAuthModal}
+      />
 
     </div>
   );
@@ -294,10 +320,12 @@ function MainApp() {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <SocketProvider>
-        <MainApp />
-      </SocketProvider>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <SocketProvider>
+          <MainApp />
+        </SocketProvider>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

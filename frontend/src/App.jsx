@@ -13,6 +13,7 @@ import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import RideTransitionOverlay from './components/RideTransitionOverlay';
 import FloatingRideTracker from './components/FloatingRideTracker';
+import UberFooter from './components/UberFooter';
 
 import { DESTINATIONS_3D } from './data/mockData';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -67,7 +68,7 @@ function MainApp() {
         name: 'Alex Rivera',
         avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
         isVerified: true,
-        costShare: 16.50,
+        costShare: 160.00,
         paymentStatus: 'Paid'
       }
     ],
@@ -83,7 +84,7 @@ function MainApp() {
     vehicleType: 'Eco Sedan',
     status: 'In Progress',
     isStrangerCombined: false,
-    totalCost: 33.00,
+    totalCost: 320.00,
     distanceKm: 8.4,
     etaMinutes: 14
   });
@@ -277,10 +278,8 @@ function MainApp() {
 
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-6 text-center text-xs text-slate-400">
-        <p>© 2026 YatraGo Mobility • Next-Generation Ride Sharing</p>
-      </footer>
+      {/* Global Uber-Style Footer */}
+      <UberFooter onNavigate={handleNavigateWithTransition} />
 
       {/* 3D Ride Kinetic Page Transition Overlay */}
       <RideTransitionOverlay

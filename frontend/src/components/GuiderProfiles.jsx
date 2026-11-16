@@ -108,7 +108,7 @@ export default function GuiderProfiles({ onSelectGuider, selectedGuider }) {
                 <div className="pt-3 border-t border-slate-800 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] uppercase font-bold text-slate-400 block">Rate</span>
-                    <span className="text-lg font-extrabold text-white">${g.hourlyRate}<span className="text-xs text-slate-400 font-normal">/hr</span></span>
+                    <span className="text-lg font-extrabold text-white">₹{g.hourlyRate}<span className="text-xs text-slate-400 font-normal">/hr</span></span>
                   </div>
 
                   <button

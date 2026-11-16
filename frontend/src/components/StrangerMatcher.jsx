@@ -107,7 +107,7 @@ export default function StrangerMatcher({ onCombineSuccess }) {
                         {match.routeMatchPercent}% Route Overlap
                       </span>
                       <span className="text-[11px] px-2 py-0.5 rounded-md bg-slate-800 text-slate-300">
-                        +${match.detourMinutes}m detour
+                        +{match.detourMinutes}m detour
                       </span>
                       <span className="text-[11px] text-slate-400">
                         {match.rider.tripsCompleted} completed rides • {match.rider.rating} ★
@@ -124,8 +124,8 @@ export default function StrangerMatcher({ onCombineSuccess }) {
                       Save {match.totalSavingsPercent}% Total
                     </span>
                     <div className="flex items-baseline gap-1.5">
-                      <span className="text-xl font-extrabold text-white">${match.discountedFarePerPerson.toFixed(2)}</span>
-                      <span className="text-xs text-slate-400 line-through">${match.originalFare.toFixed(2)}</span>
+                      <span className="text-xl font-extrabold text-white">₹{match.discountedFarePerPerson.toFixed(2)}</span>
+                      <span className="text-xs text-slate-400 line-through">₹{match.originalFare.toFixed(2)}</span>
                     </div>
                   </div>
 

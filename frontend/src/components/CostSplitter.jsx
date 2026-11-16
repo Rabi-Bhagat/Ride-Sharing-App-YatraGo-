@@ -11,17 +11,17 @@ import yatraGoLogo from '../logo/yatrago-logo.png';
 export default function CostSplitter({ ride }) {
   const { user } = useAuth();
 
-  // Initial base cost from active ride or default standard pool fare
-  const initialBaseCost = ride?.totalCost || 33.00;
+  // Initial base cost from active ride or default standard pool fare (in INR ₹)
+  const initialBaseCost = ride?.totalCost || 320.00;
   const isStrangerDiscounted = ride?.isStrangerCombined || false;
 
   // Split Modes: 'equal', 'custom', 'distance'
   const [splitMode, setSplitMode] = useState('equal');
 
   // Tip and Promo states
-  const [tip, setTip] = useState(3.00);
+  const [tip, setTip] = useState(30.00);
   const [promoCode, setPromoCode] = useState('');
-  const [promoDiscount, setPromoDiscount] = useState(isStrangerDiscounted ? 8.00 : 0);
+  const [promoDiscount, setPromoDiscount] = useState(isStrangerDiscounted ? 80.00 : 0);
   const [promoApplied, setPromoApplied] = useState(isStrangerDiscounted);
 
   // Riders state
@@ -148,9 +148,9 @@ export default function CostSplitter({ ride }) {
     e.preventDefault();
     if (!promoCode.trim()) return;
     if (promoCode.toUpperCase() === 'POOL44' || promoCode.toUpperCase() === 'VELO20') {
-      setPromoDiscount(8.00);
+      setPromoDiscount(80.00);
       setPromoApplied(true);
-      setShareToast('Promo Code applied! $8.00 pool discount deducted.');
+      setShareToast('Promo Code applied! ₹80.00 pool discount deducted.');
       setTimeout(() => setShareToast(null), 3000);
     } else {
       setShareToast('Invalid promo code. Try POOL44 or VELO20.');
@@ -233,10 +233,10 @@ export default function CostSplitter({ ride }) {
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Gross Ride Fare</span>
-          <span className="text-2xl font-black text-white">${initialBaseCost.toFixed(2)}</span>
+          <span className="text-2xl font-black text-white">₹{initialBaseCost.toFixed(2)}</span>
           {promoDiscount > 0 && (
             <span className="text-[10px] text-emerald-400 block font-semibold mt-0.5">
-              -${promoDiscount.toFixed(2)} Promo Applied
+              -₹{promoDiscount.toFixed(2)} Promo Applied
             </span>
           )}
         </div>
@@ -244,7 +244,7 @@ export default function CostSplitter({ ride }) {
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Driver Tip</span>
           <div className="flex items-center gap-1.5 mt-1.5">
-            {[0, 2, 5, 8].map((amt) => (
+            {[0, 20, 50, 100].map((amt) => (
               <button
                 key={amt}
                 onClick={() => setTip(amt)}
@@ -254,7 +254,7 @@ export default function CostSplitter({ ride }) {
                     : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
-                ${amt}
+                ₹{amt}
               </button>
             ))}
           </div>
@@ -262,13 +262,13 @@ export default function CostSplitter({ ride }) {
 
         <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
           <span className="text-[10px] uppercase font-bold text-slate-400 block">Net Settle Total</span>
-          <span className="text-2xl font-black text-cyan-400">${grossTotal.toFixed(2)}</span>
+          <span className="text-2xl font-black text-cyan-400">₹{grossTotal.toFixed(2)}</span>
           <span className="text-[10px] text-slate-400 block font-mono">{ridersList.length} Active Co-Riders</span>
         </div>
 
         <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-500/30">
           <span className="text-[10px] uppercase font-bold text-emerald-300 block">Settled Collection</span>
-          <span className="text-2xl font-black text-white">${totalCollected.toFixed(2)}</span>
+          <span className="text-2xl font-black text-white">₹{totalCollected.toFixed(2)}</span>
           <span className="text-[10px] text-emerald-400 block font-bold font-mono">
             {paidCount} of {ridersList.length} Paid ({percentCollected}%)
           </span>
@@ -283,7 +283,7 @@ export default function CostSplitter({ ride }) {
             <span>Group Collection Progress</span>
           </span>
           <span className="font-mono text-emerald-400 font-extrabold">
-            ${totalCollected.toFixed(2)} / ${grossTotal.toFixed(2)}
+            ₹{totalCollected.toFixed(2)} / ₹{grossTotal.toFixed(2)}
           </span>
         </div>
         <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
@@ -466,7 +466,7 @@ export default function CostSplitter({ ride }) {
                 {/* Amount Due & Payment Actions */}
                 <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800 pt-3 sm:pt-0">
                   <div className="text-left sm:text-right">
-                    <span className="text-xl font-black text-white">${riderShare}</span>
+                    <span className="text-xl font-black text-white">₹{riderShare}</span>
                     <div className="flex items-center gap-1 text-[11px] sm:justify-end mt-0.5">
                       {isPaid ? (
                         <span className="text-emerald-400 flex items-center gap-1 font-bold">
@@ -558,7 +558,7 @@ export default function CostSplitter({ ride }) {
                 <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
                   <div>
                     <span className="text-[10px] text-slate-400 uppercase font-mono block">Amount to Authorize</span>
-                    <span className="text-3xl font-black text-white">${getRiderShare(activePaymentModalRider)}</span>
+                    <span className="text-3xl font-black text-white">₹{getRiderShare(activePaymentModalRider)}</span>
                   </div>
                   <span className="text-xs font-mono font-bold text-emerald-400 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
                     Live Escrow
@@ -622,7 +622,7 @@ export default function CostSplitter({ ride }) {
                   <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex items-center justify-between">
                     <div>
                       <span className="text-[10px] text-slate-400 block">YatraGo Wallet Balance</span>
-                      <strong className="text-white text-sm">${(user?.walletBalance || 145.50).toFixed(2)}</strong>
+                      <strong className="text-white text-sm">₹{(user?.walletBalance || 1500.00).toFixed(2)}</strong>
                     </div>
                     <span className="text-[10px] text-emerald-400 font-bold">Sufficient Funds ✓</span>
                   </div>
@@ -637,7 +637,7 @@ export default function CostSplitter({ ride }) {
                     <span>Authenticating Bank Gateway...</span>
                   ) : (
                     <>
-                      <span>Confirm & Authorize ${getRiderShare(activePaymentModalRider)}</span>
+                      <span>Confirm & Authorize ₹{getRiderShare(activePaymentModalRider)}</span>
                       <ArrowRight size={16} />
                     </>
                   )}
@@ -675,7 +675,7 @@ export default function CostSplitter({ ride }) {
                   </div>
                   <div className="flex justify-between pt-1.5 pb-1.5">
                     <span className="text-slate-400">Net Amount Paid:</span>
-                    <span className="text-emerald-400 font-extrabold text-sm">${paymentReceipt.amount}</span>
+                    <span className="text-emerald-400 font-extrabold text-sm">₹{paymentReceipt.amount}</span>
                   </div>
                   <div className="flex justify-between pt-1.5">
                     <span className="text-slate-400">Timestamp:</span>

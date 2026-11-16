@@ -107,22 +107,22 @@ const seedData = async () => {
     ]);
     console.log(`Seeded ${users.length} verified users into User collection.`);
 
-    // 2. Seed Guiders
+    // 2. Seed Guiders (in INR ₹)
     const guiders = await Guider.create([
       {
         name: 'Sofia Martinez',
         avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=300&q=80',
         languages: ['English', 'Spanish', 'French'],
         specialties: ['Architectural Landmarks', 'Local Gastronomy', 'Nightlife Routes'],
-        hourlyRate: 35,
+        hourlyRate: 350,
         rating: 4.98,
         reviewCount: 164,
         isVerifiedGuider: true,
         city: 'Downtown Cyber Hub & Plaza',
         bio: 'Licensed city guide with 7+ years experience showing visitors hidden cultural gems, rooftop lounges, and tech landmarks.',
         toursOffered: [
-          { title: 'Tech Hub & Skyline Sunset Tour', duration: '2 Hours', price: 45, preview3DId: 'downtown' },
-          { title: 'Historic Cultural District Walk', duration: '3 Hours', price: 60, preview3DId: 'historic' }
+          { title: 'Tech Hub & Skyline Sunset Tour', duration: '2 Hours', price: 450, preview3DId: 'downtown' },
+          { title: 'Historic Cultural District Walk', duration: '3 Hours', price: 600, preview3DId: 'historic' }
         ],
         isAvailable: true
       },
@@ -131,15 +131,15 @@ const seedData = async () => {
         avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
         languages: ['English', 'Japanese'],
         specialties: ['Oceanfront Coast', 'Sunset Photography', 'Maritime History'],
-        hourlyRate: 40,
+        hourlyRate: 400,
         rating: 4.94,
         reviewCount: 112,
         isVerifiedGuider: true,
         city: 'Oceanfront Bay Resort & Pier',
         bio: 'Avid coastal photographer and maritime navigator. I escort co-riders along scenic ocean drives and harbor docks.',
         toursOffered: [
-          { title: 'Pacific Rim Panoramic Drive', duration: '2.5 Hours', price: 55, preview3DId: 'ocean' },
-          { title: 'Golden Gate Bridge Coastal Overlook', duration: '2 Hours', price: 50, preview3DId: 'golden_gate' }
+          { title: 'Pacific Rim Panoramic Drive', duration: '2.5 Hours', price: 550, preview3DId: 'ocean' },
+          { title: 'Golden Gate Bridge Coastal Overlook', duration: '2 Hours', price: 500, preview3DId: 'golden_gate' }
         ],
         isAvailable: true
       },
@@ -148,14 +148,14 @@ const seedData = async () => {
         avatar: 'https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?auto=format&fit=crop&w=300&q=80',
         languages: ['English', 'Igbo', 'German'],
         specialties: ['Mountain Trails', 'Art Galleries', 'Food Markets'],
-        hourlyRate: 30,
+        hourlyRate: 300,
         rating: 4.96,
         reviewCount: 128,
         isVerifiedGuider: true,
         city: 'Alpine Heights & Ridge Gateway',
         bio: 'Outdoor trail enthusiast and local food critic. Ready to join your ride share and guide your scenic ridge expedition.',
         toursOffered: [
-          { title: 'Alpine Gateway & Peak Preview', duration: '4 Hours', price: 80, preview3DId: 'alpine' }
+          { title: 'Alpine Gateway & Peak Preview', duration: '4 Hours', price: 800, preview3DId: 'alpine' }
         ],
         isAvailable: true
       },
@@ -164,14 +164,14 @@ const seedData = async () => {
         avatar: 'https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?auto=format&fit=crop&w=300&q=80',
         languages: ['English', 'Italian'],
         specialties: ['Silicon Innovation History', 'Tech Campuses', 'Autonomous Transport'],
-        hourlyRate: 42,
+        hourlyRate: 420,
         rating: 4.99,
         reviewCount: 198,
         isVerifiedGuider: true,
         city: 'Silicon Valley Mega Tech Campus',
         bio: 'Veteran tech journalist and Silicon Valley insider guiding visitors through legendary R&D parks and campus archives.',
         toursOffered: [
-          { title: 'Silicon Legends & AI Pavilion Tour', duration: '3 Hours', price: 75, preview3DId: 'silicon_valley' }
+          { title: 'Silicon Legends & AI Pavilion Tour', duration: '3 Hours', price: 750, preview3DId: 'silicon_valley' }
         ],
         isAvailable: true
       }
@@ -190,7 +190,7 @@ const seedData = async () => {
             avatar: users[0].avatar,
             isVerified: true,
             isPrimary: true,
-            costShare: 16.50,
+            costShare: 160.00,
             paymentStatus: 'Paid'
           },
           {
@@ -199,7 +199,7 @@ const seedData = async () => {
             avatar: users[1].avatar,
             isVerified: true,
             isPrimary: false,
-            costShare: 16.50,
+            costShare: 160.00,
             paymentStatus: 'Paid'
           }
         ],
@@ -215,18 +215,18 @@ const seedData = async () => {
         guider: {
           guiderId: guiders[0]._id.toString(),
           name: 'Sofia Martinez',
-          fee: 35
+          fee: 350
         },
         vehicleType: 'Eco Sedan',
         status: 'In Progress',
         isStrangerCombined: true,
         strangerSavingsPercentage: 44,
-        totalCost: 33.00,
+        totalCost: 320.00,
         distanceKm: 8.4,
         etaMinutes: 14,
         costSplits: [
-          { riderName: 'Alex Rivera', amount: 16.50, percentage: 50, status: 'Paid' },
-          { riderName: 'Sarah Jenkins', amount: 16.50, percentage: 50, status: 'Paid' }
+          { riderName: 'Alex Rivera', amount: 160.00, percentage: 50, status: 'Paid' },
+          { riderName: 'Sarah Jenkins', amount: 160.00, percentage: 50, status: 'Paid' }
         ]
       },
       {
@@ -239,7 +239,7 @@ const seedData = async () => {
             avatar: users[1].avatar,
             isVerified: true,
             isPrimary: true,
-            costShare: 24.00,
+            costShare: 240.00,
             paymentStatus: 'Paid'
           },
           {
@@ -248,7 +248,7 @@ const seedData = async () => {
             avatar: users[3].avatar,
             isVerified: true,
             isPrimary: false,
-            costShare: 24.00,
+            costShare: 240.00,
             paymentStatus: 'Paid'
           }
         ],
@@ -265,12 +265,12 @@ const seedData = async () => {
         status: 'Completed',
         isStrangerCombined: true,
         strangerSavingsPercentage: 40,
-        totalCost: 48.00,
+        totalCost: 480.00,
         distanceKm: 18.2,
         etaMinutes: 22,
         costSplits: [
-          { riderName: 'Sarah Jenkins', amount: 24.00, percentage: 50, status: 'Paid' },
-          { riderName: 'David Kim', amount: 24.00, percentage: 50, status: 'Paid' }
+          { riderName: 'Sarah Jenkins', amount: 240.00, percentage: 50, status: 'Paid' },
+          { riderName: 'David Kim', amount: 240.00, percentage: 50, status: 'Paid' }
         ]
       }
     ]);

@@ -130,3 +130,13 @@
   animation: roadDash 1.2s linear infinite;
 }
 
+/* No-Scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+

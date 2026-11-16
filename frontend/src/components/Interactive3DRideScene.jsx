@@ -174,12 +174,19 @@ function createAsphaltRoadTexture() {
   return texture;
 }
 
-export default function Interactive3DRideScene({ onBookRideWithRoute }) {
+export default function Interactive3DRideScene({ activeVehicleType, onBookRideWithRoute }) {
   const mountRef = useRef(null);
   const audioRef = useRef(null);
 
   // Vehicle & Driving states
-  const [vehicleType, setVehicleType] = useState('bike'); // 'bike' or 'car'
+  const [vehicleType, setVehicleType] = useState(activeVehicleType || 'bike'); // 'bike' or 'car'
+
+  // Sync external activeVehicleType prop
+  useEffect(() => {
+    if (activeVehicleType && (activeVehicleType === 'bike' || activeVehicleType === 'car')) {
+      setVehicleType(activeVehicleType);
+    }
+  }, [activeVehicleType]);
   const [cameraMode, setCameraMode] = useState('chase'); // 'chase', 'cockpit', 'cinematic', 'orbit'
   const [vehicleColor, setVehicleColor] = useState('#06b6d4'); // Cyan, Black, Red, Gold, Emerald
   const [driveMode, setDriveMode] = useState('auto'); // 'auto' or 'manual'

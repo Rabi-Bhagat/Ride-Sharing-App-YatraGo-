@@ -30,7 +30,7 @@ const defaultUser = {
   rating: 4.96,
   tripsCompleted: 64,
   bio: 'Urban explorer & tech product designer. Regularly rides eco-shuttles and books verified guiders.',
-  walletBalance: 145.50,
+  walletBalance: 1500.00,
   upiId: 'alex.rivera@oksbi',
   emergencyContacts: [
     { name: 'Elena Rivera', phone: '+1 (555) 911-0199', relation: 'Sister' },
@@ -154,7 +154,7 @@ router.post('/register', async (req, res) => {
       rating: 5.0,
       tripsCompleted: 1,
       bio: 'New YatraGo explorer. Ready for fast, seamless rides and cost-pooling.',
-      walletBalance: 100.00, // Welcome credit
+      walletBalance: 500.00, // Welcome credit in INR (₹500)
       upiId: `${cleanEmail.split('@')[0]}@yatrago`,
       emergencyContacts
     };

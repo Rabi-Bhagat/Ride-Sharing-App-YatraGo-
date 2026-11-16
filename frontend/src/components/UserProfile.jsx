@@ -43,7 +43,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
   const [homeAddress, setHomeAddress] = useState(user?.homeAddress || '450 Mission St, San Francisco, CA');
   const [workAddress, setWorkAddress] = useState(user?.workAddress || '1 Market St, San Francisco, CA');
   const [bio, setBio] = useState(user?.bio || 'Urban explorer & tech product designer.');
-  const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 145.50);
+  const [walletBalance, setWalletBalance] = useState(user?.walletBalance || 1500.00);
   const [upiId, setUpiId] = useState(user?.upiId || 'alex.rivera@oksbi');
   const [isDetectingGps, setIsDetectingGps] = useState(false);
 
@@ -207,7 +207,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
     const updated = walletBalance + amount;
     setWalletBalance(updated);
     updateUserProfile({ walletBalance: updated });
-    showToast(`Added $${amount}.00 to YatraGo Wallet!`);
+    showToast(`Added ₹${amount}.00 to YatraGo Wallet!`);
   };
 
   // Add Emergency Contact
@@ -895,7 +895,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
 
                 <div className="mb-6">
                   <span className="text-[10px] text-slate-400 uppercase font-mono block">Available Balance</span>
-                  <span className="text-3xl font-black text-white tracking-tight">${walletBalance.toFixed(2)}</span>
+                  <span className="text-3xl font-black text-white tracking-tight">₹{walletBalance.toFixed(2)}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs font-mono text-slate-300 border-t border-slate-700/60 pt-3">
@@ -916,14 +916,14 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                   Quick Balance Top-Up
                 </label>
                 <div className="grid grid-cols-3 gap-3">
-                  {[20, 50, 100].map((amt) => (
+                  {[100, 250, 500].map((amt) => (
                     <button
                       key={amt}
                       onClick={() => handleTopUpWallet(amt)}
                       className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-cyan-950/40 border border-slate-800 hover:border-cyan-500/50 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all hover:scale-105"
                     >
                       <Plus size={14} className="text-cyan-400" />
-                      <span>+${amt}.00</span>
+                      <span>+₹{amt}.00</span>
                     </button>
                   ))}
                 </div>

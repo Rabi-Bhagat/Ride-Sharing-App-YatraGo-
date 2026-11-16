@@ -167,11 +167,11 @@ export default function RideBooking({
   const distanceKm = hasValidRoute && !isIntercontinental ? Math.max(1.2, Math.round(rawDistance * 10) / 10) : 0;
   const etaMinutes = hasValidRoute ? Math.max(4, Math.round(distanceKm * 1.6)) : 0;
 
-  // Fare Calculation
+  // Fare Calculation (in Indian Rupees ₹)
   const basePrice = hasValidRoute 
-    ? Math.max(8.00, Math.round((7.00 + Math.min(distanceKm, 100) * 1.25) * vehicleObj.multiplier * 100) / 100)
-    : 14.00;
-  const guiderFee = (addGuider || selectedGuider) ? (selectedGuider?.hourlyRate || 25) : 0;
+    ? Math.max(60.00, Math.round((50.00 + Math.min(distanceKm, 100) * 16.0) * vehicleObj.multiplier))
+    : 140.00;
+  const guiderFee = (addGuider || selectedGuider) ? (selectedGuider?.hourlyRate || 350) : 0;
   const totalPrice = (basePrice + guiderFee).toFixed(2);
 
   // 1-Click GPS Detect Location
@@ -470,7 +470,7 @@ export default function RideBooking({
           {VEHICLE_TIERS.map(v => {
             const isSelected = selectedVehicle === v.id;
             const cappedDist = Math.min(distanceKm || 10, 100);
-            const tierPrice = Math.max(8.00, Math.round((7.00 + cappedDist * 1.25) * v.multiplier * 100) / 100);
+            const tierPrice = Math.max(60.00, Math.round((50.00 + cappedDist * 16.0) * v.multiplier));
 
             return (
               <div
@@ -498,7 +498,7 @@ export default function RideBooking({
                 </div>
 
                 <div className="text-right">
-                  <span className="text-sm font-extrabold text-white block">${tierPrice.toFixed(2)}</span>
+                  <span className="text-sm font-extrabold text-white block">₹{tierPrice.toFixed(2)}</span>
                   {isSelected && <span className="text-[10px] text-cyan-400 font-bold block">Selected</span>}
                 </div>
               </div>
@@ -516,7 +516,7 @@ export default function RideBooking({
           <div>
             <span className="text-xs font-bold text-slate-200 block">Include Local Travel Guide</span>
             <span className="text-[10px] text-slate-400">
-              {selectedGuider ? `${selectedGuider.name} (+$${selectedGuider.hourlyRate})` : 'Adds expert guide (+ $25.00)'}
+              {selectedGuider ? `${selectedGuider.name} (+₹${selectedGuider.hourlyRate})` : 'Adds expert guide (+ ₹350.00)'}
             </span>
           </div>
         </div>
@@ -543,7 +543,7 @@ export default function RideBooking({
             </span>
           ) : (
             <>
-              <span>Request {vehicleObj.name} • ${totalPrice}</span>
+              <span>Request {vehicleObj.name} • ₹{totalPrice}</span>
               <ArrowRight size={17} />
             </>
           )}

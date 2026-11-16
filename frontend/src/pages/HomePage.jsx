@@ -1,344 +1,426 @@
-import React, { useRef, useState } from 'react';
+import React, { useState } from 'react';
 import { 
   Car, Users, DollarSign, Box, Compass, AlertTriangle, 
   ShieldCheck, ArrowRight, Sparkles, MapPin, Zap, CheckCircle2, Bike,
-  Navigation, Shield, Check, Clock, Radio, ChevronRight
+  Navigation, Shield, Check, Clock, Radio, ChevronRight, Layers, 
+  Image as ImageIcon, Plane, Smartphone, QrCode, Briefcase, Award,
+  Calendar, Package, HeartHandshake, Eye
 } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 import Interactive3DRideScene from '../components/Interactive3DRideScene';
+import HeroImageSlider from '../components/HeroImageSlider';
+import VehicleFleetShowcase, { VEHICLE_FLEET_DATA } from '../components/VehicleFleetShowcase';
+import UberRideRequestCard from '../components/UberRideRequestCard';
+import UberReserveSection from '../components/UberReserveSection';
+import UberAirportAndIntercityHub from '../components/UberAirportAndIntercityHub';
+import UberFaqSection from '../components/UberFaqSection';
 
 export default function HomePage({ onNavigate, user }) {
+  const [heroDisplayMode, setHeroDisplayMode] = useState('slider'); // 'slider' or '3d'
+  const [selectedVehicleId, setSelectedVehicleId] = useState('superbike');
   const [quickPickup, setQuickPickup] = useState('Innovation Tech Park, SF');
   const [quickDropoff, setQuickDropoff] = useState('Downtown Cyber Hub');
-  const [isPoolSelected, setIsPoolSelected] = useState(true);
 
-  const destinationOptions = [
-    { name: 'Downtown Cyber Hub', distance: '8.4 km', baseFare: 24.50 },
-    { name: 'Oceanfront Bay Pier', distance: '12.1 km', baseFare: 32.00 },
-    { name: 'Metro Airport Skyway', distance: '19.5 km', baseFare: 48.00 },
-    { name: 'Alpine Ridge Summit', distance: '26.8 km', baseFare: 62.00 }
-  ];
-
-  const currentDest = destinationOptions.find(d => d.name === quickDropoff) || destinationOptions[0];
-  const standardFare = currentDest.baseFare;
-  const poolFare = (standardFare * 0.56).toFixed(2); // 44% savings
-  const effectiveFare = isPoolSelected ? poolFare : standardFare.toFixed(2);
-
-  const handleInstantBook = () => {
+  const handleInstantBook = (bookingInfo) => {
+    if (bookingInfo?.pickup) setQuickPickup(bookingInfo.pickup);
+    if (bookingInfo?.dropoff) setQuickDropoff(bookingInfo.dropoff);
     onNavigate('book');
   };
 
   return (
-    <div className="space-y-8 animate-fadeIn">
+    <div className="space-y-12 animate-fadeIn text-slate-100">
       
-      {/* 3D INTERACTIVE HERO HEADQUARTERS */}
-      <div className="relative rounded-3xl overflow-hidden glass-panel border border-cyan-500/40 p-6 sm:p-8 lg:p-10 shadow-2xl space-y-6">
+      {/* ======================================================== */}
+      {/* 1. UBER HERO SPLIT: RIDE REQUEST CARD + HERO IMAGE SLIDER */}
+      {/* ======================================================== */}
+      <section className="relative">
         
-        {/* Ambient Glow Orbs */}
-        <div className="absolute top-0 right-0 w-96 h-96 bg-gradient-to-br from-cyan-500/15 via-emerald-600/10 to-blue-600/15 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr from-cyan-500/10 via-blue-600/10 to-emerald-500/15 rounded-full blur-3xl pointer-events-none"></div>
+        {/* Background Ambient Glow */}
+        <div className="absolute -top-12 -left-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="absolute top-1/2 -right-12 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-        {/* Top Header & Branding Row */}
-        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch relative z-10">
           
-          {/* Headline & Value Proposition */}
-          <div className="space-y-3 max-w-3xl">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-bold font-mono">
-                <Sparkles size={13} className="text-emerald-400" />
-                <span>YATRA • GO • MOBILITY • 3.0</span>
-              </div>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-extrabold border border-emerald-500/30 font-mono">
-                44% POOL SAVINGS
-              </span>
-              <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30 font-mono">
-                60FPS WEBGL ENGINE
-              </span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-white leading-tight">
-              Urban Transit Reimagined in{' '}
-              <span className="bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 bg-clip-text text-transparent">
-                Realistic Real-Time 3D
-              </span>
-            </h1>
-
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
-              Experience live interactive highway simulation with Superbikes and Tesla EV Shuttles, AI co-rider pooling, instant fare splitting, and 3D satellite previews.
-            </p>
+          {/* Left Column (5 Cols): Iconic Uber Request a Ride Card */}
+          <div className="lg:col-span-5 flex flex-col justify-between">
+            <UberRideRequestCard
+              initialPickup={quickPickup}
+              initialDropoff={quickDropoff}
+              onBookRide={handleInstantBook}
+            />
           </div>
 
-          {/* Official Emblem & Live Telemetry Badge */}
-          <div className="shrink-0 flex items-center gap-3.5 p-3 rounded-2xl bg-slate-900/90 border border-cyan-500/30 shadow-xl backdrop-blur-xl">
-            <div className="w-12 h-12 rounded-xl p-1 bg-white flex items-center justify-center border border-cyan-500/40 shadow-md">
-              <img
-                src={yatraGoLogo}
-                alt="YatraGo Roadway Logo"
-                className="w-full h-full object-contain"
-              />
+          {/* Right Column (7 Cols): Hero Transition Showcase / 3D Simulator */}
+          <div className="lg:col-span-7 flex flex-col space-y-3">
+            
+            {/* View Mode Switcher Header */}
+            <div className="flex items-center justify-between px-2">
+              <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-slate-900/90 border border-slate-800 shadow-md">
+                <button
+                  onClick={() => setHeroDisplayMode('slider')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    heroDisplayMode === 'slider'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <ImageIcon size={14} />
+                  <span>Curated Corridors</span>
+                  <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
+                </button>
+
+                <button
+                  onClick={() => setHeroDisplayMode('3d')}
+                  className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    heroDisplayMode === '3d'
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  <Box size={14} />
+                  <span>3D Digital Twin</span>
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
+                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+                <span className="hidden sm:inline">Feed: {heroDisplayMode === 'slider' ? '8K Transit Showcase' : 'WebGL 60FPS'}</span>
+              </div>
+            </div>
+
+            {/* Media Container */}
+            <div className="flex-1 rounded-3xl overflow-hidden border border-slate-800 shadow-2xl">
+              {heroDisplayMode === 'slider' ? (
+                <HeroImageSlider
+                  onBookRideWithRoute={(info) => {
+                    if (info?.waypoint) setQuickPickup(info.waypoint);
+                    handleInstantBook(info);
+                  }}
+                />
+              ) : (
+                <Interactive3DRideScene 
+                  activeVehicleType={selectedVehicleId === 'superbike' || selectedVehicleId === 'aeroscooter' ? 'bike' : 'car'}
+                  onBookRideWithRoute={() => handleInstantBook()}
+                />
+              )}
+            </div>
+
+          </div>
+
+        </div>
+
+      </section>
+
+      {/* ======================================================== */}
+      {/* 2. EXPLORE WHAT YOU CAN DO WITH YATRAGO (UBER OFFERINGS) */}
+      {/* ======================================================== */}
+      <section className="space-y-4 pt-4">
+        <div>
+          <div className="flex items-center gap-2 mb-1">
+            <Sparkles size={14} className="text-cyan-400" />
+            <span className="text-xs font-mono font-bold text-cyan-400 uppercase">YatraGo Offerings</span>
+          </div>
+          <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+            Explore What You Can Do with YatraGo
+          </h2>
+          <p className="text-xs sm:text-sm text-slate-400 mt-1">
+            Smart urban transit solutions engineered for individuals, friends, and corporate teams.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          
+          {/* Card 1: Daily Ride */}
+          <div
+            onClick={() => onNavigate('book')}
+            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-850 border border-slate-800 hover:border-cyan-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Car size={24} />
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold">
+                INSTANT PICKUP
+              </span>
             </div>
             <div>
-              <div className="flex items-center gap-1.5">
-                <strong className="text-white text-sm font-black tracking-tight">YatraGo Pro</strong>
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-              </div>
-              <span className="text-[10px] text-cyan-400 font-mono block">Zero-Carbon Transit Network</span>
+              <h3 className="text-base font-black text-white group-hover:text-cyan-300 transition-colors flex items-center justify-between">
+                <span>Ride</span>
+                <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Go anywhere with YatraGo. Request a ride, hop in, and reach your destination with top-rated drivers.
+              </p>
             </div>
           </div>
 
-        </div>
-
-        {/* REALISTIC 3D HIGHWAY & VEHICLE SCENE */}
-        <div className="relative z-10 rounded-2xl overflow-hidden border border-cyan-500/30 shadow-2xl">
-          <Interactive3DRideScene 
-            onBookRideWithRoute={handleInstantBook}
-          />
-        </div>
-
-        {/* QUICK RIDE BOOKING CONSOLE (Interactive Floating Strip) */}
-        <div className="relative z-10 glass-card p-4 sm:p-5 rounded-2xl border border-cyan-500/30 space-y-4">
-          <div className="flex flex-col lg:flex-row items-center justify-between gap-4">
-            
-            {/* Origin & Destination Inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full lg:w-auto flex-1">
-              {/* Pickup */}
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                <div className="w-3 h-3 rounded-full bg-cyan-400 animate-pulse"></div>
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Pickup Point</span>
-                  <input
-                    type="text"
-                    value={quickPickup}
-                    onChange={(e) => setQuickPickup(e.target.value)}
-                    className="w-full bg-transparent text-xs font-bold text-white focus:outline-none truncate"
-                  />
-                </div>
-              </div>
-
-              {/* Destination */}
-              <div className="flex items-center gap-2.5 p-3 rounded-xl bg-slate-950/80 border border-slate-800">
-                <MapPin size={16} className="text-emerald-400 shrink-0" />
-                <div className="flex-1 min-w-0">
-                  <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Dropoff Destination</span>
-                  <select
-                    value={quickDropoff}
-                    onChange={(e) => setQuickDropoff(e.target.value)}
-                    className="w-full bg-transparent text-xs font-bold text-white focus:outline-none cursor-pointer"
-                  >
-                    {destinationOptions.map(d => (
-                      <option key={d.name} value={d.name} className="bg-slate-900 text-white">
-                        {d.name} ({d.distance})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Fare Estimate & Booking Action */}
-            <div className="flex flex-wrap items-center justify-between lg:justify-end gap-4 w-full lg:w-auto shrink-0 pt-2 lg:pt-0 border-t lg:border-t-0 border-slate-800">
-              
-              {/* Pool Savings Switcher */}
-              <button
-                onClick={() => setIsPoolSelected(!isPoolSelected)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold border transition-all ${
-                  isPoolSelected
-                    ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 shadow-sm'
-                    : 'bg-slate-900 text-slate-400 border-slate-800'
-                }`}
-                title="Toggle AI Stranger Carpooling"
-              >
-                <Users size={14} className={isPoolSelected ? 'text-emerald-400' : ''} />
-                <span>Pool & Save 44%</span>
-                {isPoolSelected && <Check size={14} className="text-emerald-400" />}
-              </button>
-
-              {/* Price Calculation Pill */}
-              <div className="text-right">
-                <span className="text-[10px] text-slate-400 uppercase font-mono block">Estimated Fare</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-black text-white font-mono">${effectiveFare}</span>
-                  {isPoolSelected && (
-                    <span className="text-xs text-slate-500 line-through font-mono">${standardFare.toFixed(2)}</span>
-                  )}
-                </div>
-              </div>
-
-              {/* Book Button */}
-              <button
-                onClick={handleInstantBook}
-                className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-cyan-500 via-blue-600 to-emerald-500 text-white font-extrabold text-xs sm:text-sm shadow-xl shadow-cyan-500/25 hover:shadow-cyan-500/40 hover:scale-105 active:scale-95 transition-all"
-              >
-                <Car size={16} />
-                <span>Confirm & Book Ride</span>
-                <ArrowRight size={16} />
-              </button>
-
-            </div>
-
-          </div>
-        </div>
-
-      </div>
-
-      {/* QUICK STATS METRICS GRID */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="p-5 rounded-2xl glass-card border border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Total Rides Pooled</span>
-          <span className="text-2xl font-black text-white mt-1 block">14,280+</span>
-          <span className="text-[11px] text-emerald-400 font-semibold flex items-center gap-1 mt-1">
-            <Zap size={12} /> 44% Average Savings
-          </span>
-        </div>
-
-        <div className="p-5 rounded-2xl glass-card border border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Carbon Offset</span>
-          <span className="text-2xl font-black text-cyan-400 mt-1 block">38.4 Tons</span>
-          <span className="text-[11px] text-slate-400 mt-1 block">Zero-Emission Fleet</span>
-        </div>
-
-        <div className="p-5 rounded-2xl glass-card border border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Identity Verification</span>
-          <span className="text-2xl font-black text-emerald-400 mt-1 block">99.4%</span>
-          <span className="text-[11px] text-slate-400 mt-1 block">Govt ID Checkmark</span>
-        </div>
-
-        <div className="p-5 rounded-2xl glass-card border border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block font-mono">Safety Guarantee</span>
-          <span className="text-2xl font-black text-rose-400 mt-1 block">Instant SOS</span>
-          <span className="text-[11px] text-slate-400 mt-1 block">5km Telemetry Beacon</span>
-        </div>
-      </div>
-
-      {/* FEATURE PAGES SHOWCASE GRID */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-bold text-white">Platform Modules & Features</h2>
-            <p className="text-xs text-slate-400 mt-0.5">Explore each dedicated module designed for modern smart urban mobility</p>
-          </div>
-          <span className="text-xs text-cyan-400 font-mono font-bold hidden sm:block">6 Active Modules ✓</span>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Card 1: Ride Pool Matcher */}
+          {/* Card 2: Stranger Pooling */}
           <div
             onClick={() => onNavigate('stranger')}
-            className="p-6 rounded-2xl glass-card border border-slate-800 hover:border-emerald-500/50 cursor-pointer group transition-all duration-300 space-y-4"
+            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-850 border border-slate-800 hover:border-emerald-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
-            <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Users size={24} />
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Users size={24} />
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold">
+                SAVE UP TO 44%
+              </span>
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white group-hover:text-emerald-400 transition-colors flex items-center justify-between">
-                <span>Stranger Ride Matcher</span>
-                <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              <h3 className="text-base font-black text-white group-hover:text-emerald-300 transition-colors flex items-center justify-between">
+                <span>Stranger Pooling</span>
+                <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                AI route alignment algorithm that pairs you with verified co-riders to save up to 45% on fare.
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                AI route alignment pairs you with verified co-riders on identical highway routes to slash fare prices.
               </p>
             </div>
           </div>
 
-          {/* Card 2: Cost Splitter */}
+          {/* Card 3: Reserve in Advance */}
           <div
-            onClick={() => onNavigate('cost-split')}
-            className="p-6 rounded-2xl glass-card border border-slate-800 hover:border-blue-500/50 cursor-pointer group transition-all duration-300 space-y-4"
+            onClick={() => onNavigate('book')}
+            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-850 border border-slate-800 hover:border-amber-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
-            <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <DollarSign size={24} />
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Calendar size={24} />
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-bold">
+                UP TO 90 DAYS
+              </span>
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white group-hover:text-blue-400 transition-colors flex items-center justify-between">
-                <span>Automated Cost Splitter</span>
-                <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              <h3 className="text-base font-black text-white group-hover:text-amber-300 transition-colors flex items-center justify-between">
+                <span>Reserve</span>
+                <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Fair financial fare calculations with interactive live payment simulator (UPI, Card, Apple Pay).
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Reserve your ride in advance so you can relax on the day of your trip. Complimentary wait time included.
               </p>
             </div>
           </div>
 
-          {/* Card 3: 3D Preview */}
+          {/* Card 4: YatraGo Moto */}
           <div
-            onClick={() => onNavigate('preview-3d')}
-            className="p-6 rounded-2xl glass-card border border-slate-800 hover:border-violet-500/50 cursor-pointer group transition-all duration-300 space-y-4"
+            onClick={() => onNavigate('book')}
+            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-850 border border-slate-800 hover:border-cyan-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
-            <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Box size={24} />
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Bike size={24} />
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 font-bold">
+                BEAT THE TRAFFIC
+              </span>
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white group-hover:text-violet-400 transition-colors flex items-center justify-between">
-                <span>3D Destination Explorer</span>
-                <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              <h3 className="text-base font-black text-white group-hover:text-cyan-300 transition-colors flex items-center justify-between">
+                <span>YatraGo Moto</span>
+                <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Three.js WebGL 3D volumetric cityscapes with 360° orbit rotation, atmosphere modes & landmark pins.
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Affordable motorcycle rides that cut through city gridlock and get you to your destination swiftly.
               </p>
             </div>
           </div>
 
-          {/* Card 4: Local Guiders */}
+          {/* Card 5: Courier Services */}
+          <div
+            onClick={() => onNavigate('book')}
+            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-850 border border-slate-800 hover:border-blue-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+          >
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Package size={24} />
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 font-bold">
+                SAME DAY PARCEL
+              </span>
+            </div>
+            <div>
+              <h3 className="text-base font-black text-white group-hover:text-blue-300 transition-colors flex items-center justify-between">
+                <span>Courier & Package</span>
+                <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
+              </h3>
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Send documents, food, gifts, or forgotten keys across town with real-time GPS courier tracking.
+              </p>
+            </div>
+          </div>
+
+          {/* Card 6: Local Guiders */}
           <div
             onClick={() => onNavigate('guiders')}
-            className="p-6 rounded-2xl glass-card border border-slate-800 hover:border-amber-500/50 cursor-pointer group transition-all duration-300 space-y-4"
+            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-850 border border-slate-800 hover:border-violet-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <Compass size={24} />
+            <div className="flex items-center justify-between">
+              <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Compass size={24} />
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-300 font-bold">
+                VERIFIED LOCAL EXPERTS
+              </span>
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white group-hover:text-amber-400 transition-colors flex items-center justify-between">
-                <span>Local Guider Network</span>
-                <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+              <h3 className="text-base font-black text-white group-hover:text-violet-300 transition-colors flex items-center justify-between">
+                <span>Local Guiders</span>
+                <ArrowRight size={16} className="opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" />
               </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Book licensed travel guiders to join your ride share and guide your urban expedition.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 5: Emergency SOS */}
-          <div
-            onClick={() => onNavigate('sos')}
-            className="p-6 rounded-2xl glass-card border border-slate-800 hover:border-red-500/50 cursor-pointer group transition-all duration-300 space-y-4"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <AlertTriangle size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white group-hover:text-red-400 transition-colors flex items-center justify-between">
-                <span>Localized Emergency SOS</span>
-                <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                3-second safety countdown beacon broadcasting emergency GPS telemetry to 5km radius response units.
-              </p>
-            </div>
-          </div>
-
-          {/* Card 6: Real-time Group Chat */}
-          <div
-            onClick={() => onNavigate('chat')}
-            className="p-6 rounded-2xl glass-card border border-slate-800 hover:border-cyan-500/50 cursor-pointer group transition-all duration-300 space-y-4"
-          >
-            <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <ShieldCheck size={24} />
-            </div>
-            <div>
-              <h3 className="text-lg font-bold text-white group-hover:text-cyan-400 transition-colors flex items-center justify-between">
-                <span>Socket Group Chat</span>
-                <ArrowRight size={18} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-              </h3>
-              <p className="text-xs text-slate-400 mt-1">
-                Live multi-participant socket chat connecting co-riders, driver, and assigned local guiders.
+              <p className="text-xs text-slate-400 mt-1 leading-relaxed">
+                Book certified local guides to join your ride share and tour historical landmarks and hidden city gems.
               </p>
             </div>
           </div>
 
         </div>
-      </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* 3. YATRAGO RESERVE SHOWCASE (PLAN FOR LATER)             */}
+      {/* ======================================================== */}
+      <section>
+        <UberReserveSection
+          onReserveClick={(details) => {
+            if (details?.destination) setQuickDropoff(details.destination);
+            onNavigate('book');
+          }}
+        />
+      </section>
+
+      {/* ======================================================== */}
+      {/* 4. RIDE WITH FRIENDS SEAMLESSLY (GROUP RIDES BANNER)     */}
+      {/* ======================================================== */}
+      <section className="rounded-3xl p-6 sm:p-8 bg-gradient-to-r from-slate-900 via-slate-950 to-emerald-950/40 border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 shadow-xl">
+        <div className="space-y-2 max-w-2xl">
+          <div className="flex items-center gap-2">
+            <Users size={16} className="text-emerald-400" />
+            <span className="text-xs font-mono font-bold text-emerald-400 uppercase">Co-Rider Social Mobility</span>
+          </div>
+          <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            Ride with Friends Seamlessly
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            Riding with friends just got easier: set up a group ride in the YatraGo app, invite your friends, and arrive at your destination together. Friends who ride together save together.
+          </p>
+        </div>
+
+        <button
+          onClick={() => onNavigate('cost-split')}
+          className="px-6 py-3.5 rounded-2xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-emerald-500/20 hover:scale-105 transition-all flex items-center gap-2 shrink-0 cursor-pointer"
+        >
+          <span>Set Up Group Ride & Split</span>
+          <ArrowRight size={16} />
+        </button>
+      </section>
+
+      {/* ======================================================== */}
+      {/* 5. PRODUCTION VEHICLE FLEET SHOWCASE                     */}
+      {/* ======================================================== */}
+      <section>
+        <VehicleFleetShowcase
+          selectedVehicleId={selectedVehicleId}
+          onSelectVehicle={(veh) => setSelectedVehicleId(veh.id)}
+          onBookVehicle={(veh) => {
+            setSelectedVehicleId(veh.id);
+            handleInstantBook();
+          }}
+        />
+      </section>
+
+      {/* ======================================================== */}
+      {/* 6. AIRPORTS, HIGHWAYS & COURIER HUB (FROM USER'S FILE)   */}
+      {/* ======================================================== */}
+      <section>
+        <UberAirportAndIntercityHub
+          onSelectRoute={(route) => {
+            if (route?.pickup) setQuickPickup(route.pickup);
+            if (route?.dropoff) setQuickDropoff(route.dropoff);
+            onNavigate('book');
+          }}
+        />
+      </section>
+
+      {/* ======================================================== */}
+      {/* 7. YATRAGO FOR BUSINESS SOLUTIONS                       */}
+      {/* ======================================================== */}
+      <section className="rounded-3xl p-6 sm:p-8 bg-slate-900/80 border border-slate-800 grid grid-cols-1 md:grid-cols-12 gap-8 items-center shadow-xl">
+        <div className="md:col-span-8 space-y-3">
+          <div className="flex items-center gap-2">
+            <Briefcase size={16} className="text-cyan-400" />
+            <span className="text-xs font-mono font-bold text-cyan-400 uppercase">Enterprise Transit</span>
+          </div>
+          <h3 className="text-xl sm:text-3xl font-black text-white tracking-tight">
+            Looking for Business Solutions?
+          </h3>
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-2xl">
+            Get information about how companies leverage YatraGo for Business: automated expense management, courtesy rides for clients, employee daily commuting, and express courier logistics.
+          </p>
+
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-xs text-slate-300 font-mono">
+            <div className="flex items-center gap-1.5"><Check size={14} className="text-emerald-400 shrink-0" /><span>Business Travel</span></div>
+            <div className="flex items-center gap-1.5"><Check size={14} className="text-emerald-400 shrink-0" /><span>Courtesy Rides</span></div>
+            <div className="flex items-center gap-1.5"><Check size={14} className="text-emerald-400 shrink-0" /><span>Meal Programs</span></div>
+            <div className="flex items-center gap-1.5"><Check size={14} className="text-emerald-400 shrink-0" /><span>Item Delivery</span></div>
+          </div>
+        </div>
+
+        <div className="md:col-span-4 flex flex-col gap-2.5">
+          <button
+            onClick={() => onNavigate('cost-split')}
+            className="w-full py-3.5 px-5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+          >
+            <span>Get Started with Business</span>
+            <ArrowRight size={15} />
+          </button>
+          <span className="text-center text-[10px] text-slate-500 font-mono">
+            Direct monthly GST invoicing & automated billing
+          </span>
+        </div>
+      </section>
+
+      {/* ======================================================== */}
+      {/* 8. FREQUENTLY ASKED QUESTIONS ACCORDION                  */}
+      {/* ======================================================== */}
+      <section>
+        <UberFaqSection />
+      </section>
+
+      {/* ======================================================== */}
+      {/* 9. DO MORE IN THE APP (UBER-STYLE DOWNLOAD BLOCK)        */}
+      {/* ======================================================== */}
+      <section className="rounded-3xl p-6 sm:p-8 lg:p-10 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border border-slate-800 grid grid-cols-1 md:grid-cols-12 gap-8 items-center shadow-2xl">
+        <div className="md:col-span-8 space-y-3">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/30 text-cyan-400 text-xs font-mono font-bold">
+            <Smartphone size={13} />
+            <span>DO MORE IN THE APP</span>
+          </div>
+
+          <h3 className="text-2xl sm:text-4xl font-black text-white tracking-tight">
+            Download the YatraGo App
+          </h3>
+
+          <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-xl">
+            Join the millions of riders who trust YatraGo for their everyday urban travel needs. Get doorstep pickup and dropoff to your chosen destination at the tap of a button.
+          </p>
+
+          <div className="p-3 rounded-2xl bg-slate-950/80 border border-emerald-500/30 inline-block text-xs text-emerald-400 font-mono font-bold">
+            *First ride free. Valid within 14 days of signup. T&Cs apply.
+          </div>
+        </div>
+
+        <div className="md:col-span-4 flex flex-col items-center justify-center p-6 rounded-2xl bg-slate-950 border border-slate-800 text-center space-y-3">
+          <div className="w-24 h-24 rounded-2xl bg-white p-2 flex items-center justify-center shadow-lg">
+            <QrCode size={80} className="text-slate-950" />
+          </div>
+          <div>
+            <strong className="text-xs text-white block font-bold">Scan to download</strong>
+            <span className="text-[10px] text-slate-400 font-mono">iOS & Android supported</span>
+          </div>
+        </div>
+      </section>
 
     </div>
   );

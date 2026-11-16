@@ -3,7 +3,7 @@ const router = express.Router();
 const Ride = require('../models/Ride');
 const Message = require('../models/Message');
 
-// Mock fallback Active Ride state
+// Mock fallback Active Ride state (in INR ₹)
 let activeRide = {
   _id: 'ride_101',
   pickup: { name: 'Innovation Tech Park, SF', lat: 37.7749, lng: -122.4194 },
@@ -15,7 +15,7 @@ let activeRide = {
       avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
       isVerified: true,
       isPrimary: true,
-      costShare: 16.50,
+      costShare: 160.00,
       paymentStatus: 'Paid'
     }
   ],
@@ -33,11 +33,11 @@ let activeRide = {
   status: 'In Progress',
   isStrangerCombined: false,
   strangerSavingsPercentage: 0,
-  totalCost: 33.00,
+  totalCost: 320.00,
   distanceKm: 8.4,
   etaMinutes: 14,
   costSplits: [
-    { riderName: 'Alex Rivera', amount: 33.00, percentage: 100, status: 'Paid' }
+    { riderName: 'Alex Rivera', amount: 320.00, percentage: 100, status: 'Paid' }
   ]
 };
 
@@ -57,8 +57,8 @@ const strangerMatchesPool = [
     pickup: 'Financial District Plaza',
     destination: 'Downtown Cyber Hub (2 blocks away)',
     routeMatchPercent: 96,
-    originalFare: 33.00,
-    discountedFarePerPerson: 18.50,
+    originalFare: 320.00,
+    discountedFarePerPerson: 180.00,
     totalSavingsPercent: 44,
     detourMinutes: 2
   },
@@ -76,8 +76,8 @@ const strangerMatchesPool = [
     pickup: 'SoMa Tech Incubator',
     destination: 'Downtown Cyber Hub',
     routeMatchPercent: 91,
-    originalFare: 33.00,
-    discountedFarePerPerson: 19.80,
+    originalFare: 320.00,
+    discountedFarePerPerson: 190.00,
     totalSavingsPercent: 40,
     detourMinutes: 4
   }
@@ -111,10 +111,10 @@ router.post('/book', async (req, res) => {
   const { pickup, destination, vehicleType, guiderId, guiderFee } = req.body;
   
   const baseDistance = 8.5;
-  let baseRate = 18.00;
-  if (vehicleType === 'Premium SUV') baseRate = 34.00;
-  if (vehicleType === 'Electric Shuttle') baseRate = 22.00;
-  if (vehicleType === 'Guider Co-Ride') baseRate = 28.00;
+  let baseRate = 180.00;
+  if (vehicleType === 'Premium SUV') baseRate = 320.00;
+  if (vehicleType === 'Electric Shuttle') baseRate = 220.00;
+  if (vehicleType === 'Guider Co-Ride') baseRate = 280.00;
 
   let totalCost = baseRate + (guiderFee || 0);
 

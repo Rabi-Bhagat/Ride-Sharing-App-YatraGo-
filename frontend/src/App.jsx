@@ -11,7 +11,6 @@ import GroupChatPage from './pages/GroupChatPage';
 import UserProfile from './components/UserProfile';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
-import RideTransitionOverlay from './components/RideTransitionOverlay';
 import FloatingRideTracker from './components/FloatingRideTracker';
 import UberFooter from './components/UberFooter';
 
@@ -22,18 +21,9 @@ import { Sparkles } from 'lucide-react';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState('home'); // 'home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat'
-  const [isTransitioning, setIsTransitioning] = useState(false);
-  const [transitionFromTab, setTransitionFromTab] = useState('home');
-  const [transitionToTab, setTransitionToTab] = useState('home');
 
   const handleNavigateWithTransition = (targetTab) => {
-    if (targetTab === activeTab) return;
-    setTransitionFromTab(activeTab);
-    setTransitionToTab(targetTab);
-    setIsTransitioning(true);
-    setTimeout(() => {
-      setActiveTab(targetTab);
-    }, 280);
+    setActiveTab(targetTab);
   };
 
   const [pickupLocation, setPickupLocation] = useState({
@@ -280,14 +270,6 @@ function MainApp() {
 
       {/* Global Uber-Style Footer */}
       <UberFooter onNavigate={handleNavigateWithTransition} />
-
-      {/* 3D Ride Kinetic Page Transition Overlay */}
-      <RideTransitionOverlay
-        isTransitioning={isTransitioning}
-        fromTab={transitionFromTab}
-        toTab={transitionToTab}
-        onTransitionComplete={() => setIsTransitioning(false)}
-      />
 
       {/* Persistent Floating 3D Ride Companion */}
       <FloatingRideTracker

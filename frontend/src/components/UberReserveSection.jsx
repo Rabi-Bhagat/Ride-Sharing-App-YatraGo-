@@ -60,9 +60,10 @@ export default function UberReserveSection({ onReserveClick }) {
               </label>
               <input
                 type="date"
+                min={new Date().toISOString().split('T')[0]}
                 value={reserveDate}
                 onChange={(e) => setReserveDate(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 cursor-pointer"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-cyan-400 cursor-pointer [color-scheme:dark]"
               />
             </div>
 
@@ -76,7 +77,7 @@ export default function UberReserveSection({ onReserveClick }) {
                 type="time"
                 value={reserveTime}
                 onChange={(e) => setReserveTime(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-400 cursor-pointer"
+                className="w-full bg-slate-900 border border-slate-800 rounded-xl p-2.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-400 cursor-pointer [color-scheme:dark]"
               />
             </div>
 

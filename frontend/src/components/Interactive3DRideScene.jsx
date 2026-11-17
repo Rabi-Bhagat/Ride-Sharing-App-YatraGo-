@@ -282,23 +282,38 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     const handleKeyDown = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        animRef.current.isAccelerating = true;
+        animRef.current.isBraking = false;
+        setIsBraking(false);
         setIsAccelerating(true);
         setDriveMode('manual');
       } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        e.preventDefault();
+        animRef.current.isBraking = true;
+        animRef.current.isAccelerating = false;
+        setIsAccelerating(false);
         setIsBraking(true);
         setDriveMode('manual');
       } else if (e.code === 'Space') {
         e.preventDefault();
-        setIsNitro(prev => !prev);
+        setIsNitro(prev => {
+          const next = !prev;
+          animRef.current.isNitro = next;
+          return next;
+        });
       } else if (e.code === 'KeyH') {
+        e.preventDefault();
         triggerHorn();
       }
     };
 
     const handleKeyUp = (e) => {
       if (e.code === 'KeyW' || e.code === 'ArrowUp') {
+        animRef.current.isAccelerating = false;
         setIsAccelerating(false);
       } else if (e.code === 'KeyS' || e.code === 'ArrowDown') {
+        animRef.current.isBraking = false;
         setIsBraking(false);
       }
     };
@@ -322,6 +337,9 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     let handleMouseDown = null;
     let handleMouseMove = null;
     let handleMouseUp = null;
+    let handleTouchStart = null;
+    let handleTouchMove = null;
+    let handleTouchEnd = null;
 
     try {
       const width = Math.max(container.clientWidth || 800, 320);
@@ -394,8 +412,8 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     }
     container.appendChild(renderer.domElement);
 
-    // 2. Realistic Environmental Lighting
-    const ambientLight = new THREE.AmbientLight(currentEnv.ambient, currentEnv.ambientInt);
+    // 2. Realistic Environmental & Studio 3-Point Lighting
+    const ambientLight = new THREE.AmbientLight(currentEnv.ambient, Math.max(currentEnv.ambientInt, 2.6));
     scene.add(ambientLight);
 
     const mainSunLight = new THREE.DirectionalLight(currentEnv.sun, currentEnv.sunInt);
@@ -410,6 +428,16 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     mainSunLight.shadow.camera.top = 50;
     mainSunLight.shadow.camera.bottom = -50;
     scene.add(mainSunLight);
+
+    // Rim specular light to accentuate aerodynamic curves & lacquer reflections
+    const rimLight = new THREE.DirectionalLight(0x38bdf8, 2.2);
+    rimLight.position.set(-60, 45, -50);
+    scene.add(rimLight);
+
+    // Warm fill light so shaded vehicle side is beautifully visible
+    const fillLight = new THREE.DirectionalLight(0xf1f5f9, 1.8);
+    fillLight.position.set(-30, 25, 40);
+    scene.add(fillLight);
 
     // 3. Procedural Starfield & Sky Ambience
     const starCount = 800;
@@ -699,15 +727,33 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     // 9. HIGH-FIDELITY DETAILED VEHICLE MODELS (SUPERBIKE & EV SHUTTLE)
     const vehicleContainer = new THREE.Group();
 
-    // 9A. SUPERBIKE MODEL
+    // Soft tracking spotlight directly above vehicle so body is always brilliantly lit
+    const vehicleAmbientSpot = new THREE.PointLight(0xffffff, 2.2, 16);
+    vehicleAmbientSpot.position.set(0, 4.5, 0);
+    vehicleContainer.add(vehicleAmbientSpot);
+
+    // Shared high-grade materials
+    const tireMat = new THREE.MeshStandardMaterial({ color: 0x05070e, roughness: 0.9, metalness: 0.1 });
+    const chromeMat = new THREE.MeshStandardMaterial({ color: 0xf1f5f9, metalness: 0.96, roughness: 0.08 });
+    const carbonMat = new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.7, metalness: 0.5 });
+    const brakeDiscMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.2 });
+    const caliperMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
+    const goldMat = new THREE.MeshStandardMaterial({ color: 0xf59e0b, metalness: 0.95, roughness: 0.12 });
+
+    // 9A. ULTRA-REALISTIC SUPERBIKE MODEL
     const bikeGroup = new THREE.Group();
 
-    // Wheel Geometry with Spokes & Rubber Tread
-    const wheelGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.32, 24);
-    wheelGeo.rotateZ(Math.PI / 2);
-    const tireMat = new THREE.MeshStandardMaterial({ color: 0x020617, roughness: 0.85 });
+    const bikeFairingMat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color(vehicleColor),
+      metalness: 0.94,
+      roughness: 0.12,
+      envMapIntensity: 1.5
+    });
 
-    // Front & Rear Spoke Wheels
+    // Wheels with alloy rims, rubber treads, drilled rotors & red calipers
+    const wheelGeo = new THREE.CylinderGeometry(0.72, 0.72, 0.34, 24);
+    wheelGeo.rotateZ(Math.PI / 2);
+
     const rearWheel = new THREE.Mesh(wheelGeo, tireMat);
     rearWheel.position.set(0, 0.72, -1.35);
     rearWheel.castShadow = true;
@@ -718,13 +764,9 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     frontWheel.castShadow = true;
     bikeGroup.add(frontWheel);
 
-    // Rims & Perforated Disc Brakes
-    const rimMat = new THREE.MeshStandardMaterial({ color: 0x38bdf8, metalness: 0.9, roughness: 0.1 });
-    const brakeDiscMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.95, roughness: 0.2 });
-    const caliperMat = new THREE.MeshBasicMaterial({ color: 0xef4444 });
-
-    [rearWheel.position, frontWheel.position].forEach(pos => {
-      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.05, 8, 20), rimMat);
+    // Wheel rims & drilled wave brake discs
+    [rearWheel.position, frontWheel.position].forEach((pos, idx) => {
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.52, 0.05, 8, 20), chromeMat);
       rim.position.copy(pos);
       bikeGroup.add(rim);
 
@@ -738,40 +780,89 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       bikeGroup.add(caliper);
     });
 
-    // Front Chrome Suspension Forks
-    const forkMat = new THREE.MeshStandardMaterial({ color: 0xe2e8f0, metalness: 0.95, roughness: 0.1 });
+    // Inverted Gold Ohlins-Style Telescopic Front Forks
     [-0.2, 0.2].forEach(fx => {
-      const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, 1.3), forkMat);
+      const fork = new THREE.Mesh(new THREE.CylinderGeometry(0.055, 0.055, 1.35), goldMat);
       fork.position.set(fx, 1.25, 1.15);
-      fork.rotation.x = -0.25;
+      fork.rotation.x = -0.24;
       bikeGroup.add(fork);
     });
 
-    // Aerodynamic Chassis & Fairing (Dynamic Lacquer Paint)
-    const bikeFairingMat = new THREE.MeshStandardMaterial({
-      color: new THREE.Color(vehicleColor),
-      metalness: 0.9,
-      roughness: 0.15
+    // Single-Sided Aluminum Rear Swingarm & Monoshock Spring
+    const swingarm = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.16, 1.3), chromeMat);
+    swingarm.position.set(-0.16, 0.75, -0.68);
+    swingarm.rotation.x = -0.06;
+    bikeGroup.add(swingarm);
+
+    const shockSpring = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.45, 12), goldMat);
+    shockSpring.position.set(0, 1.05, -0.52);
+    shockSpring.rotation.x = 0.35;
+    bikeGroup.add(shockSpring);
+
+    // Exposed Aluminum Trellis Frame Tubes
+    [-0.22, 0.22].forEach(tx => {
+      const frameTube = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, 1.2), chromeMat);
+      frameTube.position.set(tx, 1.2, 0.15);
+      frameTube.rotation.x = 0.45;
+      bikeGroup.add(frameTube);
     });
 
+    // Electric Powertrain Block with Cooling Ribs & Cyan Energy Conduit
+    const motorBlock = new THREE.Mesh(new THREE.BoxGeometry(0.44, 0.55, 0.8), carbonMat);
+    motorBlock.position.set(0, 0.85, 0.05);
+    bikeGroup.add(motorBlock);
+
+    const energyCore = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.12, 0.12, 0.46, 12),
+      new THREE.MeshBasicMaterial({ color: 0x06b6d4 })
+    );
+    energyCore.rotateZ(Math.PI / 2);
+    energyCore.position.set(0, 0.85, 0.12);
+    bikeGroup.add(energyCore);
+
+    // Sculpted Aerodynamic Main Chassis & Fairing
     const bikeBody = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.75, 1.9), bikeFairingMat);
     bikeBody.position.set(0, 1.15, 0);
     bikeBody.castShadow = true;
     bikeGroup.add(bikeBody);
 
-    // Sculpted Gas Tank / Cowl
-    const tank = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.3, 12), bikeFairingMat);
+    // Sculpted Muscular Fuel Tank / Cowl with Carbon Protector Pad
+    const tank = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.35, 12), bikeFairingMat);
     tank.rotateX(Math.PI / 2);
     tank.position.set(0, 1.45, 0.35);
     bikeGroup.add(tank);
 
-    // Handlebars with digital dashboard screen
-    const handlebar = new THREE.Mesh(
-      new THREE.CylinderGeometry(0.04, 0.04, 0.9),
-      new THREE.MeshStandardMaterial({ color: 0x334155, metalness: 0.8 })
+    const tankPad = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.35, 0.02), carbonMat);
+    tankPad.position.set(0, 1.52, 0.02);
+    tankPad.rotation.x = 0.5;
+    bikeGroup.add(tankPad);
+
+    // Shark-Nose Front Fairing with Aerodynamic Downforce Winglets
+    const frontNose = new THREE.Mesh(new THREE.ConeGeometry(0.35, 0.75, 8), bikeFairingMat);
+    frontNose.rotateX(-Math.PI / 2);
+    frontNose.position.set(0, 1.35, 1.25);
+    bikeGroup.add(frontNose);
+
+    [-0.32, 0.32].forEach(wx => {
+      const winglet = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.35), carbonMat);
+      winglet.position.set(wx, 1.28, 1.12);
+      winglet.rotation.z = wx > 0 ? -0.2 : 0.2;
+      bikeGroup.add(winglet);
+    });
+
+    // Aerodynamic Tinted Polycarbonate Windscreen
+    const windscreen = new THREE.Mesh(
+      new THREE.ConeGeometry(0.28, 0.5, 8, 1, true),
+      new THREE.MeshStandardMaterial({ color: 0x082f49, transparent: true, opacity: 0.8, roughness: 0.1 })
     );
+    windscreen.rotateX(-Math.PI / 2);
+    windscreen.position.set(0, 1.62, 1.05);
+    bikeGroup.add(windscreen);
+
+    // Racing Clip-On Handlebars with Digital Dash
+    const handlebar = new THREE.Mesh(new THREE.CylinderGeometry(0.035, 0.035, 0.85), chromeMat);
     handlebar.rotateZ(Math.PI / 2);
-    handlebar.position.set(0, 1.62, 0.85);
+    handlebar.position.set(0, 1.62, 0.82);
     bikeGroup.add(handlebar);
 
     const dashScreen = new THREE.Mesh(
@@ -782,74 +873,188 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     dashScreen.rotation.x = -0.4;
     bikeGroup.add(dashScreen);
 
-    // Biker Rider Model in sport aerodynamic lean
-    const riderTorso = new THREE.Mesh(
-      new THREE.BoxGeometry(0.42, 0.65, 0.35),
-      new THREE.MeshStandardMaterial({ color: 0x0f172a, roughness: 0.6 })
-    );
+    // Sharp Aerodynamic Tail Cowl with Flow-Through Tunnels
+    const tailCowl = new THREE.Mesh(new THREE.ConeGeometry(0.36, 1.1, 8), bikeFairingMat);
+    tailCowl.rotateX(Math.PI / 2);
+    tailCowl.position.set(0, 1.42, -0.85);
+    bikeGroup.add(tailCowl);
+
+    // Twin Under-Tail Titanium Exhaust Tips
+    [-0.12, 0.12].forEach(ex => {
+      const tip = new THREE.Mesh(new THREE.CylinderGeometry(0.065, 0.065, 0.35, 12), chromeMat);
+      tip.rotateX(Math.PI / 2);
+      tip.position.set(ex, 1.28, -1.35);
+      bikeGroup.add(tip);
+    });
+
+    // Biker Rider in Sport Racing Leathers
+    const riderTorso = new THREE.Mesh(new THREE.BoxGeometry(0.42, 0.65, 0.35), carbonMat);
     riderTorso.position.set(0, 1.85, -0.12);
-    riderTorso.rotation.x = 0.32; // aggressive racing crouch
+    riderTorso.rotation.x = 0.32;
     bikeGroup.add(riderTorso);
 
     const riderHelmet = new THREE.Mesh(
       new THREE.SphereGeometry(0.26, 16, 16),
-      new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.9, roughness: 0.15 })
+      new THREE.MeshStandardMaterial({ color: 0x0284c7, metalness: 0.92, roughness: 0.12 })
     );
     riderHelmet.position.set(0, 2.3, 0.12);
     bikeGroup.add(riderHelmet);
 
     const helmetVisor = new THREE.Mesh(
       new THREE.BoxGeometry(0.3, 0.1, 0.16),
-      new THREE.MeshBasicMaterial({ color: 0x10b981 })
+      new THREE.MeshStandardMaterial({ color: 0x10b981, metalness: 0.98, roughness: 0.05 })
     );
     helmetVisor.position.set(0, 2.3, 0.3);
     bikeGroup.add(helmetVisor);
 
-    // Twin Projector LED Headlights projecting real forward light onto the highway
-    const bikeHeadlight = new THREE.SpotLight(0x38bdf8, 5.0, 32, Math.PI / 5, 0.45, 1);
-    bikeHeadlight.position.set(0, 1.25, 1.35);
-    bikeHeadlight.target.position.set(0, 0, 14);
+    // Twin Predatory Projector LED Headlights projecting real forward light
+    const bikeHeadlight = new THREE.SpotLight(0x38bdf8, 6.0, 36, Math.PI / 5, 0.45, 1);
+    bikeHeadlight.position.set(0, 1.35, 1.38);
+    bikeHeadlight.target.position.set(0, 0, 16);
     bikeGroup.add(bikeHeadlight);
     bikeGroup.add(bikeHeadlight.target);
 
-    // Rear LED Hazard Light Blade
+    // Rear LED Hazard & Brake Light Blade
     const bikeTailLight = new THREE.Mesh(
-      new THREE.BoxGeometry(0.32, 0.08, 0.06),
+      new THREE.BoxGeometry(0.36, 0.08, 0.06),
       new THREE.MeshBasicMaterial({ color: 0xef4444 })
     );
-    bikeTailLight.position.set(0, 1.32, -1.25);
+    bikeTailLight.position.set(0, 1.38, -1.38);
     bikeGroup.add(bikeTailLight);
 
-    // 9B. TESLA / CYBER EV SHUTTLE CAR MODEL
+    const bikeTailGlow = new THREE.PointLight(0xef4444, 2.5, 8);
+    bikeTailGlow.position.set(0, 1.38, -1.5);
+    bikeGroup.add(bikeTailGlow);
+
+    const bikeUnderglow = new THREE.PointLight(0x06b6d4, 3.5, 6);
+    bikeUnderglow.position.set(0, 0.35, 0);
+    bikeGroup.add(bikeUnderglow);
+
+
+    // 9B. ULTRA-REALISTIC LUXURY EV SHUTTLE CAR MODEL
     const carGroup = new THREE.Group();
 
     const carBodyMat = new THREE.MeshStandardMaterial({
       color: new THREE.Color(vehicleColor),
-      metalness: 0.92,
-      roughness: 0.15
+      metalness: 0.94,
+      roughness: 0.12
     });
 
-    const carBody = new THREE.Mesh(new THREE.BoxGeometry(2.1, 0.85, 4.4), carBodyMat);
-    carBody.position.set(0, 0.85, 0);
-    carBody.castShadow = true;
-    carGroup.add(carBody);
+    const glassMat = new THREE.MeshStandardMaterial({
+      color: 0x031828,
+      transparent: true,
+      opacity: 0.88,
+      metalness: 0.95,
+      roughness: 0.05
+    });
 
-    // Tinted Panoramic Glass Roof
-    const carRoof = new THREE.Mesh(
-      new THREE.BoxGeometry(1.75, 0.65, 2.4),
-      new THREE.MeshStandardMaterial({ color: 0x082f49, transparent: true, opacity: 0.85, roughness: 0.1, metalness: 0.9 })
+    // 1. Lower Sculpted Chassis
+    const carChassis = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.45, 4.3), carBodyMat);
+    carChassis.position.set(0, 0.55, 0);
+    carChassis.castShadow = true;
+    carGroup.add(carChassis);
+
+    // Sloped Front Aerodynamic Hood / Bonnet
+    const carHood = new THREE.Mesh(new THREE.BoxGeometry(1.98, 0.22, 1.35), carBodyMat);
+    carHood.position.set(0, 0.76, 1.38);
+    carHood.rotation.x = -0.14;
+    carGroup.add(carHood);
+
+    // Front Bumper with Carbon Splitter Lip
+    const frontSplitter = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.1, 0.45), carbonMat);
+    frontSplitter.position.set(0, 0.32, 2.18);
+    carGroup.add(frontSplitter);
+
+    // Front Corner Aero Air Curtain Ducts
+    [-0.7, 0.7].forEach(dx => {
+      const duct = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.18, 0.15), carbonMat);
+      duct.position.set(dx, 0.44, 2.22);
+      carGroup.add(duct);
+    });
+
+    // Rear Fastback Decklid & Integrated Lip Spoiler
+    const rearDeck = new THREE.Mesh(new THREE.BoxGeometry(1.95, 0.22, 1.15), carBodyMat);
+    rearDeck.position.set(0, 0.82, -1.5);
+    rearDeck.rotation.x = 0.12;
+    carGroup.add(rearDeck);
+
+    // Rear Carbon Diffuser with Aero Fins
+    const rearDiffuser = new THREE.Mesh(new THREE.BoxGeometry(2.05, 0.15, 0.5), carbonMat);
+    rearDiffuser.position.set(0, 0.32, -2.18);
+    carGroup.add(rearDiffuser);
+
+    [-0.6, -0.2, 0.2, 0.6].forEach(fx => {
+      const fin = new THREE.Mesh(new THREE.BoxGeometry(0.04, 0.16, 0.42), carbonMat);
+      fin.position.set(fx, 0.3, -2.2);
+      carGroup.add(fin);
+    });
+
+    // Side Aerodynamic Rocker Skirts
+    [-1.06, 1.06].forEach(sx => {
+      const skirt = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.14, 2.8), carbonMat);
+      skirt.position.set(sx, 0.34, 0);
+      carGroup.add(skirt);
+    });
+
+    // 2. Panoramic Teardrop Glass Greenhouse & Roof Pillars
+    const carGlassDome = new THREE.Mesh(new THREE.BoxGeometry(1.72, 0.58, 2.35), glassMat);
+    carGlassDome.position.set(0, 1.25, -0.15);
+    carGroup.add(carGlassDome);
+
+    const frontWindshield = new THREE.Mesh(new THREE.BoxGeometry(1.68, 0.08, 1.15), glassMat);
+    frontWindshield.position.set(0, 1.18, 0.85);
+    frontWindshield.rotation.x = -0.48;
+    carGroup.add(frontWindshield);
+
+    const rearGlass = new THREE.Mesh(new THREE.BoxGeometry(1.68, 0.08, 1.15), glassMat);
+    rearGlass.position.set(0, 1.18, -1.18);
+    rearGlass.rotation.x = 0.42;
+    carGroup.add(rearGlass);
+
+    // Roof A/B/C Lacquer Support Rails
+    [-0.86, 0.86].forEach(px => {
+      const rail = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.06, 3.2), carBodyMat);
+      rail.position.set(px, 1.48, -0.15);
+      carGroup.add(rail);
+    });
+
+    // Luxury Interior Elements (Visible Through Panoramic Glass)
+    const interiorDash = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.15, 0.4), carbonMat);
+    interiorDash.position.set(0, 0.95, 0.65);
+    carGroup.add(interiorDash);
+
+    const interiorDashScreen = new THREE.Mesh(
+      new THREE.BoxGeometry(1.2, 0.04, 0.08),
+      new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
     );
-    carRoof.position.set(0, 1.45, -0.2);
-    carGroup.add(carRoof);
+    interiorDashScreen.position.set(0, 1.04, 0.62);
+    carGroup.add(interiorDashScreen);
 
-    // 4 Alloy Performance Wheels
-    const carWheelGeo = new THREE.CylinderGeometry(0.58, 0.58, 0.38, 20);
+    // Steering Yoke
+    const yoke = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.025, 8, 16), chromeMat);
+    yoke.position.set(-0.45, 1.08, 0.45);
+    yoke.rotation.x = -0.3;
+    carGroup.add(yoke);
+
+    // Front Twin Bucket Seats
+    [-0.45, 0.45].forEach(sx => {
+      const seat = new THREE.Mesh(new THREE.BoxGeometry(0.48, 0.55, 0.42), carbonMat);
+      seat.position.set(sx, 1.02, 0);
+      carGroup.add(seat);
+
+      const headrest = new THREE.Mesh(new THREE.BoxGeometry(0.25, 0.18, 0.15), carbonMat);
+      headrest.position.set(sx, 1.38, -0.04);
+      carGroup.add(headrest);
+    });
+
+    // 3. Four Turbine Alloy Performance Wheels
+    const carWheelGeo = new THREE.CylinderGeometry(0.56, 0.56, 0.36, 24);
     carWheelGeo.rotateZ(Math.PI / 2);
     const carWheelPositions = [
-      [-1.05, 0.58, 1.4],
-      [1.05, 0.58, 1.4],
-      [-1.05, 0.58, -1.4],
-      [1.05, 0.58, -1.4]
+      [-1.08, 0.56, 1.38],
+      [1.08, 0.56, 1.38],
+      [-1.08, 0.56, -1.38],
+      [1.08, 0.56, -1.38]
     ];
     const carWheels = [];
     carWheelPositions.forEach(wPos => {
@@ -858,34 +1063,91 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       w.castShadow = true;
       carGroup.add(w);
       carWheels.push(w);
+
+      // Chrome rim lip
+      const rim = new THREE.Mesh(new THREE.TorusGeometry(0.42, 0.04, 8, 20), chromeMat);
+      rim.position.set(...wPos);
+      carGroup.add(rim);
+
+      // Brake rotor & red Brembo-style caliper
+      const disc = new THREE.Mesh(new THREE.CylinderGeometry(0.36, 0.36, 0.04, 16), brakeDiscMat);
+      disc.rotateZ(Math.PI / 2);
+      disc.position.set(...wPos);
+      carGroup.add(disc);
+
+      const caliper = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.16, 0.28), caliperMat);
+      caliper.position.set(wPos[0] + (wPos[0] > 0 ? -0.1 : 0.1), wPos[1] + 0.15, wPos[2]);
+      carGroup.add(caliper);
     });
 
-    // Front Continuous LED Lightblade
+    // 4. Signature Front & Rear Cyber Lightbars
     const carFrontLight = new THREE.Mesh(
-      new THREE.BoxGeometry(1.9, 0.1, 0.12),
+      new THREE.BoxGeometry(1.95, 0.08, 0.12),
       new THREE.MeshBasicMaterial({ color: 0x38bdf8 })
     );
-    carFrontLight.position.set(0, 0.82, 2.22);
+    carFrontLight.position.set(0, 0.74, 2.22);
     carGroup.add(carFrontLight);
 
-    const carHeadlight = new THREE.SpotLight(0x38bdf8, 4.5, 35, Math.PI / 4, 0.5);
+    // Multi-Element Jewel Matrix Headlights
+    [-0.7, 0.7].forEach(hx => {
+      const jewelLight = new THREE.Mesh(
+        new THREE.BoxGeometry(0.42, 0.08, 0.1),
+        new THREE.MeshBasicMaterial({ color: 0xffffff })
+      );
+      jewelLight.position.set(hx, 0.68, 2.21);
+      carGroup.add(jewelLight);
+    });
+
+    const carHeadlight = new THREE.SpotLight(0x38bdf8, 5.5, 38, Math.PI / 4, 0.45);
     carHeadlight.position.set(0, 0.85, 2.2);
-    carHeadlight.target.position.set(0, 0, 16);
+    carHeadlight.target.position.set(0, 0, 18);
     carGroup.add(carHeadlight);
     carGroup.add(carHeadlight.target);
 
-    // Rear Red OLED Lightblade
+    // Digital Side Mirrors with Amber Turn Strips
+    [-1.15, 1.15].forEach(mx => {
+      const stalk = new THREE.Mesh(new THREE.BoxGeometry(0.18, 0.04, 0.1), carbonMat);
+      stalk.position.set(mx, 1.05, 0.72);
+      carGroup.add(stalk);
+
+      const indicator = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, 0.03, 0.04),
+        new THREE.MeshBasicMaterial({ color: 0xf59e0b })
+      );
+      indicator.position.set(mx, 1.06, 0.74);
+      carGroup.add(indicator);
+    });
+
+    // Full-Width Rear Red OLED Lightblade
     const carTailLight = new THREE.Mesh(
-      new THREE.BoxGeometry(1.9, 0.1, 0.12),
+      new THREE.BoxGeometry(1.95, 0.09, 0.12),
       new THREE.MeshBasicMaterial({ color: 0xef4444 })
     );
     carTailLight.position.set(0, 0.82, -2.22);
     carGroup.add(carTailLight);
 
-    // Vehicle Contact Shadow
+    // High-Mount 3rd Brake Light on Rear Glass
+    const thirdBrake = new THREE.Mesh(
+      new THREE.BoxGeometry(0.8, 0.04, 0.04),
+      new THREE.MeshBasicMaterial({ color: 0xef4444 })
+    );
+    thirdBrake.position.set(0, 1.46, -1.22);
+    carGroup.add(thirdBrake);
+
+    // Rear Taillight Ambient Glow Point Light
+    const carTailGlow = new THREE.PointLight(0xef4444, 3.0, 10);
+    carTailGlow.position.set(0, 0.85, -2.5);
+    carGroup.add(carTailGlow);
+
+    // Chassis Cyber Underglow
+    const carUnderglow = new THREE.PointLight(0x06b6d4, 4.0, 8);
+    carUnderglow.position.set(0, 0.35, 0);
+    carGroup.add(carUnderglow);
+
+    // Realistic Contact Shadow Plane
     const shadowPlane = new THREE.Mesh(
-      new THREE.PlaneGeometry(2.4, 4.6),
-      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.55 })
+      new THREE.PlaneGeometry(2.5, 4.8),
+      new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.65 })
     );
     shadowPlane.rotation.x = -Math.PI / 2;
     shadowPlane.position.y = 0.04;
@@ -969,11 +1231,15 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
     const rainSystem = new THREE.Points(rainGeo, rainMat);
     scene.add(rainSystem);
 
-    // Mouse Interaction for 360° Drag Orbit
+    // Mouse & Touch Interaction for 360° Drag Orbit
     handleMouseDown = (e) => {
       animRef.current.mouseDrag = true;
       animRef.current.prevMouseX = e.clientX;
       animRef.current.prevMouseY = e.clientY;
+      if (animRef.current.cameraMode !== 'orbit') {
+        animRef.current.cameraMode = 'orbit';
+        setCameraMode('orbit');
+      }
     };
 
     handleMouseMove = (e) => {
@@ -992,9 +1258,40 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       animRef.current.mouseDrag = false;
     };
 
+    handleTouchStart = (e) => {
+      if (e.touches && e.touches.length === 1) {
+        animRef.current.mouseDrag = true;
+        animRef.current.prevMouseX = e.touches[0].clientX;
+        animRef.current.prevMouseY = e.touches[0].clientY;
+        if (animRef.current.cameraMode !== 'orbit') {
+          animRef.current.cameraMode = 'orbit';
+          setCameraMode('orbit');
+        }
+      }
+    };
+
+    handleTouchMove = (e) => {
+      if (!animRef.current.mouseDrag || !e.touches || e.touches.length !== 1) return;
+      const dx = e.touches[0].clientX - animRef.current.prevMouseX;
+      const dy = e.touches[0].clientY - animRef.current.prevMouseY;
+
+      animRef.current.orbitAngleX += dx * 0.007;
+      animRef.current.orbitAngleY = Math.max(0.1, Math.min(Math.PI / 2.2, animRef.current.orbitAngleY - dy * 0.007));
+
+      animRef.current.prevMouseX = e.touches[0].clientX;
+      animRef.current.prevMouseY = e.touches[0].clientY;
+    };
+
+    handleTouchEnd = () => {
+      animRef.current.mouseDrag = false;
+    };
+
     container.addEventListener('mousedown', handleMouseDown);
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
+    container.addEventListener('touchstart', handleTouchStart, { passive: true });
+    window.addEventListener('touchmove', handleTouchMove, { passive: true });
+    window.addEventListener('touchend', handleTouchEnd);
 
     // 13. Main 60-FPS Realistic Physics & Animation Loop
     const clock = new THREE.Clock();
@@ -1018,19 +1315,43 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       bikeFairingMat.color.copy(themeCol);
       carBodyMat.color.copy(themeCol);
 
-      // Realistic speed physics calculations
-      let targetKmh = 68;
+      // Dynamic underglow neon lighting
       if (isNitro) {
-        targetKmh = 124;
-      } else if (isBraking) {
-        targetKmh = 24;
-      } else if (isAccelerating) {
-        targetKmh = 98;
+        bikeUnderglow.color.setHex(0xf59e0b);
+        carUnderglow.color.setHex(0xf59e0b);
+        bikeUnderglow.intensity = 5.0;
+        carUnderglow.intensity = 6.0;
+      } else {
+        bikeUnderglow.color.copy(themeCol);
+        carUnderglow.color.copy(themeCol);
+        bikeUnderglow.intensity = 3.5;
+        carUnderglow.intensity = 4.0;
       }
 
-      // Smooth acceleration lerp
-      animRef.current.speed = THREE.MathUtils.lerp(animRef.current.speed, targetKmh, delta * 4);
-      const currentKmh = Math.round(animRef.current.speed);
+      // Realistic speed physics calculations
+      let targetKmh = 68;
+      if (isBraking) {
+        targetKmh = 0; // FULL STOP when braking!
+      } else if (isNitro) {
+        targetKmh = 132;
+      } else if (isAccelerating) {
+        targetKmh = 98;
+      } else if (driveMode === 'manual') {
+        // Coasting deceleration in manual mode
+        targetKmh = 0;
+      }
+
+      // Responsive braking & acceleration lerp
+      const lerpSpeed = isBraking ? 9.5 : (isAccelerating ? 5.2 : (isNitro ? 6.5 : 3.2));
+      animRef.current.speed = THREE.MathUtils.lerp(animRef.current.speed, targetKmh, delta * lerpSpeed);
+      if (isBraking && animRef.current.speed < 1.0) {
+        animRef.current.speed = 0;
+      }
+      const currentKmh = Math.max(0, Math.round(animRef.current.speed));
+
+      // Dynamic brake light glow intensity
+      bikeTailGlow.intensity = isBraking ? 6.5 : 2.5;
+      carTailGlow.intensity = isBraking ? 8.5 : 3.0;
 
       // Web Audio engine frequency modulation
       if (audioRef.current) {
@@ -1038,8 +1359,8 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       }
 
       if (!isPaused) {
-        // Curve progress advance based on realistic speed
-        const speedMultiplier = (currentKmh / 68) * 0.00085;
+        // Curve progress advance: zero movement when vehicle is stopped at 0 km/h
+        const speedMultiplier = currentKmh > 0 ? (currentKmh / 68) * 0.00085 : 0;
         animRef.current.progress = (animRef.current.progress + speedMultiplier) % 1.0;
         const prog = animRef.current.progress;
 
@@ -1057,14 +1378,14 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
         vehicleContainer.position.copy(pos);
         vehicleContainer.lookAt(lookTarget);
 
-        // Vehicle dynamics & wheel rotation
-        const wheelRotSpeed = delta * (currentKmh * 0.28);
+        // Vehicle dynamics & wheel rotation (stops rotating when 0 km/h)
+        const wheelRotSpeed = currentKmh > 0 ? delta * (currentKmh * 0.28) : 0;
         if (vehicleType === 'bike') {
-          bikeGroup.rotation.z = THREE.MathUtils.lerp(bikeGroup.rotation.z, -curvature * 1.6, delta * 8);
+          bikeGroup.rotation.z = THREE.MathUtils.lerp(bikeGroup.rotation.z, currentKmh > 0 ? -curvature * 1.6 : 0, delta * 8);
           rearWheel.rotation.x += wheelRotSpeed;
           frontWheel.rotation.x += wheelRotSpeed;
         } else {
-          carGroup.rotation.z = THREE.MathUtils.lerp(carGroup.rotation.z, -curvature * 0.45, delta * 6);
+          carGroup.rotation.z = THREE.MathUtils.lerp(carGroup.rotation.z, currentKmh > 0 ? -curvature * 0.45 : 0, delta * 6);
           carWheels.forEach(w => {
             w.rotation.x += wheelRotSpeed;
           });
@@ -1114,12 +1435,12 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
 
         // Camera Modes
         if (cameraMode === 'chase') {
-          // Dynamic follow camera with realistic inertia
+          // Exhilarating chase camera centered on vehicle with road ahead
           const desiredCamPos = pos.clone()
-            .addScaledVector(tangent, -10.5)
-            .add(new THREE.Vector3(0, 4.4, 0));
-          camera.position.lerp(desiredCamPos, delta * 7);
-          camera.lookAt(pos.clone().add(tangent.clone().multiplyScalar(5)));
+            .addScaledVector(tangent, -7.2)
+            .add(new THREE.Vector3(0, 2.9, 0));
+          camera.position.lerp(desiredCamPos, delta * 8);
+          camera.lookAt(pos.clone().add(new THREE.Vector3(0, 1.35, 0)).addScaledVector(tangent, 2.2));
         } else if (cameraMode === 'cockpit') {
           // First-person view right over the handlebars or windshield
           const cockpitOffset = vehicleType === 'bike'
@@ -1130,19 +1451,19 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
         } else if (cameraMode === 'cinematic') {
           // Scenic aerial drone flyover
           const time = clock.getElapsedTime() * 0.35;
-          camera.position.x = pos.x + Math.sin(time) * 26;
-          camera.position.y = pos.y + 14;
-          camera.position.z = pos.z + Math.cos(time) * 26;
-          camera.lookAt(pos);
+          camera.position.x = pos.x + Math.sin(time) * 18;
+          camera.position.y = pos.y + 8;
+          camera.position.z = pos.z + Math.cos(time) * 18;
+          camera.lookAt(pos.clone().add(new THREE.Vector3(0, 1.2, 0)));
         } else if (cameraMode === 'orbit') {
           // 360-degree free touch & drag orbit around vehicle
-          const dist = 16.5;
+          const dist = 11.5;
           const ox = animRef.current.orbitAngleX;
           const oy = animRef.current.orbitAngleY;
           camera.position.x = pos.x + dist * Math.cos(ox) * Math.cos(oy);
-          camera.position.y = pos.y + dist * Math.sin(oy) + 2.5;
+          camera.position.y = pos.y + Math.max(1.4, dist * Math.sin(oy) + 2.4);
           camera.position.z = pos.z + dist * Math.sin(ox) * Math.cos(oy);
-          camera.lookAt(pos.clone().add(new THREE.Vector3(0, 1.5, 0)));
+          camera.lookAt(pos.clone().add(new THREE.Vector3(0, 1.3, 0)));
         }
 
         // Live Telemetry Updates
@@ -1186,6 +1507,9 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       if (handleMouseDown) container.removeEventListener('mousedown', handleMouseDown);
       if (handleMouseMove) window.removeEventListener('mousemove', handleMouseMove);
       if (handleMouseUp) window.removeEventListener('mouseup', handleMouseUp);
+      if (handleTouchStart) container.removeEventListener('touchstart', handleTouchStart);
+      if (handleTouchMove) window.removeEventListener('touchmove', handleTouchMove);
+      if (handleTouchEnd) window.removeEventListener('touchend', handleTouchEnd);
       if (renderer) {
         try {
           renderer.dispose();
@@ -1206,7 +1530,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
 
   return (
     <div className={`relative rounded-3xl overflow-hidden glass-panel border border-cyan-500/40 shadow-2xl transition-all duration-300 ${
-      isFullscreen ? 'fixed inset-4 z-50 bg-slate-950/98 flex flex-col' : 'w-full h-[580px]'
+      isFullscreen ? 'fixed inset-4 z-50 bg-slate-950/98 flex flex-col' : 'w-full h-[520px] sm:h-[560px]'
     }`}>
       
       {/* 3D WebGL Canvas Mount Container */}
@@ -1245,107 +1569,99 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
         </div>
       )}
 
-      {/* TOP FLOATING HUD: Telemetry, GPS Waypoint, Speedometer & Weather */}
-      <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
+      {/* ======================================================== */}
+      {/* 1. UNIFIED TOP HUD: Telemetry, Speedometer, Weather & Waypoints */}
+      {/* ======================================================== */}
+      <div className="absolute top-3 left-3 right-3 sm:top-4 sm:left-4 sm:right-4 z-20 flex flex-col gap-2 pointer-events-none">
         
-        {/* Current Location Waypoint Badge */}
-        <div className="flex items-center gap-3 px-4 py-2.5 rounded-2xl bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-xl pointer-events-auto">
-          <div className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-cyan-400 font-mono">
-                Highway Telemetry • GPS Active
+        {/* Row 1: Left GPS Status & Right Integrated Instruments */}
+        <div className="flex items-center justify-between gap-2">
+          
+          {/* Left GPS Waypoint Badge */}
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg pointer-events-auto">
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <div className="flex items-center gap-1.5">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 font-mono hidden sm:inline">
+                GPS LIVE
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/30">
-                0 Commute Delays
+              <span className="h-3 w-px bg-slate-800 hidden sm:inline" />
+              <MapPin size={12} className="text-cyan-400 shrink-0" />
+              <span className="text-xs font-bold text-white truncate max-w-[140px] sm:max-w-[240px]">
+                {currentWaypoint}
               </span>
             </div>
-            <strong className="text-xs sm:text-sm font-extrabold text-white flex items-center gap-1.5 mt-0.5">
-              <MapPin size={14} className="text-cyan-400 shrink-0" />
-              <span>{currentWaypoint}</span>
-            </strong>
           </div>
-        </div>
 
-        {/* Live Gauges: Speedometer, CO2, Sound & Weather switcher */}
-        <div className="flex flex-wrap items-center gap-2.5 pointer-events-auto">
-          
-          {/* Digital Sports Speedometer */}
-          <div className="px-4 py-2 rounded-2xl bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-xl text-center">
-            <span className="text-[9px] uppercase font-bold text-slate-400 block font-mono">Speed</span>
-            <div className="flex items-baseline justify-center gap-1">
-              <span className={`text-2xl font-black font-mono transition-colors ${
+          {/* Right Instrument Cluster */}
+          <div className="flex items-center gap-1.5 pointer-events-auto">
+            
+            {/* Speedometer Badge */}
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg">
+              <span className={`text-xs font-black font-mono transition-colors ${
                 isNitro ? 'text-amber-400 animate-pulse' : 'text-cyan-400'
               }`}>
                 {currentSpeed}
               </span>
-              <span className="text-[10px] font-bold text-slate-400">km/h</span>
+              <span className="text-[9px] uppercase font-bold text-slate-400 font-mono">km/h</span>
             </div>
+
+            {/* Weather / Atmosphere Toggle Pill */}
+            <div className="flex items-center p-0.5 rounded-full bg-slate-950/85 border border-slate-800 backdrop-blur-xl shadow-lg">
+              {[
+                { id: 'neon', icon: Moon, title: 'Cyber Neon' },
+                { id: 'sunset', icon: Sunset, title: 'Sunset Glow' },
+                { id: 'daylight', icon: Sun, title: 'Daylight' },
+                { id: 'rain', icon: CloudRain, title: 'Cyber Rain' }
+              ].map(env => {
+                const Icon = env.icon;
+                return (
+                  <button
+                    key={env.id}
+                    onClick={() => setTimeOfDay(env.id)}
+                    className={`p-1.5 rounded-full transition-all cursor-pointer ${
+                      timeOfDay === env.id
+                        ? 'bg-cyan-500 text-slate-950 shadow-sm'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                    title={env.title}
+                  >
+                    <Icon size={12} />
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Sound Synthesizer Toggle */}
+            <button
+              onClick={toggleSound}
+              className={`p-1.5 rounded-full border backdrop-blur-xl shadow-lg transition-all cursor-pointer ${
+                !isAudioMuted
+                  ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
+                  : 'bg-slate-950/85 text-slate-400 hover:text-white border-slate-800'
+              }`}
+              title={isAudioMuted ? 'Turn Sound ON (Engine Audio)' : 'Mute Engine Sound'}
+            >
+              {isAudioMuted ? <VolumeX size={13} /> : <Volume2 size={13} className="text-cyan-400" />}
+            </button>
+
+            {/* Fullscreen Toggle */}
+            <button
+              onClick={() => setIsFullscreen(!isFullscreen)}
+              className="p-1.5 rounded-full bg-slate-950/85 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 shadow-lg transition-all cursor-pointer"
+              title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen 3D View'}
+            >
+              {isFullscreen ? <Minimize2 size={13} /> : <Maximize2 size={13} />}
+            </button>
+
           </div>
-
-          {/* Route Progress % */}
-          <div className="px-3.5 py-2 rounded-2xl bg-slate-950/85 border border-emerald-500/30 backdrop-blur-xl shadow-xl text-center hidden md:block">
-            <span className="text-[9px] uppercase font-bold text-slate-400 block font-mono">Progress</span>
-            <span className="text-xl font-black font-mono text-emerald-400">{progressPercent}%</span>
-          </div>
-
-          {/* Environmental Atmosphere Modes */}
-          <div className="flex items-center gap-1 bg-slate-950/85 p-1 rounded-2xl border border-slate-800 backdrop-blur-xl shadow-xl">
-            {[
-              { id: 'neon', icon: Moon, title: 'Cyber Neon' },
-              { id: 'sunset', icon: Sunset, title: 'Sunset Glow' },
-              { id: 'daylight', icon: Sun, title: 'Daylight' },
-              { id: 'rain', icon: CloudRain, title: 'Cyber Rain' }
-            ].map(env => {
-              const Icon = env.icon;
-              return (
-                <button
-                  key={env.id}
-                  onClick={() => setTimeOfDay(env.id)}
-                  className={`p-2 rounded-xl transition-all ${
-                    timeOfDay === env.id
-                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-bold'
-                      : 'text-slate-400 hover:text-white'
-                  }`}
-                  title={env.title}
-                >
-                  <Icon size={15} />
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Sound Synthesizer Toggle */}
-          <button
-            onClick={toggleSound}
-            className={`p-2.5 rounded-xl border backdrop-blur-xl shadow-lg transition-all ${
-              !isAudioMuted
-                ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50'
-                : 'bg-slate-950/85 text-slate-400 hover:text-white border-slate-800'
-            }`}
-            title={isAudioMuted ? 'Turn Sound ON (Realistic Engine Audio)' : 'Mute Engine Sound'}
-          >
-            {isAudioMuted ? <VolumeX size={16} /> : <Volume2 size={16} className="text-cyan-400" />}
-          </button>
-
-          {/* Fullscreen Toggle */}
-          <button
-            onClick={() => setIsFullscreen(!isFullscreen)}
-            className="p-2.5 rounded-xl bg-slate-950/85 hover:bg-slate-800 text-slate-300 hover:text-white border border-slate-800 shadow-lg transition-all"
-            title={isFullscreen ? 'Exit Fullscreen' : 'Fullscreen 3D View'}
-          >
-            {isFullscreen ? <Minimize2 size={16} /> : <Maximize2 size={16} />}
-          </button>
 
         </div>
 
-      </div>
-
-      {/* QUICK INTERACTIVE WAYPOINT JUMP BAR (Direct Destination Selector) */}
-      <div className="absolute top-20 left-4 right-4 flex items-center gap-2 overflow-x-auto pb-1 pointer-events-none scrollbar-none">
-        <div className="flex items-center gap-1.5 pointer-events-auto bg-slate-950/80 p-1.5 rounded-2xl border border-slate-800/80 backdrop-blur-xl shadow-lg">
-          <span className="text-[10px] font-mono font-bold text-slate-400 px-2 shrink-0">
-            Route Waypoints:
+        {/* Row 2: Route Waypoints Interactive Track */}
+        <div className="flex items-center gap-1.5 overflow-x-auto p-1 rounded-xl bg-slate-950/85 border border-slate-800/80 backdrop-blur-xl shadow-lg pointer-events-auto scrollbar-none">
+          <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400 px-2 shrink-0 flex items-center gap-1">
+            <Navigation size={11} className="text-cyan-400" />
+            <span>Corridor:</span>
           </span>
           {waypoints.map((wp, idx) => {
             const isActive = currentWaypoint.includes(wp.name.split(' ')[0]);
@@ -1353,7 +1669,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
               <button
                 key={idx}
                 onClick={() => jumpToWaypoint(wp)}
-                className={`px-2.5 py-1 rounded-xl text-[11px] font-mono font-bold whitespace-nowrap transition-all flex items-center gap-1.5 ${
+                className={`px-2.5 py-1 rounded-lg text-[10px] font-mono font-bold whitespace-nowrap transition-all flex items-center gap-1.5 cursor-pointer ${
                   isActive
                     ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50 shadow-sm'
                     : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
@@ -1365,152 +1681,183 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
             );
           })}
         </div>
+
       </div>
 
-      {/* BOTTOM FLOATING CONTROLS: Vehicle Customizer, Cockpit Controls, Nitro, Drive Controls */}
-      <div className="absolute bottom-4 left-4 right-4 flex flex-col sm:flex-row items-center justify-between gap-3 pointer-events-none">
+      {/* ======================================================== */}
+      {/* 2. UNIFIED BOTTOM COCKPIT HUD (Guaranteed Zero Cutoff)   */}
+      {/* ======================================================== */}
+      <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-3 sm:left-3 sm:right-3 z-20 flex flex-col items-center pointer-events-none">
         
-        {/* Left Controls: Vehicle Switcher, Paint Color & Camera Angles */}
-        <div className="flex flex-wrap items-center gap-2 pointer-events-auto bg-slate-950/90 p-1.5 rounded-2xl border border-slate-800/80 backdrop-blur-xl shadow-xl">
+        <div className="w-full max-w-2xl bg-slate-950/92 border border-cyan-500/30 backdrop-blur-2xl rounded-2xl p-2 sm:p-2.5 shadow-2xl pointer-events-auto space-y-2">
           
-          {/* Vehicle Switcher */}
-          <div className="flex items-center gap-1 pr-2 border-r border-slate-800">
-            <button
-              onClick={() => setVehicleType('bike')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                vehicleType === 'bike'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-extrabold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Superbike"
-            >
-              <Bike size={15} />
-              <span>Superbike</span>
-            </button>
-
-            <button
-              onClick={() => setVehicleType('car')}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                vehicleType === 'car'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-extrabold'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="EV Shuttle"
-            >
-              <Car size={15} />
-              <span>EV Shuttle</span>
-            </button>
-          </div>
-
-          {/* Vehicle Paint Customizer */}
-          <div className="flex items-center gap-1.5 px-1.5 pr-2 border-r border-slate-800" title="Vehicle Paint Color">
-            {colorPresets.map(c => (
+          {/* Row 1: Vehicle Switcher, Paint Swatches & Camera Views */}
+          <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">
+            
+            {/* Vehicle Mode Switcher */}
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-900 border border-slate-800 shrink-0">
               <button
-                key={c.hex}
-                onClick={() => setVehicleColor(c.hex)}
-                className={`w-4 h-4 rounded-full transition-transform ${
-                  vehicleColor === c.hex ? 'scale-125 ring-2 ring-white shadow-md' : 'hover:scale-110 opacity-70'
+                onClick={() => setVehicleType('bike')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  vehicleType === 'bike'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
+                    : 'text-slate-400 hover:text-white'
                 }`}
-                style={{ backgroundColor: c.hex }}
-                title={c.name}
-              />
-            ))}
-          </div>
-
-          {/* Camera Angles */}
-          <div className="flex items-center gap-1">
-            {[
-              { id: 'chase', label: 'Chase' },
-              { id: 'cockpit', label: 'Rider View' },
-              { id: 'orbit', label: '360° Orbit' },
-              { id: 'cinematic', label: 'Drone Fly' }
-            ].map(c => (
-              <button
-                key={c.id}
-                onClick={() => setCameraMode(c.id)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                  cameraMode === c.id
-                    ? 'bg-slate-800 text-cyan-300 border border-cyan-500/40 shadow-sm'
-                    : 'text-slate-400 hover:text-slate-200'
-                }`}
+                title="Superbike"
               >
-                {c.label}
+                <Bike size={14} />
+                <span>Superbike</span>
               </button>
-            ))}
+
+              <button
+                onClick={() => setVehicleType('car')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                  vehicleType === 'car'
+                    ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+                title="EV Shuttle"
+              >
+                <Car size={14} />
+                <span>EV Shuttle</span>
+              </button>
+            </div>
+
+            {/* Paint Color Swatches */}
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-xl bg-slate-900/80 border border-slate-800 shrink-0" title="Vehicle Paint">
+              {colorPresets.map(c => (
+                <button
+                  key={c.hex}
+                  onClick={() => setVehicleColor(c.hex)}
+                  className={`w-3.5 h-3.5 rounded-full transition-transform cursor-pointer ${
+                    vehicleColor === c.hex ? 'scale-125 ring-2 ring-white shadow-md' : 'hover:scale-110 opacity-70'
+                  }`}
+                  style={{ backgroundColor: c.hex }}
+                  title={c.name}
+                />
+              ))}
+            </div>
+
+            {/* Camera View Selector */}
+            <div className="flex items-center gap-1 p-0.5 rounded-xl bg-slate-900 border border-slate-800 shrink-0">
+              {[
+                { id: 'chase', label: 'Chase' },
+                { id: 'cockpit', label: 'POV' },
+                { id: 'orbit', label: '360°' },
+                { id: 'cinematic', label: 'Drone' }
+              ].map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => setCameraMode(c.id)}
+                  className={`px-2 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer ${
+                    cameraMode === c.id
+                      ? 'bg-slate-800 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
+
           </div>
 
-        </div>
+          {/* Row 2: Driving Controls (Gas, Brake, Nitro, Horn, Pause) & Book CTA */}
+          <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-slate-800/80">
+            
+            {/* Driving Buttons Group */}
+            <div className="flex items-center gap-1.5 flex-wrap">
+              
+              {/* Gas */}
+              <button
+                onMouseDown={() => { animRef.current.isAccelerating = true; animRef.current.isBraking = false; setIsBraking(false); setIsAccelerating(true); setDriveMode('manual'); }}
+                onMouseUp={() => { animRef.current.isAccelerating = false; setIsAccelerating(false); }}
+                onTouchStart={() => { animRef.current.isAccelerating = true; animRef.current.isBraking = false; setIsBraking(false); setIsAccelerating(true); setDriveMode('manual'); }}
+                onTouchEnd={() => { animRef.current.isAccelerating = false; setIsAccelerating(false); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none ${
+                  isAccelerating
+                    ? 'bg-emerald-500 text-slate-950 font-black shadow-md shadow-emerald-500/40 scale-105'
+                    : 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30'
+                }`}
+                title="Accelerate [W / Up Arrow]"
+              >
+                Gas [W]
+              </button>
 
-        {/* Right Controls: Interactive Driving (Throttle / Brake / Nitro / Book CTA) */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          
-          {/* Interactive Gas Throttle */}
-          <button
-            onMouseDown={() => { setIsAccelerating(true); setDriveMode('manual'); }}
-            onMouseUp={() => setIsAccelerating(false)}
-            onTouchStart={() => { setIsAccelerating(true); setDriveMode('manual'); }}
-            onTouchEnd={() => setIsAccelerating(false)}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold border transition-all ${
-              isAccelerating
-                ? 'bg-emerald-500 text-slate-950 font-black shadow-lg shadow-emerald-500/40'
-                : 'bg-slate-900/90 text-emerald-400 hover:bg-slate-800 border-emerald-500/30'
-            }`}
-            title="Press and hold to Accelerate (or press W / Up arrow)"
-          >
-            <span>Gas [W]</span>
-          </button>
+              {/* Brake (Stops vehicle completely to 0 km/h) */}
+              <button
+                onMouseDown={() => { animRef.current.isBraking = true; animRef.current.isAccelerating = false; setIsAccelerating(false); setIsBraking(true); setDriveMode('manual'); }}
+                onMouseUp={() => { animRef.current.isBraking = false; setIsBraking(false); }}
+                onTouchStart={() => { animRef.current.isBraking = true; animRef.current.isAccelerating = false; setIsAccelerating(false); setIsBraking(true); setDriveMode('manual'); }}
+                onTouchEnd={() => { animRef.current.isBraking = false; setIsBraking(false); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer select-none ${
+                  isBraking
+                    ? 'bg-rose-500 text-white font-black shadow-md shadow-rose-500/40 scale-105'
+                    : 'text-rose-400 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30'
+                }`}
+                title="Brake & Full Stop to 0 km/h [S / Down Arrow]"
+              >
+                Brake [S]
+              </button>
 
-          {/* Interactive Brake */}
-          <button
-            onMouseDown={() => { setIsBraking(true); setDriveMode('manual'); }}
-            onMouseUp={() => setIsBraking(false)}
-            onTouchStart={() => { setIsBraking(true); setDriveMode('manual'); }}
-            onTouchEnd={() => setIsBraking(false)}
-            className={`px-3 py-2 rounded-2xl text-xs font-bold border transition-all ${
-              isBraking
-                ? 'bg-rose-500 text-white font-black shadow-lg shadow-rose-500/40'
-                : 'bg-slate-900/90 text-rose-400 hover:bg-slate-800 border-rose-500/30'
-            }`}
-            title="Press and hold to Brake (or press S / Down arrow)"
-          >
-            <span>Brake [S]</span>
-          </button>
+              {/* Nitro */}
+              <button
+                onClick={() => {
+                  setIsNitro(prev => {
+                    const next = !prev;
+                    animRef.current.isNitro = next;
+                    return next;
+                  });
+                }}
+                className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black transition-all cursor-pointer select-none ${
+                  isNitro
+                    ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md shadow-amber-500/40 animate-pulse'
+                    : 'text-amber-300 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/30'
+                }`}
+                title="Nitro Boost [Spacebar]"
+              >
+                <Zap size={13} className={isNitro ? 'fill-white' : ''} />
+                <span>Nitro</span>
+              </button>
 
-          {/* Nitro Boost Button */}
-          <button
-            onClick={() => setIsNitro(!isNitro)}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-extrabold transition-all shadow-xl ${
-              isNitro
-                ? 'bg-gradient-to-r from-amber-500 via-rose-500 to-amber-500 text-white shadow-amber-500/30 ring-2 ring-amber-400 animate-pulse'
-                : 'bg-slate-900/90 text-amber-300 hover:bg-slate-800 border border-amber-500/30'
-            }`}
-            title="Ignite Nitro Boost (or press Spacebar)"
-          >
-            <Zap size={14} className={isNitro ? 'fill-white' : ''} />
-            <span>{isNitro ? 'NITRO ON!' : 'Nitro'}</span>
-          </button>
+              {/* Horn */}
+              <button
+                onClick={triggerHorn}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer border border-slate-800"
+                title="Sound Horn [H]"
+              >
+                <Radio size={14} className="text-cyan-400" />
+              </button>
 
-          {/* Pause / Resume */}
-          <button
-            onClick={() => setIsPaused(!isPaused)}
-            className="p-2.5 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-slate-200 border border-slate-700 shadow-xl transition-all"
-            title={isPaused ? 'Resume Ride' : 'Pause Ride'}
-          >
-            {isPaused ? <Play size={16} className="text-emerald-400" /> : <Pause size={16} />}
-          </button>
+              {/* Pause / Resume */}
+              <button
+                onClick={() => setIsPaused(!isPaused)}
+                className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-all cursor-pointer border border-slate-800"
+                title={isPaused ? 'Resume Ride' : 'Pause Ride'}
+              >
+                {isPaused ? <Play size={14} className="text-emerald-400" /> : <Pause size={14} />}
+              </button>
 
-          {/* Book this route CTA */}
-          <button
-            onClick={() => {
-              if (onBookRideWithRoute) {
-                onBookRideWithRoute();
-              }
-            }}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-cyan-500/25 hover:scale-105 active:scale-95 transition-all"
-          >
-            <span>Book This 3D Ride</span>
-            <ArrowRight size={15} />
-          </button>
+            </div>
+
+            {/* Book CTA Button */}
+            <button
+              onClick={() => {
+                if (onBookRideWithRoute) {
+                  onBookRideWithRoute({
+                    waypoint: currentWaypoint,
+                    speed: currentSpeed,
+                    vehicleType: vehicleType
+                  });
+                }
+              }}
+              className="whitespace-nowrap shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 text-slate-950 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-lg shadow-cyan-500/25 cursor-pointer"
+            >
+              <span>Book This 3D Ride</span>
+              <ArrowRight size={13} />
+            </button>
+
+          </div>
 
         </div>
 

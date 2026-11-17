@@ -1,9 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { 
-  ChevronLeft, ChevronRight, Play, Pause, Maximize2, Minimize2, 
-  Sparkles, ArrowRight, ShieldCheck, MapPin, Layers, Radio,
-  Clock, Zap, CheckCircle2, Eye, Compass
-} from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, ArrowRight, MapPin, Zap, Maximize2, Minimize2 } from 'lucide-react';
 
 export const HERO_IMAGES = [
   {
@@ -90,18 +86,11 @@ export const HERO_IMAGES = [
 
 export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [transitionEffect, setTransitionEffect] = useState('kenburns'); // 'kenburns', 'slide', 'fade'
-  const [progress, setProgress] = useState(0);
   const [isHovered, setIsHovered] = useState(false);
-  
-  const containerRef = useRef(null);
-  const timerRef = useRef(null);
-  const progressIntervalRef = useRef(null);
-  const autoPlayDuration = 5000; // 5 seconds per slide
+  const [fitMode, setFitMode] = useState('contain'); // 'contain' (small, fit full picture in frame) or 'cover' (bleed)
+  const autoPlayDuration = 2600; // Fast & dynamic auto-transition every 2.6 seconds
 
-  // Pre-load images into cache
+  // Pre-load images for seamless, instant transitions
   useEffect(() => {
     HERO_IMAGES.forEach((item) => {
       const img = new Image();
@@ -109,65 +98,14 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
     });
   }, []);
 
-  const goToNext = useCallback(() => {
-    setCurrentIndex((prev) => (prev + 1) % HERO_IMAGES.length);
-    setProgress(0);
-  }, []);
-
-  const goToPrev = useCallback(() => {
-    setCurrentIndex((prev) => (prev - 1 + HERO_IMAGES.length) % HERO_IMAGES.length);
-    setProgress(0);
-  }, []);
-
-  const goToSlide = (index) => {
-    setCurrentIndex(index);
-    setProgress(0);
-    if (onSelectSlide) {
-      onSelectSlide(HERO_IMAGES[index]);
-    }
-  };
-
-  // Autoplay and countdown progress bar
+  // Automatic transition loop (pauses gently on mouse hover)
   useEffect(() => {
-    if (!isPlaying || isHovered) {
-      if (timerRef.current) clearInterval(timerRef.current);
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-      return;
-    }
-
-    const stepMs = 50;
-    const progressStep = (stepMs / autoPlayDuration) * 100;
-
-    progressIntervalRef.current = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 100) {
-          goToNext();
-          return 0;
-        }
-        return prev + progressStep;
-      });
-    }, stepMs);
-
-    return () => {
-      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
-    };
-  }, [isPlaying, isHovered, goToNext]);
-
-  // Keyboard navigation
-  useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.key === 'ArrowRight') goToNext();
-      else if (e.key === 'ArrowLeft') goToPrev();
-      else if (e.key === ' ') {
-        e.preventDefault();
-        setIsPlaying((p) => !p);
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [goToNext, goToPrev]);
+    if (isHovered) return;
+    const interval = setInterval(() => {
+      setCurrentIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+    }, autoPlayDuration);
+    return () => clearInterval(interval);
+  }, [isHovered]);
 
   const activeImage = HERO_IMAGES[currentIndex];
 
@@ -182,258 +120,155 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
 
   return (
     <div
-      ref={containerRef}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className={`relative rounded-3xl overflow-hidden glass-panel border border-cyan-500/40 shadow-2xl transition-all duration-500 select-none ${
-        isFullscreen ? 'fixed inset-4 z-50 bg-slate-950 flex flex-col' : 'w-full h-[580px] sm:h-[620px]'
-      }`}
+      className="relative w-full h-[520px] sm:h-[560px] rounded-3xl overflow-hidden glass-panel border border-cyan-500/40 shadow-2xl select-none"
     >
       {/* ======================================================== */}
-      {/* IMAGE STACK WITH TRANSITION EFFECTS                      */}
+      {/* CINEMATIC IMAGE AUTO-TRANSITION STACK                    */}
       {/* ======================================================== */}
-      <div className="relative w-full h-full overflow-hidden bg-slate-950">
+      <div className="relative w-full h-full overflow-hidden bg-slate-950 flex items-center justify-center">
         {HERO_IMAGES.map((img, index) => {
           const isActive = index === currentIndex;
-          const isPrev = index === (currentIndex - 1 + HERO_IMAGES.length) % HERO_IMAGES.length;
-
-          // Transition styling based on active effect
-          let transformClasses = 'scale-100 translate-x-0';
-          if (transitionEffect === 'kenburns') {
-            transformClasses = isActive ? 'scale-105 duration-[8000ms]' : 'scale-100 duration-700';
-          } else if (transitionEffect === 'slide') {
-            if (isActive) transformClasses = 'translate-x-0 duration-700';
-            else if (isPrev) transformClasses = '-translate-x-full duration-700';
-            else transformClasses = 'translate-x-full duration-700';
-          }
 
           return (
             <div
               key={img.id}
-              className={`absolute inset-0 transition-opacity duration-700 ease-in-out ${
+              className={`absolute inset-0 transition-opacity duration-500 ease-in-out ${
                 isActive ? 'opacity-100 z-10 pointer-events-auto' : 'opacity-0 z-0 pointer-events-none'
               }`}
             >
-              <img
-                src={img.src}
-                alt={img.title}
-                className={`w-full h-full object-cover transition-transform ease-out ${transformClasses}`}
-                loading={index < 2 ? 'eager' : 'lazy'}
-              />
+              {fitMode === 'contain' ? (
+                <>
+                  {/* 1. Ambient Blurred Glow in Background to Fill Outer Frame */}
+                  <img
+                    src={img.src}
+                    alt=""
+                    aria-hidden="true"
+                    className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-35 scale-110 pointer-events-none"
+                  />
 
-              {/* Cinematic Vignette & Lighting Gradients */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/40 to-transparent pointer-events-none" />
-              <div className="absolute inset-0 bg-gradient-to-r from-slate-950/80 via-transparent to-slate-950/40 pointer-events-none" />
+                  {/* Soft Cinematic Vignette */}
+                  <div className="absolute inset-0 bg-slate-950/40 pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/15 to-slate-950/50 pointer-events-none" />
+
+                  {/* 2. Sharp Contained Picture (Scaled Small So Entire Image Fits Full Frame) */}
+                  <div className="relative w-full h-full flex items-center justify-center p-3 sm:p-5 pt-14 pb-24 sm:pb-28">
+                    <img
+                      src={img.src}
+                      alt={img.title}
+                      className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border border-cyan-500/30 transition-transform duration-500 ease-out"
+                      loading={index < 2 ? 'eager' : 'lazy'}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Full Bleed Mode */}
+                  <img
+                    src={img.src}
+                    alt={img.title}
+                    className="w-full h-full object-cover transition-transform duration-[3000ms] ease-out scale-100"
+                    loading={index < 2 ? 'eager' : 'lazy'}
+                  />
+
+                  {/* Cinematic Vignette & Lighting Gradients */}
+                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent pointer-events-none" />
+                  <div className="absolute inset-0 bg-gradient-to-r from-slate-950/75 via-transparent to-slate-950/35 pointer-events-none" />
+                </>
+              )}
             </div>
           );
         })}
 
-        {/* Ambient Animated Cyber Sweep */}
+        {/* Ambient Subtle Cyber Glow Sweep */}
         <div className="absolute inset-0 bg-gradient-to-r from-transparent via-cyan-500/5 to-transparent pointer-events-none animate-pulse" />
       </div>
 
       {/* ======================================================== */}
-      {/* TOP STATUS BAR: LOCATION, SLIDE COUNTER, TRANSITION PICKER */}
+      {/* TOP HEADER: LIVE LOCATION CORRIDOR BADGE                 */}
       {/* ======================================================== */}
-      <div className="absolute top-4 left-4 right-4 flex flex-wrap items-center justify-between gap-3 z-20 pointer-events-none">
-        
-        {/* Active Location & Status Badge */}
-        <div className="flex items-center gap-3 px-4 py-2 rounded-2xl bg-slate-950/85 border border-cyan-500/40 backdrop-blur-xl shadow-xl pointer-events-auto">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping" />
-            <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 font-mono">
-              {activeImage.tag}
-            </span>
-          </div>
-
-          <div className="h-4 w-px bg-slate-800" />
-
-          <div className="flex items-center gap-1.5 text-white text-xs font-extrabold">
-            <MapPin size={13} className="text-cyan-400 shrink-0" />
-            <span className="truncate max-w-[180px] sm:max-w-[280px]">{activeImage.location}</span>
-          </div>
-
-          <span className="hidden sm:inline text-[9px] font-mono text-cyan-300 px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-500/30 font-bold">
-            {activeImage.stat}
+      <div className="absolute top-4 left-4 z-20 pointer-events-none">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 font-mono">
+            {activeImage.tag}
+          </span>
+          <span className="h-3 w-px bg-slate-800" />
+          <span className="flex items-center gap-1 text-white text-xs font-bold truncate max-w-[180px] sm:max-w-[280px]">
+            <MapPin size={12} className="text-cyan-400 shrink-0" />
+            <span className="truncate">{activeImage.location}</span>
           </span>
         </div>
-
-        {/* Controls: Transition Effect, Play/Pause, Fullscreen */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          
-          {/* Transition Style Selector */}
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl">
-            <button
-              onClick={() => setTransitionEffect('kenburns')}
-              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
-                transitionEffect === 'kenburns'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Ken Burns Cinematic Zoom Transition"
-            >
-              Zoom
-            </button>
-            <button
-              onClick={() => setTransitionEffect('slide')}
-              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
-                transitionEffect === 'slide'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Smooth Slide Transition"
-            >
-              Slide
-            </button>
-            <button
-              onClick={() => setTransitionEffect('fade')}
-              className={`px-2.5 py-1 rounded-xl text-[11px] font-bold transition-all ${
-                transitionEffect === 'fade'
-                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/40'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-              title="Pure Crossfade Transition"
-            >
-              Fade
-            </button>
-          </div>
-
-          {/* Play/Pause & Fullscreen Controls */}
-          <div className="flex items-center gap-1 p-1 rounded-2xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl">
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white transition-all"
-              title={isPlaying ? 'Pause Slideshow' : 'Resume Slideshow'}
-            >
-              {isPlaying ? <Pause size={15} /> : <Play size={15} />}
-            </button>
-
-            <button
-              onClick={() => setIsFullscreen(!isFullscreen)}
-              className="p-2 rounded-xl text-slate-400 hover:text-white transition-all"
-              title="Toggle Fullscreen View"
-            >
-              {isFullscreen ? <Minimize2 size={15} /> : <Maximize2 size={15} />}
-            </button>
-          </div>
-
-          {/* Slide Indicator Counter */}
-          <div className="px-3 py-1.5 rounded-2xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl text-xs font-mono font-bold text-slate-300">
-            <span className="text-cyan-400">{currentIndex + 1}</span>
-            <span className="text-slate-500"> / </span>
-            <span>{HERO_IMAGES.length}</span>
-          </div>
-
-        </div>
-
       </div>
 
       {/* ======================================================== */}
-      {/* PREVIOUS / NEXT FLOATING ARROW BUTTONS                   */}
+      {/* TOP-RIGHT MINIMALIST SLIDE INDICATORS & FIT TOGGLE       */}
       {/* ======================================================== */}
-      <button
-        onClick={goToPrev}
-        className="absolute left-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-2xl bg-slate-950/70 hover:bg-slate-900 border border-slate-700/60 hover:border-cyan-400 text-white shadow-2xl backdrop-blur-md transition-all hover:scale-110 active:scale-95 group"
-        title="Previous Image (Left Arrow)"
-      >
-        <ChevronLeft size={22} className="group-hover:-translate-x-0.5 transition-transform" />
-      </button>
+      <div className="absolute top-4 right-4 z-20 flex items-center gap-2 p-1.5 rounded-full bg-slate-950/85 border border-slate-800/80 backdrop-blur-xl shadow-lg">
+        <div className="flex items-center gap-1.5 px-1">
+          {HERO_IMAGES.map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentIndex(i)}
+              className={`h-1.5 rounded-full transition-all duration-300 cursor-pointer ${
+                i === currentIndex
+                  ? 'w-6 bg-cyan-400 shadow-sm shadow-cyan-400/50'
+                  : 'w-1.5 bg-slate-700 hover:bg-slate-500'
+              }`}
+              title={`Slide ${i + 1} of ${HERO_IMAGES.length}`}
+            />
+          ))}
+        </div>
 
-      <button
-        onClick={goToNext}
-        className="absolute right-4 top-1/2 -translate-y-1/2 z-20 p-3 rounded-2xl bg-slate-950/70 hover:bg-slate-900 border border-slate-700/60 hover:border-cyan-400 text-white shadow-2xl backdrop-blur-md transition-all hover:scale-110 active:scale-95 group"
-        title="Next Image (Right Arrow)"
-      >
-        <ChevronRight size={22} className="group-hover:translate-x-0.5 transition-transform" />
-      </button>
+        <span className="w-px h-3 bg-slate-700/60" />
+
+        <button
+          onClick={() => setFitMode(prev => prev === 'contain' ? 'cover' : 'contain')}
+          className="p-1 rounded-full text-slate-400 hover:text-cyan-300 hover:bg-slate-800/80 transition-all cursor-pointer"
+          title={fitMode === 'contain' ? "Switch to Full Bleed Fill" : "Fit Full Picture in Frame"}
+        >
+          {fitMode === 'contain' ? <Maximize2 size={12} /> : <Minimize2 size={12} />}
+        </button>
+      </div>
 
       {/* ======================================================== */}
-      {/* BOTTOM OVERLAY: CAPTION, ACTION CTA & THUMBNAILS         */}
+      {/* BOTTOM OVERLAY: STREAMLINED CAPTION & ACTION CTA         */}
       {/* ======================================================== */}
-      <div className="absolute bottom-4 left-4 right-4 z-20 space-y-3 pointer-events-none">
-        
-        {/* Caption & Instant Action Bar */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-2xl pointer-events-auto">
+      <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 pointer-events-auto">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-2xl">
           
-          <div className="space-y-1 max-w-xl">
+          <div className="space-y-0.5 max-w-xl">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 font-bold uppercase">
-                {activeImage.tag}
+              <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 rounded-full">
+                {activeImage.stat}
               </span>
               <span className="text-[10px] text-emerald-400 font-mono font-bold">
-                ✓ Live Route Corridor
+                ✓ Live Corridor
               </span>
             </div>
 
-            <h3 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+            <h3 className="text-lg sm:text-xl font-black text-white tracking-tight leading-snug">
               {activeImage.title}
             </h3>
 
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-300 line-clamp-1 leading-relaxed">
               {activeImage.subtitle}
             </p>
           </div>
 
-          {/* Quick Action CTA */}
-          <div className="flex items-center gap-2.5 shrink-0 w-full sm:w-auto">
-            <button
-              onClick={handleBook}
-              className="flex-1 sm:flex-initial px-5 py-3 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 text-slate-950 font-black text-xs sm:text-sm hover:scale-105 active:scale-95 transition-all shadow-xl shadow-cyan-500/25 flex items-center justify-center gap-2"
-            >
-              <span>Instant Dispatch Route</span>
-              <ArrowRight size={15} />
-            </button>
-          </div>
+          {/* Quick Action CTA Button */}
+          <button
+            onClick={handleBook}
+            className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 text-slate-950 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-cyan-500/25 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
+          >
+            <span>Instant Dispatch Route</span>
+            <ArrowRight size={14} />
+          </button>
 
         </div>
-
-        {/* Thumbnail Preview Strip & Transition Timer Bar */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          
-          {/* 8 Thumbnail Previews */}
-          <div className="flex items-center gap-1.5 p-1.5 rounded-2xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl flex-1 overflow-x-auto no-scrollbar">
-            {HERO_IMAGES.map((img, i) => {
-              const isSelected = i === currentIndex;
-              return (
-                <button
-                  key={img.id}
-                  onClick={() => goToSlide(i)}
-                  className={`relative shrink-0 h-11 w-16 sm:w-20 rounded-xl overflow-hidden transition-all duration-300 border ${
-                    isSelected
-                      ? 'border-cyan-400 ring-2 ring-cyan-400/40 scale-105 shadow-md'
-                      : 'border-slate-800/80 opacity-60 hover:opacity-100 hover:border-slate-600'
-                  }`}
-                  title={`${img.title} (${i + 1} of ${HERO_IMAGES.length})`}
-                >
-                  <img
-                    src={img.src}
-                    alt={img.title}
-                    className="w-full h-full object-cover"
-                  />
-                  {isSelected && (
-                    <div className="absolute inset-0 bg-cyan-500/10 pointer-events-none" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Circular/Linear Progress Timer Bar */}
-          <div className="hidden md:flex items-center px-3 py-2 rounded-2xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shrink-0 gap-2 font-mono text-xs text-slate-300">
-            <Clock size={13} className={isPlaying ? 'text-cyan-400 animate-spin' : 'text-slate-500'} />
-            <div className="w-16 h-1.5 bg-slate-800 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-gradient-to-r from-cyan-400 to-emerald-400 rounded-full transition-all duration-75"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-          </div>
-
-        </div>
-
       </div>
 
     </div>
   );
 }
-

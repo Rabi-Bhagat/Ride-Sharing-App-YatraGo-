@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Car, Users, Clock, Calendar, MapPin, Navigation, ArrowRight, 
   Sparkles, ShieldCheck, LocateFixed, Check, Bike, Package, 
-  ChevronDown, Search, X, DollarSign, Award, Info
+  ChevronDown, Search, X, DollarSign, Award, Info, Zap
 } from 'lucide-react';
 
 const POPULAR_PRESETS = [
@@ -24,15 +24,59 @@ export default function UberRideRequestCard({
   const [pickup, setPickup] = useState(initialPickup);
   const [dropoff, setDropoff] = useState(initialDropoff);
   const [pickupTimeMode, setPickupTimeMode] = useState('now'); // 'now' or 'later'
-  const [reserveDate, setReserveDate] = useState(() => {
-    const d = new Date();
-    d.setDate(d.getDate() + 1);
-    return d.toISOString().split('T')[0];
-  });
+  const [timingDropdownOpen, setTimingDropdownOpen] = useState(false);
+  const timingRef = useRef(null);
+  const dateInputRef = useRef(null);
+  const timeInputRef = useRef(null);
+
+  // Quick date presets in ISO format YYYY-MM-DD
+  const todayObj = new Date();
+  const todayISO = todayObj.toISOString().split('T')[0];
+
+  const tmrwObj = new Date();
+  tmrwObj.setDate(tmrwObj.getDate() + 1);
+  const tmrwISO = tmrwObj.toISOString().split('T')[0];
+
+  const dayAfterObj = new Date();
+  dayAfterObj.setDate(dayAfterObj.getDate() + 2);
+  const dayAfterISO = dayAfterObj.toISOString().split('T')[0];
+
+  const satObj = new Date();
+  const satDiff = (6 - satObj.getDay() + 7) % 7 || 7;
+  satObj.setDate(satObj.getDate() + satDiff);
+  const satISO = satObj.toISOString().split('T')[0];
+
+  const [reserveDate, setReserveDate] = useState(tmrwISO);
   const [reserveTime, setReserveTime] = useState('09:30');
-  const [showTimeModal, setShowTimeModal] = useState(false);
   const [locating, setLocating] = useState(false);
   const [selectedVehicleTier, setSelectedVehicleTier] = useState('go'); // 'moto', 'auto', 'go', 'xl'
+
+  // Format date nicely for display
+  const formatDateDisplay = (dateStr) => {
+    if (!dateStr) return '';
+    try {
+      const [y, m, d] = dateStr.split('-').map(Number);
+      const dateObj = new Date(y, m - 1, d);
+      return dateObj.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric'
+      });
+    } catch (e) {
+      return dateStr;
+    }
+  };
+
+  // Close timing dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (timingRef.current && !timingRef.current.contains(e.target)) {
+        setTimingDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Distance calculation based on destination
   const activeDest = POPULAR_PRESETS.find(p => p.name === dropoff) || { distKm: 9.5, distance: '9.5 km' };
@@ -166,45 +210,207 @@ export default function UberRideRequestCard({
           </p>
         </div>
 
-        {/* Pickup Timing Pill */}
-        <div className="relative">
+        {/* Pickup Timing Selector Pill with Dropdown */}
+        <div ref={timingRef} className="relative">
           <button
-            onClick={() => setPickupTimeMode(pickupTimeMode === 'now' ? 'later' : 'now')}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-750 border border-slate-700 text-xs font-bold text-slate-200 transition-all"
+            onClick={() => setTimingDropdownOpen(!timingDropdownOpen)}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-cyan-400 text-xs font-bold text-slate-200 transition-all cursor-pointer shadow-sm"
           >
             <Clock size={13} className="text-cyan-400" />
             <span>{pickupTimeMode === 'now' ? 'Pickup now' : 'Schedule later'}</span>
-            <ChevronDown size={13} className="text-slate-400" />
+            <ChevronDown size={13} className={`text-slate-400 transition-transform duration-200 ${timingDropdownOpen ? 'rotate-180' : ''}`} />
           </button>
+
+          {/* Timing Mode Dropdown Popover */}
+          {timingDropdownOpen && (
+            <div className="absolute right-0 top-full mt-2 w-60 rounded-2xl bg-slate-900 border border-slate-700 shadow-2xl p-1.5 z-40 animate-fadeIn space-y-1">
+              <button
+                onClick={() => {
+                  setPickupTimeMode('now');
+                  setTimingDropdownOpen(false);
+                }}
+                className={`w-full text-left p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                  pickupTimeMode === 'now' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40' : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Zap size={15} className="text-cyan-400" />
+                  <div>
+                    <strong className="block text-white text-xs">Pickup now</strong>
+                    <span className="text-[10px] text-slate-400 font-normal">Drivers 2-4 mins away</span>
+                  </div>
+                </div>
+                {pickupTimeMode === 'now' && <Check size={14} className="text-cyan-400" />}
+              </button>
+
+              <button
+                onClick={() => {
+                  setPickupTimeMode('later');
+                  setTimingDropdownOpen(false);
+                }}
+                className={`w-full text-left p-2.5 rounded-xl text-xs font-bold transition-all flex items-center justify-between ${
+                  pickupTimeMode === 'later' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-400/40' : 'text-slate-300 hover:bg-slate-800'
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <Calendar size={15} className="text-cyan-400" />
+                  <div>
+                    <strong className="block text-white text-xs">Schedule later</strong>
+                    <span className="text-[10px] text-slate-400 font-normal">Choose date & time</span>
+                  </div>
+                </div>
+                {pickupTimeMode === 'later' && <Check size={14} className="text-cyan-400" />}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Schedule Picker Bar (if reserve / later mode is active) */}
+      {/* Interactive Schedule Date & Time Picker Bar */}
       {pickupTimeMode === 'later' && (
-        <div className="p-3 rounded-2xl bg-slate-950/80 border border-cyan-500/30 flex flex-wrap items-center justify-between gap-3 text-xs animate-slideDown">
-          <div className="flex items-center gap-2">
-            <Calendar size={15} className="text-cyan-400" />
-            <input
-              type="date"
-              value={reserveDate}
-              onChange={(e) => setReserveDate(e.target.value)}
-              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
-            />
+        <div className="p-3.5 sm:p-4 rounded-2xl bg-slate-950/90 border border-cyan-500/40 space-y-3 animate-slideDown shadow-xl shadow-cyan-500/10">
+          
+          {/* Header & Guaranteed Cancellation Notice */}
+          <div className="flex items-center justify-between text-xs">
+            <span className="text-[10px] uppercase font-mono font-bold text-cyan-400 flex items-center gap-1.5">
+              <Calendar size={13} className="text-cyan-400" />
+              <span>RESERVE RIDE SCHEDULE</span>
+            </span>
+            <span className="text-[10px] text-cyan-300 font-mono font-bold bg-cyan-500/20 px-2 py-0.5 rounded-full border border-cyan-500/30">
+              Free Cancellation 60m Prior
+            </span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <Clock size={15} className="text-emerald-400" />
-            <input
-              type="time"
-              value={reserveTime}
-              onChange={(e) => setReserveTime(e.target.value)}
-              className="bg-transparent text-white font-bold text-xs focus:outline-none cursor-pointer"
-            />
+          {/* Primary Date & Time Selector Interactive Cards */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            
+            {/* Clickable Date Card with Native Picker Integration */}
+            <div 
+              onClick={() => {
+                try {
+                  dateInputRef.current?.showPicker();
+                } catch (e) {
+                  dateInputRef.current?.focus();
+                }
+              }}
+              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-cyan-400 focus-within:border-cyan-400 cursor-pointer transition-all group flex items-center gap-2.5 shadow-sm"
+            >
+              <div className="p-2 rounded-lg bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 group-hover:scale-105 transition-transform shrink-0">
+                <Calendar size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[9px] uppercase font-mono text-slate-400 font-bold block">
+                  Select Date (Click Calendar)
+                </span>
+                <input
+                  ref={dateInputRef}
+                  type="date"
+                  min={todayISO}
+                  value={reserveDate}
+                  onChange={(e) => setReserveDate(e.target.value)}
+                  className="w-full bg-transparent text-white font-black text-xs sm:text-sm focus:outline-none cursor-pointer [color-scheme:dark]"
+                />
+              </div>
+            </div>
+
+            {/* Clickable Time Card with Native Picker Integration */}
+            <div 
+              onClick={() => {
+                try {
+                  timeInputRef.current?.showPicker();
+                } catch (e) {
+                  timeInputRef.current?.focus();
+                }
+              }}
+              className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 hover:border-emerald-400 focus-within:border-emerald-400 cursor-pointer transition-all group flex items-center gap-2.5 shadow-sm"
+            >
+              <div className="p-2 rounded-lg bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 group-hover:scale-105 transition-transform shrink-0">
+                <Clock size={16} />
+              </div>
+              <div className="flex-1 min-w-0">
+                <span className="text-[9px] uppercase font-mono text-slate-400 font-bold block">
+                  Pickup Time (Click Clock)
+                </span>
+                <input
+                  ref={timeInputRef}
+                  type="time"
+                  value={reserveTime}
+                  onChange={(e) => setReserveTime(e.target.value)}
+                  className="w-full bg-transparent text-white font-black text-xs sm:text-sm focus:outline-none cursor-pointer [color-scheme:dark]"
+                />
+              </div>
+            </div>
+
           </div>
 
-          <span className="text-[10px] text-cyan-300 font-mono font-bold bg-cyan-500/20 px-2 py-0.5 rounded-full">
-            Free Cancellation 60m Prior
-          </span>
+          {/* 1-Click Quick Date Presets */}
+          <div className="space-y-1.5 pt-1 border-t border-slate-800/80">
+            <div className="flex items-center justify-between text-[10px] font-mono text-slate-400">
+              <span>Quick Date Options:</span>
+              <strong className="text-cyan-300 font-bold">{formatDateDisplay(reserveDate)}</strong>
+            </div>
+            <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-0.5">
+              {[
+                { label: 'Today', date: todayISO },
+                { label: 'Tomorrow', date: tmrwISO },
+                { label: 'Day After', date: dayAfterISO },
+                { label: 'Saturday', date: satISO }
+              ].map((pill) => (
+                <button
+                  key={pill.label}
+                  type="button"
+                  onClick={() => setReserveDate(pill.date)}
+                  className={`px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono transition-all shrink-0 border cursor-pointer ${
+                    reserveDate === pill.date
+                      ? 'bg-cyan-500/25 text-cyan-300 border-cyan-400 ring-1 ring-cyan-400/50'
+                      : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  {pill.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    dateInputRef.current?.showPicker();
+                  } catch (e) {
+                    dateInputRef.current?.focus();
+                  }
+                }}
+                className="px-2.5 py-1 rounded-lg text-[10px] font-bold font-mono bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 transition-all flex items-center gap-1 shrink-0 cursor-pointer"
+              >
+                <Calendar size={11} />
+                <span>Open Calendar 📅</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 1-Click Quick Time Presets */}
+          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pt-1">
+            <span className="text-[10px] text-slate-400 font-mono shrink-0">Popular Hours:</span>
+            {[
+              { label: '08:00 AM', time: '08:00' },
+              { label: '09:30 AM', time: '09:30' },
+              { label: '01:00 PM', time: '13:00' },
+              { label: '05:30 PM', time: '17:30' },
+              { label: '08:00 PM', time: '20:00' }
+            ].map((t) => (
+              <button
+                key={t.label}
+                type="button"
+                onClick={() => setReserveTime(t.time)}
+                className={`px-2 py-0.5 rounded-md text-[10px] font-bold font-mono transition-all shrink-0 border cursor-pointer ${
+                  reserveTime === t.time
+                    ? 'bg-emerald-500/25 text-emerald-300 border-emerald-400 ring-1 ring-emerald-400/50'
+                    : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-800'
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+
         </div>
       )}
 
@@ -373,7 +579,9 @@ export default function UberRideRequestCard({
         className="w-full py-4 px-6 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm sm:text-base transition-all duration-200 shadow-xl shadow-white/10 hover:shadow-white/20 active:scale-[0.99] flex items-center justify-between group cursor-pointer"
       >
         <span className="text-slate-950 font-black tracking-tight">
-          {activeService === 'reserve' ? 'Confirm Reservation' : `Request ${currentTier.name}`}
+          {activeService === 'reserve' || pickupTimeMode === 'later'
+            ? `Reserve for ${formatDateDisplay(reserveDate)} • ${reserveTime}`
+            : `Request ${currentTier.name}`}
         </span>
         
         <div className="flex items-center gap-2">

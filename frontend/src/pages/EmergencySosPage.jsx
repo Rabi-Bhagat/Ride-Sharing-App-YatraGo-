@@ -21,7 +21,7 @@ export default function EmergencySosPage() {
               <span>Emergency Safety Center & Local SOS</span>
             </h1>
             <span className="text-xs px-2.5 py-0.5 rounded-full bg-red-500/20 text-red-300 font-bold border border-red-500/30">
-              5km Radius Telemetry Beacon
+              24/7 Safety Network
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">
@@ -40,11 +40,11 @@ export default function EmergencySosPage() {
       {/* Main Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
         
-        {/* Safety Telemetry Card */}
+        {/* Safety Status Card */}
         <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Radio className="text-cyan-400 animate-pulse" />
-            <span>Active Safety Telemetry</span>
+            <span>Live Safety Status & Location</span>
           </h2>
 
           <div className="space-y-3 text-xs text-slate-300">
@@ -55,12 +55,12 @@ export default function EmergencySosPage() {
 
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between">
               <span className="text-slate-400">Broadcast Radius:</span>
-              <strong className="text-cyan-400 font-bold">5.0 km Radius</strong>
+              <strong className="text-cyan-400 font-bold">5.0 km Safety Zone</strong>
             </div>
 
             <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 flex justify-between">
-              <span className="text-slate-400">Response Patrol Unit:</span>
-              <strong className="text-emerald-400 font-bold">Metro Patrol #402 Standby</strong>
+              <span className="text-slate-400">Safety Response Unit:</span>
+              <strong className="text-emerald-400 font-bold">Metro Response Team Standby</strong>
             </div>
           </div>
         </div>
@@ -73,7 +73,10 @@ export default function EmergencySosPage() {
           </h2>
 
           <div className="space-y-3">
-            {user.emergencyContacts.map((c, idx) => (
+            {(user?.emergencyContacts && user.emergencyContacts.length > 0 ? user.emergencyContacts : [
+              { name: 'National Emergency Response', relation: 'Police / Ambulance', phone: '112' },
+              { name: 'YatraGo 24/7 Safety Desk', relation: 'Incident Support', phone: '1800-112-999' }
+            ]).map((c, idx) => (
               <div key={idx} className="p-4 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div>
                   <strong className="text-white block text-sm">{c.name} ({c.relation})</strong>

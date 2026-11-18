@@ -35,40 +35,40 @@ export const HERO_IMAGES = [
   {
     id: 3,
     src: '/hero-images/hero-slide-3.png',
-    title: 'Smart Roadways & Telemetry',
-    subtitle: 'Dynamic Route Optimization and Fleet Analytics',
-    tag: 'SMART NAVIGATION',
-    stat: 'AI Route Sync',
+    title: 'Real-Time Navigation & Traffic',
+    subtitle: 'Dynamic Route Optimization and Fast Commutes',
+    tag: 'LIVE NAVIGATION',
+    stat: 'Live GPS Sync',
     color: '#f59e0b',
     location: 'Oceanfront Bay Highline Viaduct'
   },
   {
     id: 4,
     src: '/hero-images/hero-slide-4.png',
-    title: 'Zero-Emission Urban Living',
+    title: 'Zero-Emission Urban Rides',
     subtitle: 'Clean Sustainable Mobility for Modern Commuters',
     tag: 'ECO FLEET',
-    stat: '38.4 Tons Offset',
+    stat: '100% Electric',
     color: '#06b6d4',
     location: 'Metro Cyber Interchange 101'
   },
   {
     id: 5,
     src: '/hero-images/hero-slide-5.png',
-    title: 'Enterprise Safety Architecture',
-    subtitle: 'Government ID Verified Riders & Instant SOS Beacon',
+    title: 'Safety First on Every Trip',
+    subtitle: 'Government ID Verified Riders & 24/7 Safety Support',
     tag: 'VERIFIED SAFETY',
-    stat: '99.4% Verified',
+    stat: 'Verified Drivers',
     color: '#ef4444',
-    location: 'Central Safety Response Beacon'
+    location: 'Central Safety Operations Hub'
   },
   {
     id: 6,
     src: '/hero-images/hero-slide-6.png',
-    title: 'Dynamic Stranger Ride Pooling',
-    subtitle: 'Intelligent Waypoint Matching with Co-Riders',
+    title: 'Carpool & Shared Rides',
+    subtitle: 'Share rides along identical routes & slash fare prices',
     tag: 'SHARED TRANSIT',
-    stat: 'Split Up to 45%',
+    stat: 'Save Up to 45%',
     color: '#8b5cf6',
     location: 'West End Terminal Corridor'
   },
@@ -122,7 +122,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative w-full h-[520px] sm:h-[560px] rounded-3xl overflow-hidden glass-panel border border-cyan-500/40 shadow-2xl select-none"
+      className="relative w-full h-[520px] sm:h-[560px] rounded-3xl overflow-hidden glass-panel border border-slate-800 shadow-2xl select-none"
     >
       {/* ======================================================== */}
       {/* CINEMATIC IMAGE AUTO-TRANSITION STACK                    */}
@@ -157,7 +157,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
                     <img
                       src={img.src}
                       alt={img.title}
-                      className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border border-cyan-500/30 transition-transform duration-500 ease-out"
+                      className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border border-slate-800 transition-transform duration-500 ease-out"
                       loading={index < 2 ? 'eager' : 'lazy'}
                     />
                   </div>
@@ -189,7 +189,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
       {/* TOP HEADER: LIVE LOCATION CORRIDOR BADGE                 */}
       {/* ======================================================== */}
       <div className="absolute top-4 left-4 z-20 pointer-events-none">
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg">
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-slate-800 backdrop-blur-xl shadow-lg">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <span className="text-[10px] font-black uppercase tracking-wider text-emerald-400 font-mono">
             {activeImage.tag}
@@ -236,15 +236,15 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
       {/* BOTTOM OVERLAY: STREAMLINED CAPTION & ACTION CTA         */}
       {/* ======================================================== */}
       <div className="absolute bottom-3 left-3 right-3 sm:bottom-4 sm:left-4 sm:right-4 z-20 pointer-events-auto">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-950/90 border border-cyan-500/30 backdrop-blur-xl shadow-2xl">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-950/90 border border-slate-800 backdrop-blur-xl shadow-2xl">
           
           <div className="space-y-0.5 max-w-xl">
             <div className="flex items-center gap-2">
-              <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-500/15 border border-cyan-500/30 px-2 py-0.5 rounded-full">
+              <span className="text-[10px] text-cyan-300 font-mono font-bold bg-slate-800/90 border border-slate-700 px-2 py-0.5 rounded-full">
                 {activeImage.stat}
               </span>
               <span className="text-[10px] text-emerald-400 font-mono font-bold">
-                ✓ Live Corridor
+                ✓ Available Now
               </span>
             </div>
 
@@ -262,7 +262,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
             onClick={handleBook}
             className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 text-slate-950 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-xl shadow-cyan-500/25 flex items-center justify-center gap-2 shrink-0 cursor-pointer"
           >
-            <span>Instant Dispatch Route</span>
+            <span>Book This Route</span>
             <ArrowRight size={14} />
           </button>
 

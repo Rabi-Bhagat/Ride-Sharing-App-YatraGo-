@@ -19,6 +19,7 @@ const PRESET_AVATARS = [
 export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
   const { 
     login, 
+    loginWithOtp,
     register, 
     forgotPassword, 
     loading, 
@@ -62,6 +63,14 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
 
+  // Form states - Instant OTP Authentication
+  const [otpTarget, setOtpTarget] = useState('+91 98765 43210');
+  const [otpCode, setOtpCode] = useState('');
+  const [otpGenerated, setOtpGenerated] = useState('');
+  const [otpRole, setOtpRole] = useState('rider');
+  const [otpStep, setOtpStep] = useState('send'); // 'send' or 'verify'
+  const [otpCustomName, setOtpCustomName] = useState('');
+
   // UI Feedback
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
@@ -80,6 +89,39 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
     setLoginEmail('alex.rivera@yatrago.com');
     setLoginPassword('password123');
     setErrorMessage('');
+  };
+
+  // OTP handlers
+  const handleSendOtp = (e) => {
+    if (e) e.preventDefault();
+    if (!otpTarget.trim()) {
+      setErrorMessage('Please enter a valid phone number or email.');
+      return;
+    }
+    const code = '8492';
+    setOtpGenerated(code);
+    setOtpStep('verify');
+    setErrorMessage('');
+    setSuccessMessage(`Instant OTP Generated! Your 4-digit code is: ${code}`);
+  };
+
+  const handleVerifyOtp = async (e) => {
+    if (e) e.preventDefault();
+    if (!otpCode.trim()) {
+      setErrorMessage('Please enter the 4-digit OTP code.');
+      return;
+    }
+    if (otpCode.trim() !== '8492' && otpCode.trim() !== otpGenerated) {
+      setErrorMessage('Incorrect OTP! Please use 8492.');
+      return;
+    }
+    const res = await loginWithOtp(otpTarget, otpCode, otpRole, otpCustomName);
+    if (res.success) {
+      setSuccessMessage(res.message);
+      setTimeout(() => {
+        if (onClose) onClose();
+      }, 400);
+    }
   };
 
   // Image Upload handler for Profile Photo
@@ -327,13 +369,13 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
 
         {/* Tab Navigation Switches */}
         <div className="px-6 pt-4 pb-2 relative z-10 flex border-b border-slate-800/60 bg-slate-950/40">
-          <div className="grid grid-cols-3 w-full p-1 rounded-2xl bg-slate-900/80 border border-slate-800">
+          <div className="grid grid-cols-4 w-full p-1 rounded-2xl bg-slate-900/80 border border-slate-800">
             <button
               type="button"
               onClick={() => handleSwitchTab('login')}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center ${
                 activeTab === 'login'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-extrabold'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
@@ -341,25 +383,37 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
             </button>
             <button
               type="button"
+              onClick={() => handleSwitchTab('otp')}
+              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 ${
+                activeTab === 'otp'
+                  ? 'bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 shadow-md font-black'
+                  : 'text-emerald-400 hover:text-emerald-300'
+              }`}
+            >
+              <span>OTP</span>
+              <Sparkles size={11} />
+            </button>
+            <button
+              type="button"
               onClick={() => handleSwitchTab('signup')}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center ${
                 activeTab === 'signup'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-extrabold'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Create Account
+              Register
             </button>
             <button
               type="button"
               onClick={() => handleSwitchTab('forgot')}
-              className={`py-2 px-3 rounded-xl text-xs font-bold transition-all text-center ${
+              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center ${
                 activeTab === 'forgot'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-extrabold'
+                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
                   : 'text-slate-400 hover:text-white'
               }`}
             >
-              Reset Pass
+              Reset
             </button>
           </div>
         </div>
@@ -500,6 +554,146 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
               </div>
 
             </form>
+          )}
+
+          {/* ========================================================= */}
+          {/* 1.5 INSTANT OTP AUTHENTICATION VIEW                       */}
+          {/* ========================================================= */}
+          {activeTab === 'otp' && (
+            <div className="space-y-4 animate-fadeIn">
+              
+              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/40 text-xs text-emerald-300 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Sparkles size={16} className="text-emerald-400 shrink-0" />
+                  <span>Passwordless OTP Login</span>
+                </div>
+                <span className="font-mono text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
+                  Universal Role Access
+                </span>
+              </div>
+
+              {otpStep === 'send' ? (
+                <form onSubmit={handleSendOtp} className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                      <Phone size={14} className="text-emerald-400" />
+                      <span>Mobile Number or Email Address</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={otpTarget}
+                      onChange={(e) => setOtpTarget(e.target.value)}
+                      placeholder="+91 98765 43210 or user@yatrago.com"
+                      className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition-all font-mono"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 text-slate-950 font-black text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <span>Get 4-Digit Verification OTP</span>
+                    <ArrowRight size={16} />
+                  </button>
+                </form>
+              ) : (
+                <form onSubmit={handleVerifyOtp} className="space-y-4">
+                  
+                  {/* Enter OTP Field */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                        <KeyRound size={14} className="text-emerald-400" />
+                        <span>Enter 4-Digit Verification OTP</span>
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => setOtpCode('8492')}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30"
+                      >
+                        Auto-fill: 8492
+                      </button>
+                    </div>
+
+                    <input
+                      type="text"
+                      maxLength={4}
+                      required
+                      value={otpCode}
+                      onChange={(e) => setOtpCode(e.target.value)}
+                      placeholder="• • • •"
+                      className="w-full bg-slate-900 border border-emerald-500/50 rounded-2xl py-3 text-center text-xl font-mono tracking-widest font-black text-white focus:outline-none focus:border-emerald-400"
+                    />
+                  </div>
+
+                  {/* Account Role Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-300 block">
+                      Select Access Role:
+                    </label>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {[
+                        { id: 'rider', label: 'Rider', icon: User },
+                        { id: 'driver', label: 'Driver', icon: Car },
+                        { id: 'guider', label: 'Guider', icon: Compass },
+                        { id: 'admin', label: 'Admin', icon: ShieldCheck }
+                      ].map(r => {
+                        const Icon = r.icon;
+                        const isSelected = otpRole === r.id;
+                        return (
+                          <button
+                            key={r.id}
+                            type="button"
+                            onClick={() => setOtpRole(r.id)}
+                            className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${
+                              isSelected
+                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 shadow-sm'
+                                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white'
+                            }`}
+                          >
+                            <Icon size={16} className={isSelected ? 'text-emerald-400' : 'text-slate-500'} />
+                            <span className="text-[11px]">{r.label}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Optional Custom Display Name */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-bold text-slate-400">Display Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={otpCustomName}
+                      onChange={(e) => setOtpCustomName(e.target.value)}
+                      placeholder="e.g. Alex Rivera or Rabi Bhagat"
+                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setOtpStep('send')}
+                      className="w-1/3 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-400 hover:text-white"
+                    >
+                      Resend
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={loading}
+                      className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                    >
+                      <CheckCircle2 size={16} />
+                      <span>Verify & Authenticate</span>
+                    </button>
+                  </div>
+
+                </form>
+              )}
+
+            </div>
           )}
 
           {/* ========================================================= */}
@@ -790,11 +984,12 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
               {/* Account Role Selector */}
               <div className="space-y-1.5">
                 <label className="text-xs font-bold text-slate-300">Account Role:</label>
-                <div className="grid grid-cols-3 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {[
-                    { id: 'rider', label: 'Rider / Commuter', icon: User },
-                    { id: 'driver', label: 'Driver Partner', icon: Car },
-                    { id: 'guider', label: 'City Guider', icon: Compass }
+                    { id: 'rider', label: 'Rider', icon: User },
+                    { id: 'driver', label: 'Driver', icon: Car },
+                    { id: 'guider', label: 'Guider', icon: Compass },
+                    { id: 'admin', label: 'Admin', icon: ShieldCheck }
                   ].map(r => {
                     const Icon = r.icon;
                     const isSelected = role === r.id;

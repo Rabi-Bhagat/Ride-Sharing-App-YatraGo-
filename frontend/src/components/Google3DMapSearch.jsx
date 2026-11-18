@@ -613,7 +613,7 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
           </MapContainer>
         )}
 
-        {/* Floating Telemetry Box */}
+        {/* Floating Location Status Box */}
         <div className="absolute top-4 left-4 z-[1000] glass-panel px-4 py-2.5 rounded-xl border border-slate-700/60 text-xs text-slate-200 flex items-center gap-3 backdrop-blur-md">
           <div className="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></div>
           <div>
@@ -676,7 +676,7 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
           <p className="text-xs text-slate-300 mt-0.5">{activePlace.description}</p>
         </div>
         <div className="text-right shrink-0">
-          <span className="text-[10px] text-slate-400 block">GPS Telemetry</span>
+          <span className="text-[10px] text-slate-400 block">GPS Coordinates</span>
           <span className="text-xs font-mono font-bold text-cyan-400">{activePlace.lat.toFixed(4)}° N, {activePlace.lng.toFixed(4)}° W</span>
         </div>
       </div>

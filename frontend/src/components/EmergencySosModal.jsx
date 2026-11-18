@@ -64,9 +64,9 @@ export default function EmergencySosModal({ onClose }) {
           <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center mx-auto shadow-xl shadow-red-600/50 sos-button-active">
             <AlertTriangle size={36} className="animate-bounce" />
           </div>
-          <h2 className="text-2xl font-black text-white uppercase tracking-wider">Localized Emergency SOS</h2>
+          <h2 className="text-2xl font-black text-white uppercase tracking-wider">Emergency SOS</h2>
           <p className="text-xs text-red-200">
-            Instantly broadcast emergency location telemetry to local radius units & nearby drivers.
+            Instantly alert emergency responders and share your live GPS location with 24/7 safety support.
           </p>
         </div>
 

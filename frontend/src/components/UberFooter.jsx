@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { 
   Globe, Shield, Smartphone, ArrowUpRight, HelpCircle, 
-  MapPin, ChevronDown, Check, Sparkles 
+  MapPin, ChevronDown, Check, Sparkles, Award
 } from 'lucide-react';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 
@@ -55,8 +55,8 @@ export default function UberFooter({ onNavigate }) {
               <li><button onClick={() => onNavigate('home')} className="hover:text-white transition-colors">About us</button></li>
               <li><button onClick={() => onNavigate('book')} className="hover:text-white transition-colors">Our offerings</button></li>
               <li><button onClick={() => onNavigate('stranger')} className="hover:text-white transition-colors">How pooling works</button></li>
-              <li><button onClick={() => onNavigate('preview-3d')} className="hover:text-white transition-colors">3D Digital Twin Map</button></li>
-              <li><span className="text-slate-400 hover:text-white cursor-pointer">Autonomous Transit (FSD)</span></li>
+              <li><button onClick={() => onNavigate('preview-3d')} className="hover:text-white transition-colors">3D Route Preview</button></li>
+              <li><span className="text-slate-400 hover:text-white cursor-pointer">Electric Vehicle Fleet</span></li>
               <li><span className="text-slate-400 hover:text-white cursor-pointer">Careers & Drivers</span></li>
             </ul>
           </div>

@@ -35,6 +35,7 @@ export default function Navbar({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [servicesDropdownOpen, setServicesDropdownOpen] = useState(false);
   const [exploreDropdownOpen, setExploreDropdownOpen] = useState(false);
+  const [portalsDropdownOpen, setPortalsDropdownOpen] = useState(false);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [walletDropdownOpen, setWalletDropdownOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
@@ -43,6 +44,7 @@ export default function Navbar({
   // Refs for click outside handling
   const servicesRef = useRef(null);
   const exploreRef = useRef(null);
+  const portalsRef = useRef(null);
   const profileRef = useRef(null);
   const walletRef = useRef(null);
   const searchInputRef = useRef(null);
@@ -56,6 +58,9 @@ export default function Navbar({
       if (exploreRef.current && !exploreRef.current.contains(e.target)) {
         setExploreDropdownOpen(false);
       }
+      if (portalsRef.current && !portalsRef.current.contains(e.target)) {
+        setPortalsDropdownOpen(false);
+      }
       if (profileRef.current && !profileRef.current.contains(e.target)) {
         setProfileDropdownOpen(false);
       }
@@ -68,6 +73,7 @@ export default function Navbar({
       if (e.key === 'Escape') {
         setServicesDropdownOpen(false);
         setExploreDropdownOpen(false);
+        setPortalsDropdownOpen(false);
         setProfileDropdownOpen(false);
         setWalletDropdownOpen(false);
         setSearchModalOpen(false);
@@ -118,7 +124,7 @@ export default function Navbar({
   return (
     <>
       <header className="sticky top-0 z-40 w-full bg-slate-950/85 backdrop-blur-2xl border-b border-slate-800/80 shadow-2xl transition-all">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl 2xl:max-w-[1480px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4">
             
             {/* ========================================================= */}
@@ -278,6 +284,63 @@ export default function Navbar({
                         <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Fixed rates to 700+ airports and expressway routes</p>
                       </div>
                     </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('driver');
+                        setServicesDropdownOpen(false);
+                      }}
+                      className="p-2.5 rounded-xl hover:bg-slate-800/90 cursor-pointer transition-all flex items-start gap-3 group"
+                    >
+                      <div className="p-2 rounded-xl bg-teal-500/15 text-teal-400 border border-teal-500/30 group-hover:scale-105 transition-transform shrink-0">
+                        <Car size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-xs font-bold text-white group-hover:text-teal-300 transition-colors">Driver Partner Console</strong>
+                          <span className="text-[10px] font-mono text-emerald-400 font-bold">Earn ₹</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Accept dispatches, verify OTP & navigate routes</p>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('guide-portal');
+                        setServicesDropdownOpen(false);
+                      }}
+                      className="p-2.5 rounded-xl hover:bg-slate-800/90 cursor-pointer transition-all flex items-start gap-3 group"
+                    >
+                      <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30 group-hover:scale-105 transition-transform shrink-0">
+                        <Compass size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors">Local Guider Portal</strong>
+                          <span className="text-[10px] font-mono text-purple-400 font-bold">₹350/hr</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Manage tour bookings & 3D destinations</p>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('admin');
+                        setServicesDropdownOpen(false);
+                      }}
+                      className="p-2.5 rounded-xl hover:bg-slate-800/90 cursor-pointer transition-all flex items-start gap-3 group"
+                    >
+                      <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 group-hover:scale-105 transition-transform shrink-0">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">Operations & Admin</strong>
+                          <span className="text-[10px] font-mono text-cyan-400 font-bold">Staff</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Verify driver/guide licenses & configure fare policies</p>
+                      </div>
+                    </div>
                   </div>
                 )}
               </div>
@@ -363,8 +426,101 @@ export default function Navbar({
                         <Zap size={16} />
                       </div>
                       <div>
-                        <strong className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors block">Fleet Telemetry & 8K Renders</strong>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Inspect HyperBike 1200R, Cyber Sedan & EcoSUV</p>
+                        <strong className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors block">Fleet Vehicles & Specs</strong>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Explore EV Sedan, SUV, Superbike & Scooters</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Role-Based Workspaces & Portals Dropdown */}
+              <div ref={portalsRef} className="relative">
+                <button
+                  onClick={() => {
+                    setPortalsDropdownOpen(!portalsDropdownOpen);
+                    setServicesDropdownOpen(false);
+                    setExploreDropdownOpen(false);
+                  }}
+                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                    ['driver', 'admin', 'guide-portal'].includes(activeTab) || portalsDropdownOpen
+                      ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
+                      : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
+                  }`}
+                  title="Role-Based Workspaces & Portals"
+                >
+                  <ShieldCheck size={15} className={['driver', 'admin', 'guide-portal'].includes(activeTab) ? 'text-cyan-400' : 'text-slate-400'} />
+                  <span>Workspaces</span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 text-slate-400 ${portalsDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {portalsDropdownOpen && (
+                  <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2.5 z-50 animate-fadeIn space-y-1">
+                    <div className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/80 mb-1 flex items-center justify-between">
+                      <span>Role-Specific Portals</span>
+                      <span className="text-cyan-400 font-mono font-bold">Verified</span>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('driver');
+                        setPortalsDropdownOpen(false);
+                      }}
+                      className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-start gap-3 group ${
+                        activeTab === 'driver' ? 'bg-emerald-950/50 border border-emerald-500/40' : 'hover:bg-slate-800/90'
+                      }`}
+                    >
+                      <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 group-hover:scale-105 transition-transform shrink-0">
+                        <Car size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors">Driver Partner Console</strong>
+                          <span className="text-[10px] font-mono text-emerald-400 font-bold">Online</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Dispatches, passenger OTP verification & fare payouts</p>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('admin');
+                        setPortalsDropdownOpen(false);
+                      }}
+                      className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-start gap-3 group ${
+                        activeTab === 'admin' ? 'bg-cyan-950/50 border border-cyan-500/40' : 'hover:bg-slate-800/90'
+                      }`}
+                    >
+                      <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 group-hover:scale-105 transition-transform shrink-0">
+                        <ShieldCheck size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors">Operations & Admin</strong>
+                          <span className="text-[10px] font-mono text-cyan-400 font-bold">Staff</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Verify driver/guide licenses & fare management policies</p>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('guide-portal');
+                        setPortalsDropdownOpen(false);
+                      }}
+                      className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-start gap-3 group ${
+                        activeTab === 'guide-portal' ? 'bg-purple-950/50 border border-purple-500/40' : 'hover:bg-slate-800/90'
+                      }`}
+                    >
+                      <div className="p-2 rounded-xl bg-purple-500/15 text-purple-400 border border-purple-500/30 group-hover:scale-105 transition-transform shrink-0">
+                        <Compass size={16} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <strong className="text-xs font-bold text-white group-hover:text-purple-300 transition-colors">Local Guider Portal</strong>
+                          <span className="text-[10px] font-mono text-purple-400 font-bold">₹350/hr</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">Manage tourist tour requests & 3D destinations</p>
                       </div>
                     </div>
                   </div>
@@ -376,15 +532,17 @@ export default function Navbar({
             {/* ========================================================= */}
             {/* 3. QUICK SEARCH CAPSULE (SHORTCUT: ⌘K / CTRL+K) */}
             {/* ========================================================= */}
-            <div className="hidden md:flex items-center">
+            <div className="hidden md:flex items-center shrink-0">
               <button
                 onClick={() => setSearchModalOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-850 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 transition-all shadow-inner group"
+                className="flex items-center justify-between gap-2.5 w-36 lg:w-48 xl:w-60 h-9 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-805 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 transition-all shadow-inner whitespace-nowrap overflow-hidden group cursor-pointer shrink-0"
+                title="Search routes or airports (Ctrl+K)"
               >
-                <Search size={14} className="text-cyan-400 group-hover:scale-110 transition-transform" />
-                <span className="hidden xl:inline">Search airport, city, or route...</span>
-                <span className="xl:hidden">Search...</span>
-                <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-bold text-slate-400 bg-slate-950 border border-slate-800 rounded">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Search size={14} className="text-cyan-400 group-hover:scale-110 transition-transform shrink-0" />
+                  <span className="truncate text-xs">Search route or airport...</span>
+                </div>
+                <kbd className="hidden lg:inline-flex items-center px-1.5 py-0.5 text-[9px] font-mono font-bold text-slate-400 bg-slate-950 border border-slate-800 rounded shrink-0">
                   Ctrl K
                 </kbd>
               </button>
@@ -393,7 +551,7 @@ export default function Navbar({
             {/* ========================================================= */}
             {/* 4. RIGHT ACTION PILLS: WALLET, SOS, CHAT, USER */}
             {/* ========================================================= */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               
               {/* Interactive Wallet Balance Pill & Quick Top-Up */}
               <div ref={walletRef} className="relative">
@@ -576,6 +734,36 @@ export default function Navbar({
                         </div>
                       </button>
 
+                      <div className="pt-1 border-t border-slate-800 space-y-0.5">
+                        <span className="text-[9px] uppercase font-mono font-bold text-slate-500 px-2 block">Switch Mode</span>
+                        <button
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            setActiveTab('driver');
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 text-xs font-bold text-slate-300 hover:text-emerald-300 transition-all"
+                        >
+                          <div className="flex items-center gap-2">
+                            <Car size={14} className="text-emerald-400" />
+                            <span>Driver Console</span>
+                          </div>
+                          <span className="text-[10px] text-emerald-400 font-mono">Shift</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setProfileDropdownOpen(false);
+                            setActiveTab('admin');
+                          }}
+                          className="w-full flex items-center justify-between p-2 rounded-xl hover:bg-slate-800 text-xs font-bold text-slate-300 hover:text-cyan-300 transition-all"
+                        >
+                          <div className="flex items-center gap-2">
+                            <ShieldCheck size={14} className="text-cyan-400" />
+                            <span>Admin Desk</span>
+                          </div>
+                          <span className="text-[10px] text-cyan-400 font-mono">Control</span>
+                        </button>
+                      </div>
+
                       <div className="pt-1 mt-1 border-t border-slate-800">
                         <button
                           onClick={() => {
@@ -706,8 +894,11 @@ export default function Navbar({
                 { id: 'cost-split', label: 'Smart Fare Splitter', icon: IndianRupee },
                 { id: 'preview-3d', label: '3D Simulation & Map', icon: Globe },
                 { id: 'guiders', label: 'Local Guider Network', icon: Compass },
+                { id: 'driver', label: 'Driver Partner Console', icon: Car, badge: 'Online', badgeColor: 'bg-emerald-500/20 text-emerald-300' },
+                { id: 'admin', label: 'Operations & Admin', icon: ShieldCheck, badge: 'Staff', badgeColor: 'bg-cyan-500/20 text-cyan-300' },
+                { id: 'guide-portal', label: 'Local Guider Portal', icon: Compass, badge: '₹350/hr', badgeColor: 'bg-purple-500/20 text-purple-300' },
                 { id: 'chat', label: 'Group Ride Chat', icon: MessageSquare },
-                { id: 'sos', label: 'Emergency SOS Protocol', icon: AlertTriangle, danger: true }
+                { id: 'sos', label: 'Emergency SOS Center', icon: AlertTriangle, danger: true }
               ].map((item) => {
                 const Icon = item.icon;
                 const isActive = activeTab === item.id;

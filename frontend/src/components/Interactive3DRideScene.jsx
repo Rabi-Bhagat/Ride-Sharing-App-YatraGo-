@@ -1529,7 +1529,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
   };
 
   return (
-    <div className={`relative rounded-3xl overflow-hidden glass-panel border border-cyan-500/40 shadow-2xl transition-all duration-300 ${
+    <div className={`relative rounded-3xl overflow-hidden glass-panel border border-slate-800 shadow-2xl transition-all duration-300 ${
       isFullscreen ? 'fixed inset-4 z-50 bg-slate-950/98 flex flex-col' : 'w-full h-[520px] sm:h-[560px]'
     }`}>
       
@@ -1543,13 +1543,13 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       {/* High-Performance Fallback UI if WebGL is unavailable */}
       {hasWebGLError && (
         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-950/92 backdrop-blur-md p-6 text-center space-y-4">
-          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 shadow-xl">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 border border-slate-800 flex items-center justify-center text-cyan-400 shadow-xl">
             <Zap size={32} />
           </div>
           <div className="space-y-1">
             <h3 className="text-xl font-black text-white">YatraGo High-Efficiency Route Simulation</h3>
             <p className="text-xs text-slate-300 max-w-md mx-auto">
-              Real-time telemetry, GPS waypoints, and smart fare splitting remain fully operational with reduced GPU power mode.
+              Real-time routes, GPS waypoints, and smart fare splitting remain fully operational with reduced GPU power mode.
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -1561,7 +1561,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
             </button>
             <button
               onClick={() => onBookRideWithRoute?.({ waypoint: currentWaypoint, speed: currentSpeed })}
-              className="px-5 py-2.5 rounded-xl bg-slate-900 border border-cyan-500/40 text-cyan-400 font-bold text-xs hover:scale-105 transition-all"
+              className="px-5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-cyan-400 font-bold text-xs hover:scale-105 transition-all"
             >
               Book Express Ride
             </button>
@@ -1578,7 +1578,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
         <div className="flex items-center justify-between gap-2">
           
           {/* Left GPS Waypoint Badge */}
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg pointer-events-auto">
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-950/85 border border-slate-800 backdrop-blur-xl shadow-lg pointer-events-auto">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
             <div className="flex items-center gap-1.5">
               <span className="text-[10px] uppercase font-bold tracking-wider text-emerald-400 font-mono hidden sm:inline">
@@ -1596,7 +1596,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
           <div className="flex items-center gap-1.5 pointer-events-auto">
             
             {/* Speedometer Badge */}
-            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/85 border border-cyan-500/30 backdrop-blur-xl shadow-lg">
+            <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-950/85 border border-slate-800 backdrop-blur-xl shadow-lg">
               <span className={`text-xs font-black font-mono transition-colors ${
                 isNitro ? 'text-amber-400 animate-pulse' : 'text-cyan-400'
               }`}>
@@ -1689,7 +1689,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
       {/* ======================================================== */}
       <div className="absolute bottom-2.5 left-2.5 right-2.5 sm:bottom-3 sm:left-3 sm:right-3 z-20 flex flex-col items-center pointer-events-none">
         
-        <div className="w-full max-w-2xl bg-slate-950/92 border border-cyan-500/30 backdrop-blur-2xl rounded-2xl p-2 sm:p-2.5 shadow-2xl pointer-events-auto space-y-2">
+        <div className="w-full max-w-2xl bg-slate-950/92 border border-slate-800 backdrop-blur-2xl rounded-2xl p-2 sm:p-2.5 shadow-2xl pointer-events-auto space-y-2">
           
           {/* Row 1: Vehicle Switcher, Paint Swatches & Camera Views */}
           <div className="flex items-center justify-between gap-2 flex-wrap sm:flex-nowrap">

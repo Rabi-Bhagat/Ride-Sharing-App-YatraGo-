@@ -140,36 +140,36 @@ export default function AdminDashboardPage() {
       {/* ========================================================= */}
       {/* 1. ADMIN COMMAND CENTER HEADER                            */}
       {/* ========================================================= */}
-      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-cyan-500/30 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
+      <div className="glass-panel p-6 sm:p-8 rounded-3xl border border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 shadow-2xl flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div>
           <div className="flex items-center gap-2.5 flex-wrap">
             <div className="p-2.5 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-lg shadow-cyan-500/20">
               <ShieldCheck size={24} />
             </div>
             <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Platform Administration & Governance
+              Platform Operations & Admin
             </h1>
-            <span className="text-xs px-3 py-1 rounded-full bg-cyan-500/15 text-cyan-300 font-mono font-bold border border-cyan-500/30">
-              Admin Superuser Console
+            <span className="text-xs px-3 py-1 rounded-full bg-cyan-500/10 text-cyan-300 font-mono font-bold border border-cyan-500/30">
+              Operations Center
             </span>
           </div>
           <p className="text-xs sm:text-sm text-slate-400 mt-2 max-w-2xl leading-relaxed">
-            Full administrative control over driver/guide identity verifications, dynamic fare policies, dispute resolutions, and platform-wide analytics.
+            Verify driver and guide credentials, manage dynamic fare rates in Indian Rupees (₹), review disputes, and inspect live fleet statistics.
           </p>
         </div>
 
         {/* Quick System Health Pill */}
         <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0">
-          <div className="w-3 h-3 rounded-full bg-emerald-400 animate-pulse"></div>
+          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
           <div className="text-xs">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block font-bold">System Status</span>
-            <strong className="text-white font-mono">100% Operational</strong>
+            <span className="text-[10px] uppercase font-mono text-slate-400 block font-bold">Platform Status</span>
+            <strong className="text-white font-mono">All Systems Live</strong>
           </div>
         </div>
       </div>
 
       {/* ========================================================= */}
-      {/* 2. PLATFORM-WIDE TELEMETRY & KPIS                         */}
+      {/* 2. PLATFORM-WIDE METRICS & KPIS                         */}
       {/* ========================================================= */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         

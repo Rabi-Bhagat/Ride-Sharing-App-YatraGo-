@@ -519,11 +519,12 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                 <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
                   Active YatraGo Profile Mode
                 </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
                   {[
                     { id: 'rider', title: 'Passenger Rider', desc: 'Book rides, pool with strangers & split fares.', icon: Car },
+                    { id: 'driver', title: 'Driver Partner', desc: 'Drive verified electric shuttles, cars & bikes.', icon: Zap },
                     { id: 'guider', title: 'Local Guider', desc: 'Guide tourists & earn per-hour booking fees.', icon: Compass },
-                    { id: 'driver', title: 'Eco Driver', desc: 'Drive verified electric shuttles & cars.', icon: Zap }
+                    { id: 'admin', title: 'Platform Admin', desc: 'Superuser oversight, verifications & fare policies.', icon: ShieldCheck }
                   ].map((r) => {
                     const Icon = r.icon;
                     const isSelected = user.role === r.id;
@@ -944,7 +945,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                     <span>Emergency SOS Contacts</span>
                   </h3>
                   <p className="text-xs text-slate-400">
-                    Trusted guardians automatically alerted with GPS telemetry during SOS triggers.
+                    Trusted contacts automatically notified with your live GPS location during SOS alerts.
                   </p>
                 </div>
                 <button
@@ -1044,7 +1045,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
               <div className="p-4 rounded-2xl bg-red-950/30 border border-red-500/30 flex items-center justify-between gap-4">
                 <div>
                   <strong className="text-xs text-white block">Test SOS Notification Broadcast</strong>
-                  <span className="text-[11px] text-slate-300">Simulate sending an automated SMS telemetry beacon.</span>
+                  <span className="text-[11px] text-slate-300">Simulate sending an automated emergency SMS alert.</span>
                 </div>
                 <button
                   onClick={handleSimulateTestSos}
@@ -1092,7 +1093,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                   },
                   {
                     title: 'Night Owl Navigator',
-                    desc: 'Safe pooled travel during peak night transit hours with live SOS telemetry.',
+                    desc: 'Safe travel during peak night transit hours with 24/7 safety monitoring.',
                     icon: Shield
                   }
                 ].map((b, idx) => {

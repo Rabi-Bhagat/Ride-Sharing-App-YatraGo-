@@ -137,6 +137,52 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // 1.5 OTP-BASED AUTHENTICATION (Rider, Driver, Guide, Admin)
+  const loginWithOtp = async (phoneOrEmail, otp, selectedRole = 'rider', customName = '') => {
+    setLoading(true);
+    const defaultNames = {
+      rider: 'Alex Rivera',
+      driver: 'Rajesh Sharma',
+      guider: 'Aarav Kapoor',
+      admin: 'Rabi Bhagat (Admin)'
+    };
+    const defaultAvatars = {
+      rider: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      driver: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      guider: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+      admin: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80'
+    };
+
+    const authenticatedUser = {
+      _id: 'usr_otp_' + Date.now(),
+      name: customName || defaultNames[selectedRole] || 'Verified User',
+      email: phoneOrEmail.includes('@') ? phoneOrEmail : `${phoneOrEmail.replace(/[^0-9]/g, '')}@yatrago.com`,
+      phone: phoneOrEmail.includes('@') ? '+91 98765 43210' : phoneOrEmail,
+      address: 'Innovation Tech Park, Sector 4',
+      homeAddress: '450 Mission St, Cyber Hub',
+      workAddress: 'Downtown Cyber Plaza',
+      role: selectedRole,
+      avatar: defaultAvatars[selectedRole] || defaultAvatars.rider,
+      isVerified: true,
+      verificationBadgeType: 'Government ID',
+      rating: 4.98,
+      tripsCompleted: 82,
+      bio: `Verified ${selectedRole.toUpperCase()} on YatraGo Mobility Network.`,
+      walletBalance: 1500.00,
+      upiId: 'user@okhdfc',
+      emergencyContacts: [
+        { name: 'Elena Rivera', phone: '+91 98112 00199', relation: 'Family' },
+        { name: 'Campus Safety Help Point', phone: '112', relation: 'Emergency' }
+      ]
+    };
+
+    setUser(authenticatedUser);
+    setToken('jwt_otp_' + Date.now());
+    setLoading(false);
+    closeAuthModal();
+    return { success: true, user: authenticatedUser, message: `Successfully authenticated via OTP as ${selectedRole.toUpperCase()}!` };
+  };
+
   // 2. SIGN UP (Create Account)
   const register = async (formData) => {
     setLoading(true);
@@ -326,6 +372,7 @@ export const AuthProvider = ({ children }) => {
       closeAuthModal,
       setAuthModalTab,
       login,
+      loginWithOtp,
       register,
       logout,
       changePassword,

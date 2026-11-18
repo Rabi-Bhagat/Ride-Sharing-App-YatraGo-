@@ -154,11 +154,11 @@ export default function GroupChat({
       {
         id: 's_1',
         senderId: 'support_1',
-        senderName: 'YatraGo Safety Protocol',
+        senderName: 'YatraGo Safety Support',
         senderRole: 'support',
         senderAvatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
         isVerified: true,
-        text: 'Your ride is monitored under 24/7 Telemetry & Government ID verification. SOS beacon is armed and ready if needed.',
+        text: 'Your ride is protected by 24/7 safety monitoring and verified drivers. Tap SOS anytime if you need urgent assistance.',
         timestamp: new Date(Date.now() - 20 * 60000).toISOString(),
         type: 'system'
       }

@@ -19,8 +19,8 @@ const FAQS = [
     a: 'Yes. YatraGo makes it seamless to request YatraGo Moto (motorcycle), YatraGo Auto (electric moped/rickshaw), or YatraGo Premier (luxury EV sedan). There is no need to hail cabs on the street: request doorstep pickup at the tap of a button.'
   },
   {
-    q: 'How does Stranger Ride Pooling save up to 44%?',
-    a: 'Our AI Route Alignment algorithm dynamically pairs you with verified commuters traveling along the exact same highway or urban corridor. Because you share vehicle occupancy and highway tolls, your fare is cut by up to 44% with 100% verified co-riders.'
+    q: 'How does Carpool & Shared Rides save up to 44%?',
+    a: 'Our smart route alignment matches you with verified commuters traveling along the same route. By sharing vehicle seats, your fare is cut by up to 44% with verified co-riders.'
   },
   {
     q: 'Can I schedule a ride in advance?',
@@ -28,7 +28,7 @@ const FAQS = [
   },
   {
     q: 'What safety features are active during my trip?',
-    a: 'Every ride is protected by our Enterprise Safety Architecture: mandatory Government ID verification for all riders & drivers, 4-digit ride start PIN, live GPS telemetry sharing with trusted contacts, and an instant 3-second Emergency SOS beacon.'
+    a: 'Every ride is protected by comprehensive safety features: mandatory Government ID verification for all riders & drivers, 4-digit ride start PIN, live GPS route sharing with trusted contacts, and an instant 3-second Emergency SOS button.'
   }
 ];
 

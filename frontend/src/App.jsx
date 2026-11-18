@@ -8,6 +8,9 @@ import ThreeDestinationPage from './pages/ThreeDestinationPage';
 import GuiderDirectoryPage from './pages/GuiderDirectoryPage';
 import EmergencySosPage from './pages/EmergencySosPage';
 import GroupChatPage from './pages/GroupChatPage';
+import AdminDashboardPage from './pages/AdminDashboardPage';
+import DriverPortalPage from './pages/DriverPortalPage';
+import GuidePortalPage from './pages/GuidePortalPage';
 import UserProfile from './components/UserProfile';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -263,6 +266,18 @@ function MainApp() {
 
           {activeTab === 'chat' && (
             <GroupChatPage />
+          )}
+
+          {activeTab === 'admin' && (
+            <AdminDashboardPage />
+          )}
+
+          {activeTab === 'driver' && (
+            <DriverPortalPage />
+          )}
+
+          {activeTab === 'guide-portal' && (
+            <GuidePortalPage onNavigate={handleNavigateWithTransition} />
           )}
         </ErrorBoundary>
 

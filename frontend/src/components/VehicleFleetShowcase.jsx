@@ -303,13 +303,13 @@ export default function VehicleFleetShowcase({
         })}
       </div>
 
-      {/* Selected Vehicle In-Depth Live Telemetry Bar */}
-      <div className="p-4 sm:p-5 rounded-2xl glass-card border border-cyan-500/30 bg-gradient-to-r from-slate-950/90 via-slate-900/90 to-cyan-950/50 space-y-4">
+      {/* Selected Vehicle In-Depth Specifications */}
+      <div className="p-4 sm:p-5 rounded-2xl glass-card border border-slate-800 bg-gradient-to-r from-slate-950/90 via-slate-900/90 to-slate-900/90 space-y-4">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           
           {/* Vehicle Highlights & Badges */}
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-xl overflow-hidden border border-cyan-500/40 shadow-lg shrink-0">
+            <div className="w-16 h-16 rounded-xl overflow-hidden border border-slate-800 shadow-lg shrink-0">
               <img
                 src={current.image}
                 alt={current.name}

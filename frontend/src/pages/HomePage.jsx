@@ -66,7 +66,7 @@ export default function HomePage({ onNavigate, user }) {
                   }`}
                 >
                   <ImageIcon size={14} />
-                  <span>Curated Corridors</span>
+                  <span>Scenic Routes</span>
                   <span className="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-ping"></span>
                 </button>
 
@@ -79,13 +79,13 @@ export default function HomePage({ onNavigate, user }) {
                   }`}
                 >
                   <Box size={14} />
-                  <span>3D Digital Twin</span>
+                  <span>3D Route Preview</span>
                 </button>
               </div>
 
               <div className="flex items-center gap-2 text-xs font-mono text-slate-400">
                 <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-                <span className="hidden sm:inline">Feed: {heroDisplayMode === 'slider' ? '8K Transit Showcase' : 'WebGL 60FPS'}</span>
+                <span className="hidden sm:inline">{heroDisplayMode === 'slider' ? 'Featured Destinations' : 'Interactive 3D Engine'}</span>
               </div>
             </div>
 

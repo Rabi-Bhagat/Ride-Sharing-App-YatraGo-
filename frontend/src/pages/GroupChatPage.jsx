@@ -77,7 +77,7 @@ export default function GroupChatPage() {
       badgeRole: 'Safety Protocol',
       vehicleInfo: 'Instant Response Team • SOS Armed',
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
-      lastMessage: 'Live ride telemetry and GPS tracking active.',
+      lastMessage: 'Live trip tracking and GPS active.',
       time: '20m ago',
       unread: 0,
       isOnline: true,
@@ -105,15 +105,15 @@ export default function GroupChatPage() {
               <MessageSquare size={20} />
             </div>
             <h1 className="text-xl sm:text-2xl font-black text-white tracking-tight">
-              Ride & Driver Chatting Hub
+              Ride & Driver Chat
             </h1>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-mono font-bold border border-emerald-500/30 flex items-center gap-1.5">
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-mono font-bold border border-emerald-500/30 flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-              <span>256-Bit Encrypted</span>
+              <span>Encrypted</span>
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1.5 max-w-2xl leading-relaxed">
-            Direct in-app communication with assigned drivers, verified pool co-riders, and 24/7 safety response. Zero phone number disclosure.
+            Message your driver, fellow pool passengers, or trip guide in real time. Your personal phone number is never shared.
           </p>
         </div>
 
@@ -146,12 +146,12 @@ export default function GroupChatPage() {
         {/* ======================================================= */}
         <div className="lg:col-span-4 space-y-4">
           
-          {/* Active Trip Telemetry Card */}
-          <div className="glass-panel p-4 rounded-3xl border border-cyan-500/30 bg-gradient-to-b from-cyan-950/30 via-slate-900/90 to-slate-900 shadow-xl space-y-3">
+          {/* Active Trip Status Card */}
+          <div className="glass-panel p-4 rounded-3xl border border-slate-800 bg-gradient-to-b from-slate-900/90 via-slate-900/90 to-slate-900 shadow-xl space-y-3">
             <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
               <div className="flex items-center gap-2">
                 <Car size={16} className="text-cyan-400" />
-                <span className="text-xs font-extrabold text-white">Active Ride Telemetry</span>
+                <span className="text-xs font-extrabold text-white">Active Ride Status</span>
               </div>
               <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/20 px-2 py-0.5 rounded-full border border-emerald-500/30">
                 {currentTrip.discount}

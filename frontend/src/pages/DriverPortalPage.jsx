@@ -5,6 +5,7 @@ import {
   TrendingUp, Award, Zap, ToggleLeft, ToggleRight, Check, X
 } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
+import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';
 
 export default function DriverPortalPage() {
@@ -210,10 +211,10 @@ export default function DriverPortalPage() {
             {/* Trip Specs */}
             <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80"
-                  alt="Passenger"
-                  className="w-12 h-12 rounded-2xl object-cover ring-2 ring-cyan-400"
+                <UserAvatar
+                  name={activeDispatch.riderName}
+                  size="md"
+                  className="ring-2 ring-cyan-400 rounded-2xl overflow-hidden shrink-0"
                 />
                 <div>
                   <div className="flex items-center gap-1.5">

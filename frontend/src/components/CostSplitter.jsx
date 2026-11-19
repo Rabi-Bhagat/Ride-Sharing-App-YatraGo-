@@ -33,7 +33,7 @@ export default function CostSplitter({ ride }) {
           {
             userId: 'usr_1',
             name: user?.name || 'Alex Rivera',
-            avatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+            avatar: user?.avatar || '',
             isVerified: true,
             percentage: 50,
             distanceKm: 12,

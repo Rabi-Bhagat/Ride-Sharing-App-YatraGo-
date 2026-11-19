@@ -7,6 +7,7 @@ import {
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
+import UserAvatar from './UserAvatar';
 
 export default function GroupChat({ 
   activeChannel = 'driver', 
@@ -84,7 +85,7 @@ export default function GroupChat({
         senderId: user ? (user._id || user.id || 'usr_me') : 'rider_demo',
         senderName: user?.name || 'Passenger',
         senderRole: 'rider',
-        senderAvatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        senderAvatar: user?.avatar || '',
         isVerified: true,
         text: 'Thanks Rajesh! I am at Innovation Tech Park near the glass canopy entrance.',
         timestamp: new Date(Date.now() - 2 * 60000).toISOString(),
@@ -208,7 +209,7 @@ export default function GroupChat({
       senderId: user._id || user.id || 'usr_me',
       senderName: user.name || 'Rider',
       senderRole: user.role || 'rider',
-      senderAvatar: user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      senderAvatar: user.avatar || '',
       isVerified: Boolean(user.isVerified),
       text: text.trim(),
       timestamp: new Date().toISOString(),
@@ -237,7 +238,7 @@ export default function GroupChat({
       senderId: user._id || user.id || 'usr_me',
       senderName: user.name || 'Rider',
       senderRole: user.role || 'rider',
-      senderAvatar: user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      senderAvatar: user.avatar || '',
       isVerified: Boolean(user.isVerified),
       text: '📍 Shared Live GPS Pickup Pin: Innovation Tech Park (East Concourse, Canopy Area)',
       timestamp: new Date().toISOString(),
@@ -389,10 +390,11 @@ export default function GroupChat({
               className={`flex gap-3 items-end ${isMe ? 'flex-row-reverse' : 'flex-row'}`}
             >
               {/* Sender Avatar */}
-              <img
-                src={msg.senderAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80'}
-                alt={msg.senderName}
-                className="w-8 h-8 rounded-xl object-cover ring-2 ring-slate-800 shrink-0"
+              <UserAvatar
+                name={msg.senderName}
+                avatar={msg.senderAvatar}
+                size="sm"
+                className="rounded-xl overflow-hidden shrink-0"
               />
 
               <div className={`max-w-[80%] sm:max-w-[70%] space-y-1 ${isMe ? 'items-end' : 'items-start'}`}>

@@ -25,7 +25,13 @@ import { Sparkles } from 'lucide-react';
 function MainApp() {
   const [activeTab, setActiveTab] = useState('home'); // 'home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat'
 
-  const handleNavigateWithTransition = (targetTab) => {
+  const handleNavigateWithTransition = (targetTab, params) => {
+    if (params?.pickup) {
+      setPickupLocation(typeof params.pickup === 'string' ? { name: params.pickup, lat: 28.6139, lng: 77.2090 } : params.pickup);
+    }
+    if (params?.destination) {
+      setSelectedDestination(typeof params.destination === 'string' ? { name: params.destination, address: params.destination, lat: 28.5355, lng: 77.3910 } : params.destination);
+    }
     setActiveTab(targetTab);
   };
 

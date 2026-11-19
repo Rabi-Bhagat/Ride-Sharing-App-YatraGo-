@@ -25,7 +25,13 @@ export default function HomePage({ onNavigate, user }) {
   const handleInstantBook = (bookingInfo) => {
     if (bookingInfo?.pickup) setQuickPickup(bookingInfo.pickup);
     if (bookingInfo?.dropoff) setQuickDropoff(bookingInfo.dropoff);
-    onNavigate('book');
+    onNavigate('book', {
+      pickup: bookingInfo?.pickup,
+      destination: bookingInfo?.dropoff,
+      distanceKm: bookingInfo?.distanceKm,
+      tier: bookingInfo?.tier,
+      fare: bookingInfo?.fare
+    });
   };
 
   return (

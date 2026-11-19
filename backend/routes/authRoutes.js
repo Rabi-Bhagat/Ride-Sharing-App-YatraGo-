@@ -21,7 +21,7 @@ const defaultUser = {
   name: 'Alex Rivera',
   email: 'alex.rivera@yatrago.com',
   password: hashPassword('password123'),
-  phone: '+1 (555) 234-8901',
+  phone: '+91 98765 43210',
   address: 'Innovation Tech Park, SF',
   homeAddress: '450 Mission St, San Francisco, CA',
   workAddress: '1 Market St, San Francisco, CA',

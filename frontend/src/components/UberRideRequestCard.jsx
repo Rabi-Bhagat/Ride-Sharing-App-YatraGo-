@@ -2,17 +2,48 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Car, Users, Clock, Calendar, MapPin, Navigation, ArrowRight, 
   Sparkles, ShieldCheck, LocateFixed, Check, Bike, Package, 
-  ChevronDown, Search, X, DollarSign, Award, Info, Zap
+  ChevronDown, Search, X, DollarSign, Award, Info, Zap,
+  Compass, AlertCircle, Loader2
 } from 'lucide-react';
 
 const POPULAR_PRESETS = [
-  { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub' },
-  { name: 'Delhi Airport (DEL)', distance: '16.2 km', distKm: 16.2, type: 'airport' },
-  { name: 'Metro Airport Skyway', distance: '19.5 km', distKm: 19.5, type: 'airport' },
-  { name: 'Oceanfront Bay Pier', distance: '12.1 km', distKm: 12.1, type: 'attraction' },
-  { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office' },
-  { name: 'Mumbai Airport (BOM)', distance: '22.0 km', distKm: 22.0, type: 'airport' }
+  { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', desc: 'Tech corridor & dining plaza' },
+  { name: 'Delhi Airport (DEL)', distance: '16.2 km', distKm: 16.2, type: 'airport', desc: 'Indira Gandhi International Airport T3' },
+  { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', distKm: 14.5, type: 'transit', desc: 'Northern Railway Main Junction' },
+  { name: 'Cyber City Rapid Metro', distance: '7.8 km', distKm: 7.8, type: 'transit', desc: 'Rapid Metro Station interchange' },
+  { name: 'MMU Mullana Campus & Hospital', distance: '3.2 km', distKm: 3.2, type: 'campus', desc: 'Medical Sciences & Technology Campus' },
+  { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office', desc: 'Innovation towers & business park' },
+  { name: 'Sector 17 City Center', distance: '18.4 km', distKm: 18.4, type: 'center', desc: 'Commercial shopping plaza & boulevard' },
+  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', desc: 'Retail, leisure & entertainment hub' },
+  { name: 'Metro Airport Skyway', distance: '19.5 km', distKm: 19.5, type: 'transit', desc: 'Rapid express air-rail transfer terminal' },
+  { name: 'Oceanfront Bay Pier', distance: '12.1 km', distKm: 12.1, type: 'attraction', desc: 'Waterfront promenade & scenic ferry terminal' },
+  { name: 'Mumbai Airport (BOM)', distance: '22.0 km', distKm: 22.0, type: 'airport', desc: 'Chhatrapati Shivaji Maharaj International' },
+  { name: 'Rajiv Chowk Central Metro', distance: '24.1 km', distKm: 24.1, type: 'transit', desc: 'Connaught Place yellow/blue line hub' }
 ];
+
+// Fallback recommendations when user searches a place that is not indexed or found
+const NEARBY_FALLBACKS = [
+  { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', tag: 'Top Business District', icon: '🏢' },
+  { name: 'Delhi Airport (DEL)', distance: '16.2 km', distKm: 16.2, type: 'airport', tag: 'Fastest Highway Route', icon: '✈️' },
+  { name: 'Cyber City Rapid Metro', distance: '7.8 km', distKm: 7.8, type: 'transit', tag: 'Public Transit Link', icon: '🚇' },
+  { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', distKm: 14.5, type: 'transit', tag: 'Major Express Junction', icon: '🚉' },
+  { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office', tag: 'Nearest Innovation Zone', icon: '💻' },
+  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', tag: 'Popular Shopping & Food', icon: '🛍️' }
+];
+
+// Deterministic realistic distance calculation for custom user-entered places
+const getEstimatedDistKm = (placeName) => {
+  if (!placeName) return 8.5;
+  const match = POPULAR_PRESETS.find(p => p.name.toLowerCase() === placeName.toLowerCase());
+  if (match) return match.distKm;
+  let hash = 0;
+  for (let i = 0; i < placeName.length; i++) {
+    hash = (hash << 5) - hash + placeName.charCodeAt(i);
+    hash |= 0;
+  }
+  const variance = Math.abs(hash % 90) / 10;
+  return Number((6.5 + variance).toFixed(1));
+};
 
 export default function UberRideRequestCard({ 
   onBookRide, 
@@ -23,11 +54,169 @@ export default function UberRideRequestCard({
   const [activeService, setActiveService] = useState('ride'); // 'ride', 'pool', 'reserve', 'courier', 'moto'
   const [pickup, setPickup] = useState(initialPickup);
   const [dropoff, setDropoff] = useState(initialDropoff);
+  const [dropoffInput, setDropoffInput] = useState(initialDropoff);
+  const [customDistKm, setCustomDistKm] = useState(null);
+  const [showDestDropdown, setShowDestDropdown] = useState(false);
+  const [destSearchResults, setDestSearchResults] = useState(POPULAR_PRESETS);
+  const [isSearchingGeocode, setIsSearchingGeocode] = useState(false);
   const [pickupTimeMode, setPickupTimeMode] = useState('now'); // 'now' or 'later'
   const [timingDropdownOpen, setTimingDropdownOpen] = useState(false);
   const timingRef = useRef(null);
   const dateInputRef = useRef(null);
   const timeInputRef = useRef(null);
+  const destDropdownRef = useRef(null);
+  const destInputRef = useRef(null);
+
+  // Sync if initialDropoff prop changes from parent
+  useEffect(() => {
+    if (initialDropoff) {
+      setDropoff(initialDropoff);
+      setDropoffInput(initialDropoff);
+    }
+  }, [initialDropoff]);
+
+  // Sync if initialPickup prop changes from parent
+  useEffect(() => {
+    if (initialPickup) {
+      setPickup(initialPickup);
+    }
+  }, [initialPickup]);
+
+  // Handle live search & autocomplete for destination input
+  useEffect(() => {
+    const q = dropoffInput.trim().toLowerCase();
+    if (!q) {
+      setDestSearchResults(POPULAR_PRESETS);
+      return;
+    }
+
+    // 1. Instant local matches from preset catalogue
+    const localMatches = POPULAR_PRESETS.filter(p => 
+      p.name.toLowerCase().includes(q) ||
+      (p.desc && p.desc.toLowerCase().includes(q)) ||
+      (p.type && p.type.toLowerCase().includes(q))
+    );
+
+    setDestSearchResults(localMatches);
+
+    // 2. Debounced live geocoding lookup via OpenStreetMap Nominatim
+    if (q.length >= 3) {
+      setIsSearchingGeocode(true);
+      const timer = setTimeout(async () => {
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(dropoffInput)}&limit=5&addressdetails=1`,
+            { headers: { 'Accept-Language': 'en' } }
+          );
+          const data = await res.json();
+          if (Array.isArray(data) && data.length > 0) {
+            const geocodedItems = data.map((item) => {
+              const shortName = item.display_name.split(',').slice(0, 2).join(', ').trim();
+              const fullName = item.display_name;
+              const estDist = getEstimatedDistKm(shortName);
+              return {
+                name: shortName,
+                fullName,
+                distance: `${estDist} km`,
+                distKm: estDist,
+                type: 'geocoded',
+                isLiveResult: true
+              };
+            });
+
+            setDestSearchResults(prev => {
+              const existingNames = new Set(prev.map(p => p.name.toLowerCase()));
+              const novel = geocodedItems.filter(g => !existingNames.has(g.name.toLowerCase()));
+              return [...prev, ...novel];
+            });
+          }
+        } catch (e) {
+          // Gracefully continue with local matches
+        } finally {
+          setIsSearchingGeocode(false);
+        }
+      }, 350);
+
+      return () => clearTimeout(timer);
+    } else {
+      setIsSearchingGeocode(false);
+    }
+  }, [dropoffInput]);
+
+  // Destination selection handlers
+  const handleSelectDestination = (item) => {
+    const name = item.name || item.shortName || item;
+    const distanceKm = item.distKm || getEstimatedDistKm(name);
+    setDropoff(name);
+    setDropoffInput(name);
+    setCustomDistKm(distanceKm);
+    setShowDestDropdown(false);
+    if (onSelectRoute) {
+      onSelectRoute({ name, distanceKm });
+    }
+  };
+
+  const handleSelectCustomPlace = (customName) => {
+    const trimmed = (customName || '').trim();
+    if (!trimmed) return;
+    const estDist = getEstimatedDistKm(trimmed);
+    setDropoff(trimmed);
+    setDropoffInput(trimmed);
+    setCustomDistKm(estDist);
+    setShowDestDropdown(false);
+    if (onSelectRoute) {
+      onSelectRoute({ name: trimmed, distanceKm: estDist });
+    }
+  };
+
+  const handleDropoffInputChange = (e) => {
+    const val = e.target.value;
+    setDropoffInput(val);
+    setShowDestDropdown(true);
+  };
+
+  const handleClearDropoff = () => {
+    setDropoffInput('');
+    setDropoff('');
+    setCustomDistKm(null);
+    setDestSearchResults(POPULAR_PRESETS);
+    destInputRef.current?.focus();
+  };
+
+  const handleDestKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      if (destSearchResults.length > 0) {
+        handleSelectDestination(destSearchResults[0]);
+      } else if (dropoffInput.trim()) {
+        handleSelectCustomPlace(dropoffInput);
+      }
+    } else if (e.key === 'Escape') {
+      setShowDestDropdown(false);
+    }
+  };
+
+  const getDestinationIcon = (type) => {
+    switch (type) {
+      case 'airport':
+        return '✈️';
+      case 'transit':
+        return '🚇';
+      case 'hub':
+      case 'office':
+        return '🏢';
+      case 'campus':
+        return '🎓';
+      case 'attraction':
+        return '🎡';
+      case 'center':
+        return '🛍️';
+      case 'geocoded':
+        return '📍';
+      default:
+        return '📍';
+    }
+  };
 
   // Quick date presets in ISO format YYYY-MM-DD
   const todayObj = new Date();
@@ -67,20 +256,23 @@ export default function UberRideRequestCard({
     }
   };
 
-  // Close timing dropdown on click outside
+  // Close timing and destination dropdown on click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (timingRef.current && !timingRef.current.contains(e.target)) {
         setTimingDropdownOpen(false);
+      }
+      if (destDropdownRef.current && !destDropdownRef.current.contains(e.target)) {
+        setShowDestDropdown(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Distance calculation based on destination
-  const activeDest = POPULAR_PRESETS.find(p => p.name === dropoff) || { distKm: 9.5, distance: '9.5 km' };
-  const dist = activeDest.distKm;
+  // Distance calculation based on destination (known presets or dynamic custom estimation)
+  const activeDest = POPULAR_PRESETS.find(p => p.name.toLowerCase() === dropoff.toLowerCase());
+  const dist = customDistKm || (activeDest ? activeDest.distKm : getEstimatedDistKm(dropoff));
 
   // Tier base pricing (Indian Rupee ₹)
   const TIER_PRICING = {
@@ -123,13 +315,15 @@ export default function UberRideRequestCard({
   };
 
   const handleConfirmRequest = () => {
+    const finalDropoff = dropoffInput.trim() || dropoff || 'Downtown Cyber Hub';
     if (onBookRide) {
       onBookRide({
         pickup,
-        dropoff,
+        dropoff: finalDropoff,
         service: activeService,
         tier: selectedVehicleTier,
         fare: displayCost,
+        distanceKm: dist,
         reserveDate: pickupTimeMode === 'later' ? reserveDate : null,
         reserveTime: pickupTimeMode === 'later' ? reserveTime : null
       });
@@ -453,31 +647,229 @@ export default function UberRideRequestCard({
           </button>
         </div>
 
-        {/* Dropoff Input */}
-        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 focus-within:border-emerald-400 transition-all relative z-20">
-          {/* Black square icon */}
-          <div className="w-4 h-4 bg-emerald-400 rounded-sm flex items-center justify-center shrink-0">
-            <div className="w-1.5 h-1.5 bg-slate-950 rounded-xs"></div>
-          </div>
+        {/* Dropoff Input with Dynamic Autocomplete & Nearby Fallbacks */}
+        <div ref={destDropdownRef} className="relative z-30">
+          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 focus-within:border-emerald-400 transition-all shadow-sm">
+            {/* Emerald square icon */}
+            <div className="w-4 h-4 bg-emerald-400 rounded-sm flex items-center justify-center shrink-0">
+              <div className="w-1.5 h-1.5 bg-slate-950 rounded-xs"></div>
+            </div>
 
-          <div className="flex-1 min-w-0">
-            <label className="text-[10px] uppercase font-bold text-slate-400 block font-mono">
-              Where to? (Destination)
-            </label>
-            <select
-              value={dropoff}
-              onChange={(e) => setDropoff(e.target.value)}
-              className="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none cursor-pointer truncate"
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] uppercase font-bold text-slate-400 block font-mono">
+                  Where to? (Destination)
+                </label>
+                {dist > 0 && (
+                  <span className="text-[10px] font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.2 rounded-full border border-emerald-500/20">
+                    {dist} km
+                  </span>
+                )}
+              </div>
+              <input
+                ref={destInputRef}
+                type="text"
+                value={dropoffInput}
+                onChange={handleDropoffInputChange}
+                onFocus={() => setShowDestDropdown(true)}
+                onKeyDown={handleDestKeyDown}
+                placeholder="Search or type any destination..."
+                className="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none placeholder:text-slate-500 truncate"
+              />
+            </div>
+
+            {/* Clear Button */}
+            {dropoffInput && (
+              <button
+                type="button"
+                onClick={handleClearDropoff}
+                className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-all shrink-0 cursor-pointer"
+                title="Clear destination"
+              >
+                <X size={14} />
+              </button>
+            )}
+
+            {/* Dropdown Chevron / Loading Spinner */}
+            <button
+              type="button"
+              onClick={() => {
+                setShowDestDropdown(!showDestDropdown);
+                if (!showDestDropdown) destInputRef.current?.focus();
+              }}
+              className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-emerald-400 border border-slate-800 text-xs transition-all shrink-0 cursor-pointer"
+              title="Browse popular destinations & search"
             >
-              {POPULAR_PRESETS.map((p) => (
-                <option key={p.name} value={p.name} className="bg-slate-900 text-white">
-                  {p.name} ({p.distance})
-                </option>
-              ))}
-            </select>
+              {isSearchingGeocode ? (
+                <Loader2 size={15} className="animate-spin text-emerald-400" />
+              ) : (
+                <ChevronDown size={15} className={`transition-transform duration-200 ${showDestDropdown ? 'rotate-180' : ''}`} />
+              )}
+            </button>
           </div>
 
-          <MapPin size={16} className="text-emerald-400 shrink-0" />
+          {/* Autocomplete & Nearby Places Popover Dropdown */}
+          {showDestDropdown && (
+            <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl bg-slate-900/98 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2 z-50 animate-fadeIn max-h-80 overflow-y-auto no-scrollbar space-y-2 ring-1 ring-white/10">
+              
+              {/* CASE 1: MATCHING RESULTS FOUND */}
+              {destSearchResults.length > 0 ? (
+                <>
+                  <div className="flex items-center justify-between px-2 pt-1 text-[10px] uppercase font-mono font-bold text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Search size={11} className="text-emerald-400" />
+                      <span>Matching Places ({destSearchResults.length})</span>
+                    </span>
+                    {isSearchingGeocode && (
+                      <span className="flex items-center gap-1 text-emerald-400">
+                        <Loader2 size={11} className="animate-spin" />
+                        <span>Searching map...</span>
+                      </span>
+                    )}
+                  </div>
+
+                  <div className="space-y-1">
+                    {destSearchResults.map((item, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleSelectDestination(item)}
+                        className={`p-2.5 rounded-xl cursor-pointer transition-all flex items-center justify-between group ${
+                          dropoff.toLowerCase() === item.name.toLowerCase()
+                            ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-300'
+                            : 'hover:bg-slate-800/90 text-slate-200 border border-transparent'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-base shrink-0 group-hover:scale-110 transition-transform">
+                            {getDestinationIcon(item.type)}
+                          </span>
+                          <div className="min-w-0">
+                            <strong className="block text-xs font-bold text-white truncate group-hover:text-emerald-300 transition-colors">
+                              {item.name}
+                            </strong>
+                            <span className="text-[10px] text-slate-400 truncate block">
+                              {item.fullName || item.desc || 'Available for immediate pickup'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <span className="text-[11px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/30 px-2 py-0.5 rounded-lg shrink-0 ml-2">
+                          {item.distKm} km
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Option to use custom typed text directly */}
+                  {dropoffInput.trim() && !destSearchResults.some(p => p.name.toLowerCase() === dropoffInput.trim().toLowerCase()) && (
+                    <div className="pt-1 border-t border-slate-800">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectCustomPlace(dropoffInput)}
+                        className="w-full text-left p-2.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 text-xs transition-all flex items-center justify-between group cursor-pointer"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <MapPin size={14} className="text-cyan-400 shrink-0" />
+                          <span className="text-white text-xs truncate">
+                            Use custom destination: <strong className="text-cyan-300 font-bold">"{dropoffInput}"</strong>
+                          </span>
+                        </div>
+                        <span className="text-[10px] font-mono text-cyan-300 shrink-0">
+                          ~{getEstimatedDistKm(dropoffInput)} km ➔
+                        </span>
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                /* CASE 2: NO EXACT MATCH FOUND - SUGGEST NEARBY PLACES */
+                <div className="space-y-2.5 p-1">
+                  
+                  {/* Warning banner */}
+                  <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-1">
+                    <div className="flex items-center gap-2 font-bold text-xs text-amber-300">
+                      <Compass size={15} className="text-amber-400 shrink-0 animate-spin" style={{ animationDuration: '6s' }} />
+                      <span>No exact place found for "{dropoffInput}"</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 leading-relaxed">
+                      We couldn't locate this exact spot. Here are verified nearby hubs & transit stations in this region:
+                    </p>
+                  </div>
+
+                  {/* Nearby Suggestions Header */}
+                  <div className="flex items-center justify-between px-1 text-[10px] uppercase font-mono font-bold text-slate-400">
+                    <span className="flex items-center gap-1.5">
+                      <Sparkles size={11} className="text-amber-400" />
+                      <span>Suggested Nearby Places</span>
+                    </span>
+                    <span className="text-emerald-400">1-Tap Select</span>
+                  </div>
+
+                  {/* List of Nearby Fallback Places */}
+                  <div className="space-y-1">
+                    {NEARBY_FALLBACKS.map((place, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleSelectDestination(place)}
+                        className="p-2.5 rounded-xl bg-slate-950/70 hover:bg-slate-800 border border-slate-800/80 hover:border-emerald-500/40 cursor-pointer transition-all flex items-center justify-between group"
+                      >
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <span className="text-base shrink-0 group-hover:scale-110 transition-transform">
+                            {place.icon}
+                          </span>
+                          <div className="min-w-0">
+                            <strong className="block text-xs font-bold text-white truncate group-hover:text-emerald-300 transition-colors">
+                              {place.name}
+                            </strong>
+                            <span className="text-[10px] text-emerald-400 font-mono block">
+                              {place.tag}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0 ml-2">
+                          <span className="text-[10px] font-mono font-bold text-slate-300 bg-slate-900 px-2 py-0.5 rounded-md border border-slate-700">
+                            {place.distance}
+                          </span>
+                          <span className="text-[10px] font-bold text-emerald-400 opacity-0 group-hover:opacity-100 transition-opacity">
+                            Select ➔
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Fallback Option: Proceed with typed text anyway */}
+                  <div className="pt-1.5 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCustomPlace(dropoffInput)}
+                      className="w-full text-left p-3 rounded-xl bg-gradient-to-r from-cyan-950/60 to-slate-900 hover:from-cyan-900/60 hover:to-slate-850 border border-cyan-500/40 text-xs transition-all flex items-center justify-between group cursor-pointer shadow-sm"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
+                          <MapPin size={14} />
+                        </div>
+                        <div className="min-w-0">
+                          <strong className="block text-white text-xs truncate">
+                            Proceed with "{dropoffInput}"
+                          </strong>
+                          <span className="text-[10px] text-cyan-300 font-mono block">
+                            Est. ~{getEstimatedDistKm(dropoffInput)} km • Doorstep GPS Navigation
+                          </span>
+                        </div>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-lg bg-cyan-500 text-slate-950 text-[10px] font-black uppercase tracking-wider shrink-0 ml-2">
+                        Use Custom
+                      </span>
+                    </button>
+                  </div>
+
+                </div>
+              )}
+
+            </div>
+          )}
         </div>
 
       </div>
@@ -488,17 +880,23 @@ export default function UberRideRequestCard({
           Frequent destinations:
         </span>
         <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar pb-1">
-          {POPULAR_PRESETS.slice(0, 4).map((preset) => (
+          {POPULAR_PRESETS.slice(0, 5).map((preset) => (
             <button
               key={preset.name}
-              onClick={() => setDropoff(preset.name)}
-              className={`shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 ${
-                dropoff === preset.name
+              type="button"
+              onClick={() => {
+                setDropoff(preset.name);
+                setDropoffInput(preset.name);
+                setCustomDistKm(preset.distKm);
+                setShowDestDropdown(false);
+              }}
+              className={`shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 cursor-pointer ${
+                dropoff.toLowerCase() === preset.name.toLowerCase()
                   ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400'
                   : 'bg-slate-950/70 text-slate-400 border-slate-800 hover:text-white hover:bg-slate-900'
               }`}
             >
-              <span>{preset.type === 'airport' ? '✈️' : '📍'}</span>
+              <span>{getDestinationIcon(preset.type)}</span>
               <span className="truncate max-w-[120px]">{preset.name.split(' ')[0]}</span>
             </button>
           ))}

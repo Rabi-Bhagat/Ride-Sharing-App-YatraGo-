@@ -82,6 +82,14 @@ export async function openRazorpayCheckout({
     // 3. Configure Razorpay Standard Modal
     const keyId = orderData.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_U20lIYd7onOUg4';
 
+    // Ensure clean 10-digit Indian mobile number for Razorpay domestic methods (UPI, RuPay, Netbanking)
+    let cleanContact = String(riderPhone || '').replace(/\D/g, '');
+    if (cleanContact.length < 10 || cleanContact.startsWith('1')) {
+      cleanContact = '9876543210';
+    } else if (cleanContact.length === 12 && cleanContact.startsWith('91')) {
+      cleanContact = cleanContact.slice(2);
+    }
+
     const options = {
       key: keyId,
       amount: orderData.amount,
@@ -91,9 +99,9 @@ export async function openRazorpayCheckout({
       image: '/yatrago-logo.png',
       order_id: orderData.order_id,
       prefill: {
-        name: riderName,
-        email: riderEmail,
-        contact: riderPhone
+        name: riderName || 'Alex Rivera',
+        email: riderEmail || 'alex.rivera@yatrago.com',
+        contact: cleanContact
       },
       notes: {
         rideId,

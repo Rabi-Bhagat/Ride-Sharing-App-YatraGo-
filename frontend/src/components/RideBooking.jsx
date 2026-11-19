@@ -19,6 +19,15 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
   return R * c;
 }
 
+const NEARBY_FALLBACK_DESTS = [
+  { name: 'Downtown Cyber Hub', distance: '8.4 km', icon: '🏢', lat: 28.4950, lng: 77.0890, desc: 'Tech corridor & dining plaza' },
+  { name: 'Delhi Airport (DEL) T3', distance: '16.2 km', icon: '✈️', lat: 28.5562, lng: 77.1000, desc: 'Indira Gandhi International Airport' },
+  { name: 'Cyber City Rapid Metro', distance: '7.8 km', icon: '🚇', lat: 28.4920, lng: 77.0870, desc: 'Rapid Metro Station interchange' },
+  { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', icon: '🚉', lat: 30.3340, lng: 76.8370, desc: 'Northern Railway Main Junction' },
+  { name: 'Tech Park Central', distance: '6.8 km', icon: '💻', lat: 28.5020, lng: 77.0780, desc: 'Innovation towers & business park' },
+  { name: 'Ambience Mall & Promenade', distance: '10.5 km', icon: '🛍️', lat: 28.5040, lng: 77.0970, desc: 'Retail, leisure & entertainment hub' }
+];
+
 export default function RideBooking({ 
   onBookRide, 
   pickup, 
@@ -223,6 +232,34 @@ export default function RideBooking({
     setShowDestDropdown(false);
   };
 
+  const handleSelectNearbyFallback = (place) => {
+    const updated = {
+      id: 'dest_' + Date.now(),
+      name: place.name,
+      address: place.desc || place.name,
+      lat: place.lat || 28.5355,
+      lng: place.lng || 77.3910
+    };
+    if (setSelectedDestination) setSelectedDestination(updated);
+    setDestQuery(place.name);
+    setShowDestDropdown(false);
+  };
+
+  const handleSelectCustomDest = (customName) => {
+    const trimmed = (customName || '').trim();
+    if (!trimmed) return;
+    const updated = {
+      id: 'dest_' + Date.now(),
+      name: trimmed,
+      address: trimmed,
+      lat: (pickup?.lat || 28.6139) + 0.045,
+      lng: (pickup?.lng || 77.2090) + 0.052
+    };
+    if (setSelectedDestination) setSelectedDestination(updated);
+    setDestQuery(trimmed);
+    setShowDestDropdown(false);
+  };
+
   const handleSelectPickupSuggestion = (item) => {
     const updated = {
       name: item.shortName,
@@ -407,23 +444,73 @@ export default function RideBooking({
             </div>
           </div>
 
-          {/* Destination Autocomplete Suggestions */}
-          {showDestDropdown && destSuggestions.length > 0 && (
-            <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden divide-y divide-slate-800 z-50 animate-fadeIn">
-              {destSuggestions.map((item, idx) => (
-                <div
-                  key={idx}
-                  onClick={() => handleSelectDestSuggestion(item)}
-                  className="p-3 hover:bg-purple-950/40 cursor-pointer flex items-center gap-2.5 text-xs transition-colors"
-                >
-                  <MapPin size={14} className="text-purple-400 shrink-0" />
-                  <div className="min-w-0">
-                    <strong className="text-white block truncate">{item.shortName}</strong>
-                    <span className="text-[11px] text-slate-400 block truncate">{item.fullName}</span>
+          {/* Destination Autocomplete Suggestions & Nearby Fallbacks */}
+          {showDestDropdown && (
+            destSuggestions.length > 0 ? (
+              <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden divide-y divide-slate-800 z-50 animate-fadeIn max-h-72 overflow-y-auto no-scrollbar">
+                {destSuggestions.map((item, idx) => (
+                  <div
+                    key={idx}
+                    onClick={() => handleSelectDestSuggestion(item)}
+                    className="p-3 hover:bg-purple-950/40 cursor-pointer flex items-center justify-between text-xs transition-colors group"
+                  >
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <MapPin size={14} className="text-purple-400 shrink-0 group-hover:scale-110 transition-transform" />
+                      <div className="min-w-0">
+                        <strong className="text-white block truncate group-hover:text-purple-300 transition-colors">{item.shortName}</strong>
+                        <span className="text-[11px] text-slate-400 block truncate">{item.fullName}</span>
+                      </div>
+                    </div>
+                    <span className="text-[10px] text-purple-400 font-mono font-bold shrink-0 ml-2">Select ➔</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              destQuery.trim().length >= 2 && !isSearchingDest && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-xl p-3 z-50 animate-fadeIn space-y-2.5">
+                  <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-200 text-xs space-y-1">
+                    <div className="flex items-center gap-1.5 font-bold text-amber-300">
+                      <Compass size={14} className="text-amber-400 shrink-0" />
+                      <span>No exact place found for "{destQuery}"</span>
+                    </div>
+                    <p className="text-[11px] text-slate-300">
+                      We couldn't locate this exact place. Here are recommended nearby hubs & transit stations:
+                    </p>
+                  </div>
+
+                  <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block">
+                    Suggested Nearby Places:
+                  </span>
+
+                  <div className="space-y-1">
+                    {NEARBY_FALLBACK_DESTS.map((place, idx) => (
+                      <div
+                        key={idx}
+                        onClick={() => handleSelectNearbyFallback(place)}
+                        className="p-2 rounded-lg bg-slate-950/80 hover:bg-slate-800 border border-slate-800/80 hover:border-purple-500/40 cursor-pointer text-xs flex items-center justify-between text-white transition-all group"
+                      >
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="text-sm shrink-0">{place.icon}</span>
+                          <span className="font-bold truncate group-hover:text-purple-300 transition-colors">{place.name}</span>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-mono font-bold shrink-0 ml-2">{place.distance}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="pt-1 border-t border-slate-800">
+                    <button
+                      type="button"
+                      onClick={() => handleSelectCustomDest(destQuery)}
+                      className="w-full text-left p-2 rounded-lg bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-xs text-purple-200 transition-colors flex items-center justify-between group cursor-pointer"
+                    >
+                      <span className="truncate">Proceed with custom dropoff: <strong>"{destQuery}"</strong></span>
+                      <span className="text-[10px] font-mono text-purple-300 shrink-0 ml-1">Use Custom ➔</span>
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
+              )
+            )
           )}
         </div>
       </div>

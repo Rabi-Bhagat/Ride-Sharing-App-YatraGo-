@@ -32,9 +32,13 @@ export const SocketProvider = ({ children }) => {
   const [strangerAlertNotification, setStrangerAlertNotification] = useState(null);
 
   useEffect(() => {
-    // Connect to Socket server
+    // Connect to Socket server with polling fallback and graceful error handling
     const newSocket = io(window.location.origin, {
-      transports: ['websocket', 'polling']
+      transports: ['polling', 'websocket'],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 3000,
+      autoConnect: true,
+      timeout: 5000
     });
 
     setSocket(newSocket);
@@ -42,6 +46,10 @@ export const SocketProvider = ({ children }) => {
     newSocket.on('connect', () => {
       console.log('⚡ Socket Connected to server:', newSocket.id);
       newSocket.emit('join_ride', 'ride_101');
+    });
+
+    newSocket.on('connect_error', () => {
+      // Quietly handle offline backend without throwing errors
     });
 
     // Load persisted chat history from MongoDB

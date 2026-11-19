@@ -176,7 +176,7 @@ async function sendWelcomeEmail({ to, name, role }) {
       </div>
       <div style="background-color: #020617; padding: 20px 24px; text-align: center; font-size: 11px; color: #64748b; border-top: 1px solid #1e293b;">
         <p style="margin: 0;">© 2026 YatraGo Mobility Inc. All rights reserved.</p>
-        <p style="margin: 4px 0 0;">Naac Grade A++ Accredited Ride Sharing Management System</p>
+        <p style="margin: 4px 0 0;">Zero-Emission Urban & Highway Mobility Network</p>
       </div>
     </div>
   `;
@@ -240,7 +240,50 @@ async function sendPasswordResetEmail({ to, name, newPassword }) {
   return sendNativeSmtp({ to, subject, html });
 }
 
+/**
+ * Send OTP / Security Code Verification Email
+ */
+async function sendOtpEmail({ to, otp, subject, title, description }) {
+  const mailer = getTransporter();
+  const from = process.env.EMAIL_FROM || '"YatraGo Mobility" <rabibhagat789@gmail.com>';
+  const emailSubject = subject || `Your YatraGo Verification Code is ${otp}`;
+  const headerTitle = title || 'YatraGo Verification';
+  const desc = description || 'Use the security code below to verify your account or reset your password:';
+
+  const html = `
+    <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 540px; margin: 0 auto; background-color: #0b1120; color: #f8fafc; border-radius: 16px; overflow: hidden; border: 1px solid #1e293b;">
+      <div style="background: linear-gradient(135deg, #06b6d4 0%, #3b82f6 100%); padding: 24px; text-align: center;">
+        <h1 style="margin: 0; color: #020617; font-size: 22px; font-weight: 900;">${headerTitle}</h1>
+        <p style="margin: 4px 0 0; color: #0f172a; font-size: 13px; font-weight: 700;">One-Time Security Passcode</p>
+      </div>
+      <div style="padding: 28px 24px; text-align: center;">
+        <p style="font-size: 14px; color: #94a3b8; margin: 0 0 16px;">${desc}</p>
+        <div style="display: inline-block; background-color: #0f172a; border: 2px dashed #06b6d4; border-radius: 12px; padding: 14px 32px; letter-spacing: 6px; font-size: 28px; font-weight: 900; color: #38bdf8; font-family: monospace;">
+          ${otp}
+        </div>
+        <p style="font-size: 12px; color: #64748b; margin: 20px 0 0;">This code will expire in 15 minutes. Please enter this code into the previous code / verification field.</p>
+      </div>
+      <div style="background-color: #020617; padding: 16px; text-align: center; font-size: 11px; color: #475569; border-top: 1px solid #1e293b;">
+        © 2026 YatraGo Mobility Inc. All rights reserved.
+      </div>
+    </div>
+  `;
+
+  if (mailer) {
+    try {
+      const info = await mailer.sendMail({ from, to, subject: emailSubject, html });
+      console.log(`[Nodemailer] Code email delivered to ${to} (${info.messageId})`);
+      return { success: true, messageId: info.messageId };
+    } catch (e) {
+      console.warn('[Nodemailer error, falling back to native SMTP]:', e.message);
+    }
+  }
+
+  return sendNativeSmtp({ to, subject: emailSubject, html });
+}
+
 module.exports = {
   sendWelcomeEmail,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  sendOtpEmail
 };

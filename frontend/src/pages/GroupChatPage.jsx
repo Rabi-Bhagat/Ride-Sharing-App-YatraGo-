@@ -9,9 +9,49 @@ import { useAuth } from '../context/AuthContext';
 import VerificationBadge from '../components/VerificationBadge';
 
 export default function GroupChatPage() {
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const [activeChannel, setActiveChannel] = useState('driver');
   const [searchFilter, setSearchFilter] = useState('');
+  const [channelUnread, setChannelUnread] = useState({
+    driver: 0,
+    pool: 0,
+    guider: 0,
+    support: 0
+  });
+
+  if (!user) {
+    return (
+      <div className="max-w-2xl mx-auto py-16 px-4 animate-fadeIn">
+        <div className="glass-panel p-8 sm:p-12 rounded-3xl border border-cyan-500/30 text-center space-y-6 shadow-2xl relative overflow-hidden">
+          <div className="w-16 h-16 rounded-2xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/30 flex items-center justify-center mx-auto shadow-lg shadow-cyan-500/10">
+            <MessageSquare size={32} />
+          </div>
+          
+          <div className="space-y-2 max-w-md mx-auto">
+            <h2 className="text-2xl font-black text-white">Live Ride Chat Requires Sign In</h2>
+            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
+              Driver communication, pool passenger coordination, and GPS location sharing are protected services for verified YatraGo riders.
+            </p>
+          </div>
+
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <button
+              onClick={() => openAuthModal('login', 'chat')}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-sm shadow-lg shadow-cyan-500/25 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+            >
+              Sign In to Access Chat
+            </button>
+            <button
+              onClick={() => openAuthModal('signup', 'chat')}
+              className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-sm border border-slate-700 transition-all cursor-pointer"
+            >
+              Create Account
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // Active simulated trip telemetry for rich contextual chat
   const currentTrip = {
@@ -40,7 +80,7 @@ export default function GroupChatPage() {
       avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
       lastMessage: 'Pulling in with hazard lights on near Gate 3!',
       time: 'Just now',
-      unread: 1,
+      unread: channelUnread.driver || 0,
       isOnline: true,
       verified: true,
       tagColor: 'text-cyan-400 bg-cyan-500/10 border-cyan-500/30'
@@ -51,9 +91,9 @@ export default function GroupChatPage() {
       badgeRole: 'Pool Group',
       vehicleInfo: 'Maya S. & Rahul V. onboard',
       avatar: 'https://images.unsplash.com/photo-1522071820081-009f0129c71c?auto=format&fit=crop&w=200&q=80',
-      lastMessage: 'Rahul: Hello Maya & Alex! Looking forward to the ride.',
+      lastMessage: 'Rahul: Hello Maya! Looking forward to the ride.',
       time: '5m ago',
-      unread: 2,
+      unread: channelUnread.pool || 0,
       isOnline: true,
       verified: true,
       tagColor: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30'
@@ -66,7 +106,7 @@ export default function GroupChatPage() {
       avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
       lastMessage: 'Let me know if you need terminal shortcut tips!',
       time: '15m ago',
-      unread: 0,
+      unread: channelUnread.guider || 0,
       isOnline: true,
       verified: true,
       tagColor: 'text-purple-400 bg-purple-500/10 border-purple-500/30'
@@ -79,12 +119,17 @@ export default function GroupChatPage() {
       avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&w=200&q=80',
       lastMessage: 'Live trip tracking and GPS active.',
       time: '20m ago',
-      unread: 0,
+      unread: channelUnread.support || 0,
       isOnline: true,
       verified: true,
       tagColor: 'text-rose-400 bg-rose-500/10 border-rose-500/30'
     }
   ];
+
+  const handleSelectChannel = (id) => {
+    setActiveChannel(id);
+    setChannelUnread(prev => ({ ...prev, [id]: 0 }));
+  };
 
   const filteredChannels = channelsList.filter(ch => 
     ch.name.toLowerCase().includes(searchFilter.toLowerCase()) ||
@@ -232,7 +277,7 @@ export default function GroupChatPage() {
                 return (
                   <button
                     key={ch.id}
-                    onClick={() => setActiveChannel(ch.id)}
+                    onClick={() => handleSelectChannel(ch.id)}
                     className={`w-full p-3 rounded-2xl text-left transition-all flex items-start gap-3 cursor-pointer group ${
                       isSelected
                         ? 'bg-gradient-to-r from-cyan-950/60 to-slate-900 border border-cyan-500/50 shadow-lg shadow-cyan-500/10'

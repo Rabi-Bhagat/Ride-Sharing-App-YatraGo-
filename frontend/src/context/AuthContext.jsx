@@ -37,14 +37,14 @@ export const AuthProvider = ({ children }) => {
         return JSON.parse(stored);
       }
     } catch (e) {}
-    return DEMO_USER;
+    return null; // Start unauthenticated so website runs from login/signup page
   });
 
   const [token, setToken] = useState(() => {
     try {
-      return localStorage.getItem(STORAGE_KEY_TOKEN) || 'yatrago_jwt_token_demo';
+      return localStorage.getItem(STORAGE_KEY_TOKEN) || null;
     } catch (e) {
-      return 'yatrago_jwt_token_demo';
+      return null;
     }
   });
 
@@ -373,14 +373,14 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {}
   };
 
-  // 6. FORGOT / RESET PASSWORD
-  const forgotPassword = async (email, newPassword) => {
+  // 6. FORGOT / RESET PASSWORD (with previous password or verification code)
+  const forgotPassword = async (email, previousCode, newPassword) => {
     setLoading(true);
     try {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword })
+        body: JSON.stringify({ email, previousCode, newPassword })
       });
       const data = await res.json();
       setLoading(false);
@@ -390,7 +390,25 @@ export const AuthProvider = ({ children }) => {
       return { success: true, message: data.message };
     } catch (err) {
       setLoading(false);
-      return { success: true, message: 'Password reset successfully. You can now log in.' };
+      return { success: false, error: 'Network error connecting to YatraGo Auth server.' };
+    }
+  };
+
+  // 6.5 SEND RESET VERIFICATION CODE
+  const sendResetCode = async (email) => {
+    try {
+      const res = await fetch('/api/auth/send-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.message || 'Failed to send reset code.' };
+      }
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, error: 'Network error dispatching reset code.' };
     }
   };
 
@@ -505,6 +523,7 @@ export const AuthProvider = ({ children }) => {
       logout,
       changePassword,
       forgotPassword,
+      sendResetCode,
       updateUserProfile,
       uploadProfilePhoto,
       toggleVerification,

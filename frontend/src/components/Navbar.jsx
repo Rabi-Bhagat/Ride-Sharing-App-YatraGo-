@@ -10,6 +10,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import VerificationBadge from './VerificationBadge';
+import UserAvatar from './UserAvatar';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 
 const POPULAR_SEARCH_PRESETS = [
@@ -147,9 +148,6 @@ export default function Navbar({
                 <div className="flex items-center gap-1.5">
                   <span className="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-400 bg-clip-text text-transparent group-hover:to-cyan-300 transition-colors">
                     YatraGo
-                  </span>
-                  <span className="text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 font-black border border-emerald-500/30 font-mono">
-                    PRO
                   </span>
                 </div>
                 <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold font-mono">
@@ -553,71 +551,73 @@ export default function Navbar({
             {/* ========================================================= */}
             <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
               
-              {/* Interactive Wallet Balance Pill & Quick Top-Up */}
-              <div ref={walletRef} className="relative">
-                <button
-                  onClick={() => setWalletDropdownOpen(!walletDropdownOpen)}
-                  className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-xs font-mono font-bold text-white transition-all shadow-sm"
-                  title="YatraGo In-App Mobility Wallet"
-                >
-                  <Wallet size={14} className="text-emerald-400 shrink-0" />
-                  <span className="text-emerald-400 font-extrabold">₹{user?.walletBalance ? Number(user.walletBalance).toFixed(0) : '1,500'}</span>
-                  <Plus size={11} className="text-cyan-400 hidden sm:inline" />
-                </button>
+              {/* Interactive Wallet Balance Pill & Quick Top-Up (Only when authenticated) */}
+              {user && (
+                <div ref={walletRef} className="relative">
+                  <button
+                    onClick={() => setWalletDropdownOpen(!walletDropdownOpen)}
+                    className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-xs font-mono font-bold text-white transition-all shadow-sm cursor-pointer"
+                    title="YatraGo In-App Mobility Wallet"
+                  >
+                    <Wallet size={14} className="text-emerald-400 shrink-0" />
+                    <span className="text-emerald-400 font-extrabold">₹{user.walletBalance ? Number(user.walletBalance).toFixed(0) : '1,500'}</span>
+                    <Plus size={11} className="text-cyan-400 hidden sm:inline" />
+                  </button>
 
-                {/* Quick Wallet Dropdown */}
-                {walletDropdownOpen && (
-                  <div className="absolute top-full right-0 mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-4 z-50 animate-fadeIn space-y-3">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-2">
-                      <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                        <Wallet size={14} className="text-emerald-400" />
-                        <span>Mobility Wallet</span>
-                      </span>
-                      <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/30">
-                        Live Escrow
-                      </span>
-                    </div>
+                  {/* Quick Wallet Dropdown */}
+                  {walletDropdownOpen && (
+                    <div className="absolute top-full right-0 mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-4 z-50 animate-fadeIn space-y-3">
+                      <div className="flex items-center justify-between border-b border-slate-800 pb-2">
+                        <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                          <Wallet size={14} className="text-emerald-400" />
+                          <span>Mobility Wallet</span>
+                        </span>
+                        <span className="text-[10px] text-cyan-400 font-mono font-bold bg-cyan-500/10 px-2 py-0.5 rounded-md border border-cyan-500/30">
+                          Live Escrow
+                        </span>
+                      </div>
 
-                    <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                      <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between">
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono block">Available Balance</span>
+                          <strong className="text-xl font-black text-white font-mono">
+                            ₹{user.walletBalance ? Number(user.walletBalance).toFixed(2) : '1,500.00'}
+                          </strong>
+                        </div>
+                        <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/20 px-2 py-1 rounded-lg">
+                          Ready ✓
+                        </span>
+                      </div>
+
                       <div>
-                        <span className="text-[10px] text-slate-400 uppercase font-mono block">Available Balance</span>
-                        <strong className="text-xl font-black text-white font-mono">
-                          ₹{user?.walletBalance ? Number(user.walletBalance).toFixed(2) : '1,500.00'}
-                        </strong>
+                        <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Quick Top-Up Balance</span>
+                        <div className="grid grid-cols-3 gap-1.5">
+                          {[100, 250, 500].map((amt) => (
+                            <button
+                              key={amt}
+                              onClick={() => handleQuickTopUp(amt)}
+                              className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-400 text-xs font-bold text-white transition-all text-center cursor-pointer"
+                            >
+                              +₹{amt}
+                            </button>
+                          ))}
+                        </div>
                       </div>
-                      <span className="text-[10px] text-emerald-400 font-bold bg-emerald-500/20 px-2 py-1 rounded-lg">
-                        Ready ✓
-                      </span>
-                    </div>
 
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Quick Top-Up Balance</span>
-                      <div className="grid grid-cols-3 gap-1.5">
-                        {[100, 250, 500].map((amt) => (
-                          <button
-                            key={amt}
-                            onClick={() => handleQuickTopUp(amt)}
-                            className="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-cyan-500/20 border border-slate-700 hover:border-cyan-400 text-xs font-bold text-white transition-all text-center"
-                          >
-                            +₹{amt}
-                          </button>
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => {
+                          setWalletDropdownOpen(false);
+                          if (onOpenProfile) onOpenProfile();
+                        }}
+                        className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20 cursor-pointer"
+                      >
+                        <CreditCard size={13} />
+                        <span>Manage Wallet & Cards</span>
+                      </button>
                     </div>
-
-                    <button
-                      onClick={() => {
-                        setWalletDropdownOpen(false);
-                        if (onOpenProfile) onOpenProfile();
-                      }}
-                      className="w-full py-2 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-cyan-500/20"
-                    >
-                      <CreditCard size={13} />
-                      <span>Manage Wallet & Cards</span>
-                    </button>
-                  </div>
-                )}
-              </div>
+                  )}
+                </div>
+              )}
 
               {/* Dedicated Emergency SOS Safety Button */}
               <button
@@ -635,16 +635,23 @@ export default function Navbar({
 
               {/* Live Group Chat Icon Button */}
               <button
-                onClick={() => setActiveTab('chat')}
-                className={`relative p-2 sm:p-2.5 rounded-xl border transition-all hover:scale-105 active:scale-95 ${
+                onClick={() => {
+                  if (!user) {
+                    if (openAuthModal) openAuthModal('login', 'chat');
+                    if (setActiveTab) setActiveTab('login');
+                  } else {
+                    if (setActiveTab) setActiveTab('chat');
+                  }
+                }}
+                className={`relative p-2 sm:p-2.5 rounded-xl border transition-all hover:scale-105 active:scale-95 cursor-pointer ${
                   activeTab === 'chat'
                     ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-sm'
                     : 'bg-slate-900/90 hover:bg-slate-800 text-slate-200 border-slate-800'
                 }`}
-                title="Live Group Ride Chat"
+                title={user ? 'Live Group Ride Chat' : 'Sign in to access Live Ride Chat'}
               >
                 <MessageSquare size={16} className="text-cyan-400" />
-                {messages && messages.length > 0 && (
+                {user && messages && messages.length > 0 && (
                   <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-cyan-500 text-slate-950 font-black text-[9px] flex items-center justify-center shadow-md animate-bounce">
                     {messages.length}
                   </span>
@@ -669,10 +676,10 @@ export default function Navbar({
                       </span>
                     </div>
 
-                    <img
-                      src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
-                      alt={user.name}
-                      className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg object-cover ring-2 ring-cyan-500/40 group-hover:ring-cyan-400 transition-all shrink-0"
+                    <UserAvatar
+                      user={user}
+                      size="sm"
+                      className="ring-2 ring-cyan-500/40 group-hover:ring-cyan-400 transition-all rounded-lg overflow-hidden shrink-0"
                     />
                     <ChevronDown size={12} className={`text-slate-400 hidden sm:inline transition-transform duration-200 ${profileDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>
@@ -681,10 +688,10 @@ export default function Navbar({
                   {profileDropdownOpen && (
                     <div className="absolute top-full right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2.5 z-50 animate-fadeIn space-y-1">
                       <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center gap-2.5 mb-1">
-                        <img
-                          src={user.avatar}
-                          alt={user.name}
-                          className="w-10 h-10 rounded-xl object-cover ring-2 ring-cyan-500/40"
+                        <UserAvatar
+                          user={user}
+                          size="md"
+                          className="ring-2 ring-cyan-500/40 rounded-xl overflow-hidden shrink-0"
                         />
                         <div className="min-w-0 flex-1">
                           <strong className="text-xs font-bold text-white block truncate">{user.name}</strong>
@@ -846,10 +853,10 @@ export default function Navbar({
             {user ? (
               <div className="p-3 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
-                  <img
-                    src={user.avatar}
-                    alt={user.name}
-                    className="w-10 h-10 rounded-xl object-cover ring-2 ring-cyan-500/40"
+                  <UserAvatar
+                    user={user}
+                    size="md"
+                    className="ring-2 ring-cyan-500/40 rounded-xl overflow-hidden shrink-0"
                   />
                   <div>
                     <strong className="text-white text-xs block font-bold">{user.name}</strong>

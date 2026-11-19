@@ -7,6 +7,7 @@ import {
   Zap, LogIn, UserPlus, HelpCircle
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import UserAvatar from '../components/UserAvatar';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 
 // Google Official SVG Icon
@@ -39,14 +40,14 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     login, 
     register, 
     loginWithGoogle, 
-    loginWithOtp, 
     forgotPassword, 
+    sendResetCode,
     logout,
     loading 
   } = useAuth();
 
-  // Active form view: 'login' | 'signup' | 'forgot' | 'otp'
-  const [activeTab, setActiveTab] = useState(initialTab);
+  // Active form view: 'login' | 'signup' | 'forgot'
+  const [activeTab, setActiveTab] = useState(initialTab === 'otp' ? 'login' : initialTab);
 
   // Sign In State
   const [loginIdentifier, setLoginIdentifier] = useState('');
@@ -63,16 +64,15 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
   const [selectedRole, setSelectedRole] = useState('traveler'); // 'traveler', 'driver', 'guide'
   const [agreeTerms, setAgreeTerms] = useState(true);
 
-  // Forgot Password State
+  // Forgot / Reset Password State
   const [forgotEmail, setForgotEmail] = useState('');
+  const [previousCode, setPreviousCode] = useState('');
+  const [showPreviousCode, setShowPreviousCode] = useState(false);
+  const [codeSending, setCodeSending] = useState(false);
+  const [codeSentMessage, setCodeSentMessage] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
-
-  // Instant OTP State
-  const [otpTarget, setOtpTarget] = useState('+91 98765 43210');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
 
   // Feedback notifications
   const [errorMessage, setErrorMessage] = useState('');
@@ -112,24 +112,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       return { score: 3, label: 'Strong', color: 'bg-emerald-500', textCol: 'text-emerald-400', width: '100%' };
     }
   }, [activeTab, signupPassword, newPassword]);
-
-  // One-click demo credentials filler
-  const handleFillDemo = (roleType = 'traveler') => {
-    setErrorMessage('');
-    if (roleType === 'driver') {
-      setLoginIdentifier('driver.sharma@yatrago.com');
-      setSelectedRole('driver');
-    } else if (roleType === 'guide') {
-      setLoginIdentifier('guide.aarav@yatrago.com');
-      setSelectedRole('guide');
-    } else {
-      setLoginIdentifier('alex.rivera@yatrago.com');
-      setSelectedRole('traveler');
-    }
-    setLoginPassword('password123');
-    setSuccessMessage(`Demo ${roleType} credentials filled! Click 'Sign In' to connect.`);
-    setTimeout(() => setSuccessMessage(''), 3000);
-  };
 
   // 1. Submit Sign In
   const handleLoginSubmit = async (e) => {
@@ -226,7 +208,28 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     }
   };
 
-  // 4. Submit Forgot Password (Sends Real Security Email via SMTP)
+  // 4. Send Verification Code to Registered Email
+  const handleSendResetCode = async () => {
+    setErrorMessage('');
+    setCodeSentMessage('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!forgotEmail.trim() || !emailRegex.test(forgotEmail.trim())) {
+      setErrorMessage('Please enter your valid registered email address first.');
+      return;
+    }
+    setCodeSending(true);
+    const res = await sendResetCode(forgotEmail.trim());
+    setCodeSending(false);
+    if (res.success) {
+      setCodeSentMessage(res.message || '6-digit verification code sent to your email! Please check your inbox.');
+      setSuccessMessage('Verification code sent to ' + forgotEmail.trim());
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } else {
+      setErrorMessage(res.error || 'Failed to dispatch code. Please check email address.');
+    }
+  };
+
+  // 5. Submit Forgot / Reset Password (Validates previous code / password + new password)
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -235,6 +238,10 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!forgotEmail.trim() || !emailRegex.test(forgotEmail.trim())) {
       setErrorMessage('Please enter a valid registered email address.');
+      return;
+    }
+    if (!previousCode.trim()) {
+      setErrorMessage('Please enter your previous password or verification code.');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
@@ -246,7 +253,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
       return;
     }
 
-    const res = await forgotPassword(forgotEmail.trim(), newPassword);
+    const res = await forgotPassword(forgotEmail.trim(), previousCode.trim(), newPassword);
     if (!res.success) {
       setErrorMessage(res.error || 'Failed to reset password.');
     } else {
@@ -255,38 +262,14 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
         setActiveTab('login');
         setLoginIdentifier(forgotEmail.trim());
         setLoginPassword(newPassword);
+        setPreviousCode('');
+        setNewPassword('');
+        setConfirmNewPassword('');
       }, 1500);
     }
   };
 
-  // 5. Submit OTP Login
-  const handleOtpSend = (e) => {
-    e.preventDefault();
-    if (!otpTarget.trim()) {
-      setErrorMessage('Please enter a phone number or email.');
-      return;
-    }
-    setOtpSent(true);
-    setOtpCode('8492');
-    setSuccessMessage('Instant OTP generated! Test code 8492 has been auto-filled.');
-  };
 
-  const handleOtpVerify = async (e) => {
-    e.preventDefault();
-    if (otpCode !== '8492') {
-      setErrorMessage('Invalid OTP code. Please use 8492.');
-      return;
-    }
-    const res = await loginWithOtp(otpTarget, otpCode, selectedRole);
-    if (res.success) {
-      setSuccessMessage(res.message);
-      setTimeout(() => {
-        if (onNavigate) {
-          onNavigate(res.nextRoute || 'home');
-        }
-      }, 400);
-    }
-  };
 
   return (
     <div className="space-y-8 animate-fadeIn text-slate-100 max-w-6xl mx-auto py-2 sm:py-6">
@@ -330,9 +313,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="text-2xl font-black text-white tracking-tight">YatraGo</span>
-                    <span className="px-2 py-0.5 rounded-md text-[10px] font-mono font-black bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                      PRO
-                    </span>
                   </div>
                   <p className="text-[10px] text-slate-400 font-mono tracking-widest uppercase">
                     Zero-Emission Transit Network
@@ -397,47 +377,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
 
               </div>
 
-              {/* Quick Demo Test Pills */}
-              <div className="pt-2">
-                <span className="text-[10px] uppercase font-mono font-bold text-slate-400 block mb-2">
-                  1-Click Test Demo Credentials
-                </span>
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleFillDemo('traveler')}
-                    className="p-2 rounded-xl bg-slate-950/80 hover:bg-cyan-500/20 border border-slate-800 hover:border-cyan-400 text-left transition-all cursor-pointer group"
-                  >
-                    <span className="text-[10px] font-bold text-cyan-400 block group-hover:underline">Traveler</span>
-                    <span className="text-[9px] text-slate-400 block truncate">Alex Rivera</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleFillDemo('driver')}
-                    className="p-2 rounded-xl bg-slate-950/80 hover:bg-emerald-500/20 border border-slate-800 hover:border-emerald-400 text-left transition-all cursor-pointer group"
-                  >
-                    <span className="text-[10px] font-bold text-emerald-400 block group-hover:underline">Driver</span>
-                    <span className="text-[9px] text-slate-400 block truncate">Rajesh Sharma</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleFillDemo('guide')}
-                    className="p-2 rounded-xl bg-slate-950/80 hover:bg-purple-500/20 border border-slate-800 hover:border-purple-400 text-left transition-all cursor-pointer group"
-                  >
-                    <span className="text-[10px] font-bold text-purple-400 block group-hover:underline">Guide</span>
-                    <span className="text-[9px] text-slate-400 block truncate">Aarav Kapoor</span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Bottom Proof Metrics */}
-            <div className="pt-6 mt-6 border-t border-slate-800/80 flex items-center justify-between text-xs text-slate-400 font-mono">
-              <span className="text-emerald-400 font-bold">★ 4.96 Rating (50K+ Rides)</span>
-              <span>Naac A++ Accredited</span>
             </div>
 
           </div>
@@ -480,7 +419,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                   <button
                     type="button"
                     onClick={() => handleTabChange('forgot')}
-                    className={`flex-1 sm:flex-none px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`flex-1 sm:flex-none px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       activeTab === 'forgot'
                         ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-md'
                         : 'text-slate-400 hover:text-white'
@@ -488,19 +427,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                   >
                     <KeyRound size={13} />
                     <span>Reset Key</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => handleTabChange('otp')}
-                    className={`flex-1 sm:flex-none px-3 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      activeTab === 'otp'
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-md'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    <Zap size={13} />
-                    <span>OTP</span>
                   </button>
                 </div>
               </div>
@@ -534,10 +460,10 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
               {user && (
                 <div className="mt-4 p-4 rounded-2xl bg-slate-950 border border-slate-800 flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <img
-                      src={user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80'}
-                      alt={user.name}
-                      className="w-10 h-10 rounded-xl object-cover ring-2 ring-cyan-500/40"
+                    <UserAvatar
+                      user={user}
+                      size="md"
+                      className="ring-2 ring-cyan-500/40 rounded-xl overflow-hidden shrink-0"
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
@@ -610,7 +536,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                         type="text"
                         value={loginIdentifier}
                         onChange={(e) => setLoginIdentifier(e.target.value)}
-                        placeholder="e.g. alex.rivera@yatrago.com or +91 98765 43210"
+                        placeholder="Enter your email to sign in"
                         className="w-full h-11 pl-10 pr-4 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all"
                         required
                       />
@@ -661,14 +587,6 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                       />
                       <span className="text-xs text-slate-300">Keep me logged in for 30 days</span>
                     </label>
-
-                    <button
-                      type="button"
-                      onClick={() => handleFillDemo('traveler')}
-                      className="text-xs font-mono text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
-                    >
-                      Fill Demo Credentials
-                    </button>
                   </div>
 
                   <button
@@ -775,7 +693,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Rabi Bhagat or Alex Rivera"
+                        placeholder="Enter your full name"
                         className="w-full h-11 pl-10 pr-4 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all"
                         required
                       />
@@ -794,7 +712,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                           type="email"
                           value={signupEmail}
                           onChange={(e) => setSignupEmail(e.target.value)}
-                          placeholder="rider@example.com"
+                          placeholder="Enter your email to sign up"
                           className="w-full h-11 pl-10 pr-4 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all"
                           required
                         />
@@ -811,7 +729,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                           type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+91 98765 43210"
+                          placeholder="Enter your phone number to sign up"
                           className="w-full h-11 pl-10 pr-4 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all"
                           required
                         />
@@ -897,14 +815,15 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
               )}
 
               {/* ==================================================== */}
-              {/* TAB 3: FORGOT PASSWORD                               */}
+              {/* TAB 3: RESET KEY / CHANGE PASSWORD                   */}
               {/* ==================================================== */}
               {activeTab === 'forgot' && (
                 <form onSubmit={handleForgotSubmit} className="mt-4 space-y-4">
                   <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    Enter your registered email address and new password. We will update your password and send a confirmation alert to your inbox.
+                    Enter your registered email, your previous password (or 6-digit security code sent to your email), and set your new password.
                   </div>
 
+                  {/* Registered Email */}
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">
                       Registered Email Address
@@ -922,6 +841,49 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                     </div>
                   </div>
 
+                  {/* Previous Code / Password */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-xs font-bold text-slate-300">
+                        Previous Password or Verification Code
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSendResetCode}
+                        disabled={codeSending}
+                        className="text-[11px] text-cyan-400 hover:text-cyan-300 font-bold transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {codeSending ? 'Sending Code...' : 'Send Code to Email'}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <KeyRound size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showPreviousCode ? 'text' : 'password'}
+                        value={previousCode}
+                        onChange={(e) => setPreviousCode(e.target.value)}
+                        placeholder="Enter previous password or 6-digit code"
+                        className="w-full h-11 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all font-mono"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPreviousCode(!showPreviousCode)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showPreviousCode ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                    {codeSentMessage && (
+                      <p className="text-[11px] text-emerald-400 mt-1 flex items-center gap-1">
+                        <CheckCircle2 size={12} />
+                        <span>{codeSentMessage}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* New Password */}
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">
                       New Password
@@ -939,7 +901,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
                         tabIndex={-1}
                       >
                         {showNewPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -947,6 +909,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                     </div>
                   </div>
 
+                  {/* Confirm New Password */}
                   <div>
                     <label className="block text-xs font-bold text-slate-300 mb-1">
                       Confirm New Password
@@ -994,82 +957,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                 </form>
               )}
 
-              {/* ==================================================== */}
-              {/* TAB 4: INSTANT OTP                                   */}
-              {/* ==================================================== */}
-              {activeTab === 'otp' && (
-                <div className="mt-4 space-y-4">
-                  <div className="p-4 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-xs sm:text-sm text-slate-300 leading-relaxed">
-                    Sign in instantaneously via 4-digit SMS / WhatsApp code without a password.
-                  </div>
 
-                  {!otpSent ? (
-                    <form onSubmit={handleOtpSend} className="space-y-4">
-                      <div>
-                        <label className="block text-xs font-bold text-slate-300 mb-1">
-                          Mobile Phone Number or Email
-                        </label>
-                        <div className="relative">
-                          <Smartphone size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input
-                            type="text"
-                            value={otpTarget}
-                            onChange={(e) => setOtpTarget(e.target.value)}
-                            placeholder="+91 98765 43210"
-                            className="w-full h-11 pl-10 pr-4 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-none transition-all"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full py-3.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-sm shadow-xl shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <span>Send 4-Digit OTP Code</span>
-                        <ArrowRight size={16} />
-                      </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleOtpVerify} className="space-y-4">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-xs font-bold text-slate-300">
-                            Enter 4-Digit Verification Code
-                          </label>
-                          <span className="text-xs font-mono text-cyan-400 font-bold">Auto-Code: 8492</span>
-                        </div>
-                        <input
-                          type="text"
-                          maxLength={4}
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value)}
-                          placeholder="8492"
-                          className="w-full h-12 text-center font-mono text-xl font-black tracking-widest rounded-xl bg-slate-950 border border-cyan-500/50 focus:border-cyan-400 text-cyan-300 placeholder-slate-600 focus:outline-none shadow-inner"
-                          required
-                        />
-                      </div>
-
-                      <div className="flex gap-2.5">
-                        <button
-                          type="button"
-                          onClick={() => setOtpSent(false)}
-                          className="py-3 px-4 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
-                        >
-                          Change Number
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs sm:text-sm shadow-xl shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          {loading ? <Loader2 size={16} className="animate-spin text-slate-950" /> : <span>Verify & Connect</span>}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              )}
 
             </div>
 

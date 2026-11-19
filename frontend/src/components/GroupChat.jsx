@@ -15,7 +15,7 @@ export default function GroupChat({
   channelData = null 
 }) {
   const { messages: socketMessages, sendMessage } = useSocket();
-  const { user } = useAuth();
+  const { user, openAuthModal } = useAuth();
   const [text, setText] = useState('');
   const [isCalling, setIsCalling] = useState(false);
   const [callMuted, setCallMuted] = useState(false);
@@ -81,8 +81,8 @@ export default function GroupChat({
       },
       {
         id: 'd_2',
-        senderId: user?.id || 'usr_1',
-        senderName: user?.name || 'Alex Rivera',
+        senderId: user ? (user._id || user.id || 'usr_me') : 'rider_demo',
+        senderName: user?.name || 'Passenger',
         senderRole: 'rider',
         senderAvatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
         isVerified: true,
@@ -197,15 +197,19 @@ export default function GroupChat({
 
   const handleSend = (e) => {
     if (e) e.preventDefault();
+    if (!user) {
+      if (openAuthModal) openAuthModal('login', 'chat');
+      return;
+    }
     if (!text.trim()) return;
 
     const newMsg = {
       id: 'msg_' + Date.now(),
-      senderId: user?.id || 'usr_1',
-      senderName: user?.name || 'Alex Rivera',
-      senderRole: 'rider',
-      senderAvatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      isVerified: true,
+      senderId: user._id || user.id || 'usr_me',
+      senderName: user.name || 'Rider',
+      senderRole: user.role || 'rider',
+      senderAvatar: user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      isVerified: Boolean(user.isVerified),
       text: text.trim(),
       timestamp: new Date().toISOString(),
       type: 'text'
@@ -217,20 +221,24 @@ export default function GroupChat({
     }));
 
     if (sendMessage) {
-      sendMessage('ride_101', text.trim(), user || { id: 'usr_1', name: 'Alex Rivera', role: 'rider' });
+      sendMessage('ride_101', text.trim(), user);
     }
 
     setText('');
   };
 
   const handleShareLocation = () => {
+    if (!user) {
+      if (openAuthModal) openAuthModal('login', 'chat');
+      return;
+    }
     const locMsg = {
       id: 'loc_' + Date.now(),
-      senderId: user?.id || 'usr_1',
-      senderName: user?.name || 'Alex Rivera',
-      senderRole: 'rider',
-      senderAvatar: user?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      isVerified: true,
+      senderId: user._id || user.id || 'usr_me',
+      senderName: user.name || 'Rider',
+      senderRole: user.role || 'rider',
+      senderAvatar: user.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      isVerified: Boolean(user.isVerified),
       text: '📍 Shared Live GPS Pickup Pin: Innovation Tech Park (East Concourse, Canopy Area)',
       timestamp: new Date().toISOString(),
       type: 'location'
@@ -475,8 +483,9 @@ export default function GroupChat({
         <button
           type="button"
           onClick={handleShareLocation}
-          className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-cyan-400 border border-slate-800 transition-all cursor-pointer"
-          title="Share GPS Location Pin"
+          disabled={!user}
+          className="p-2.5 rounded-xl bg-slate-950 hover:bg-slate-800 text-slate-400 hover:text-cyan-400 border border-slate-800 transition-all cursor-pointer disabled:opacity-40"
+          title={user ? "Share GPS Location Pin" : "Sign in to share location"}
         >
           <MapPin size={16} />
         </button>
@@ -486,14 +495,15 @@ export default function GroupChat({
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={`Message ${channel.name.split(' ')[0]}...`}
-          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors shadow-inner"
+          disabled={!user}
+          placeholder={user ? `Message ${channel.name.split(' ')[0]}...` : "Sign in to send messages..."}
+          className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-4 py-2.5 text-xs sm:text-sm text-white focus:outline-none focus:border-cyan-400 transition-colors shadow-inner disabled:opacity-50"
         />
 
         {/* Send Button */}
         <button
           type="submit"
-          disabled={!text.trim()}
+          disabled={!user || !text.trim()}
           className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-300 to-emerald-400 text-slate-950 font-black text-xs sm:text-sm hover:scale-105 active:scale-95 transition-all shadow-lg shadow-cyan-500/25 flex items-center gap-1.5 cursor-pointer disabled:opacity-40 disabled:pointer-events-none"
         >
           <span>Send</span>

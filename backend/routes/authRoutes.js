@@ -13,53 +13,153 @@ const {
 } = require('../utils/authHelper');
 const { 
   sendWelcomeEmail, 
-  sendPasswordResetEmail 
+  sendPasswordResetEmail,
+  sendOtpEmail
 } = require('../utils/emailService');
 
 // In-Memory user storage fallback for guaranteed 100% uptime
 const memoryUsers = new Map();
 
-// Initialize with verified demo user
-const defaultUser = {
-  _id: 'usr_verified_1',
-  name: 'Alex Rivera',
-  email: 'alex.rivera@yatrago.com',
-  password: hashPassword('password123'),
-  phone: '+91 98765 43210',
-  address: 'Innovation Tech Park, SF',
-  homeAddress: '450 Mission St, San Francisco, CA',
-  workAddress: '1 Market St, San Francisco, CA',
-  role: 'rider',
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-  isVerified: true,
-  verificationBadgeType: 'Government ID',
-  rating: 4.96,
-  tripsCompleted: 64,
-  bio: 'Urban explorer & tech product designer. Regularly rides eco-shuttles and books verified guiders.',
-  walletBalance: 1500.00,
-  upiId: 'alex.rivera@oksbi',
-  emergencyContacts: [
-    { name: 'Elena Rivera', phone: '+1 (555) 911-0199', relation: 'Sister' },
-    { name: 'Marcus Chen', phone: '+1 (555) 432-1098', relation: 'Friend' }
-  ]
-};
+// Initialize with verified demo accounts across all platform roles
+const defaultAccounts = [
+  {
+    _id: 'usr_verified_1',
+    name: 'Alex Rivera',
+    email: 'alex.rivera@yatrago.com',
+    password: hashPassword('password123'),
+    phone: '+91 98765 43210',
+    address: 'Innovation Tech Park, SF',
+    homeAddress: '450 Mission St, San Francisco, CA',
+    workAddress: '1 Market St, San Francisco, CA',
+    role: 'traveler',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    isVerified: true,
+    verificationBadgeType: 'Government ID',
+    rating: 4.96,
+    tripsCompleted: 64,
+    bio: 'Urban explorer & tech product designer. Regularly rides eco-shuttles and books verified guiders.',
+    walletBalance: 1500.00,
+    upiId: 'alex.rivera@oksbi',
+    emergencyContacts: [
+      { name: 'Elena Rivera', phone: '+1 (555) 911-0199', relation: 'Sister' },
+      { name: 'Marcus Chen', phone: '+1 (555) 432-1098', relation: 'Friend' }
+    ]
+  },
+  {
+    _id: 'usr_driver_1',
+    name: 'Rajesh Sharma',
+    email: 'driver.sharma@yatrago.com',
+    password: hashPassword('password123'),
+    phone: '+91 98765 22001',
+    address: 'Cyber Harbor Viaduct, Sector 4',
+    homeAddress: 'Tower B, Sector 4, Cyber City',
+    workAddress: 'City Corridor Route 1',
+    role: 'driver',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    isVerified: true,
+    verificationBadgeType: 'Gold Driver',
+    rating: 4.98,
+    tripsCompleted: 1420,
+    bio: 'Top-rated hybrid highway driver. White Toyota Hyryder DL-01-AB-1234.',
+    walletBalance: 3200.00,
+    upiId: 'driver.rajesh@paytm'
+  },
+  {
+    _id: 'usr_guide_1',
+    name: 'Aarav Kapoor',
+    email: 'guide.aarav@yatrago.com',
+    password: hashPassword('password123'),
+    phone: '+91 98765 33002',
+    address: 'Heritage Old City Quarter',
+    homeAddress: 'Old City Center, Gate 2',
+    workAddress: 'Downtown Tourism Corridor',
+    role: 'guide',
+    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+    isVerified: true,
+    verificationBadgeType: 'Certified Guide',
+    rating: 5.0,
+    tripsCompleted: 210,
+    bio: 'Government-certified regional culture & culinary guide. Expert in historical corridors.',
+    walletBalance: 2400.00,
+    upiId: 'aarav.guide@okhdfc'
+  },
+  {
+    _id: 'usr_admin_1',
+    name: 'Rabi Bhagat (Admin)',
+    email: 'admin@yatrago.com',
+    password: hashPassword('password123'),
+    phone: '+91 98263 81573',
+    address: 'Maharishi Markandeshwar University, Mullana-Ambala',
+    homeAddress: 'Campus Block A, Mullana, Haryana',
+    workAddress: 'YatraGo Headquarters Operations Desk',
+    role: 'admin',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+    isVerified: true,
+    verificationBadgeType: 'Platform Admin',
+    rating: 5.0,
+    tripsCompleted: 88,
+    bio: 'Lead System Administrator & Founder of YatraGo Mobility Network.',
+    walletBalance: 10000.00,
+    upiId: 'rabibhagat@okhdfc'
+  },
+  {
+    _id: 'usr_personal_1',
+    name: 'Rabi Bhagat',
+    email: 'rabibhagat789@gmail.com',
+    password: hashPassword('admin1234'),
+    phone: '9826381573',
+    address: 'Maharishi Markandeshwar University, Mullana-Ambala',
+    homeAddress: 'Campus Block A, Mullana, Haryana',
+    workAddress: 'YatraGo Operations Desk',
+    role: 'traveler',
+    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+    isVerified: true,
+    verificationBadgeType: 'Government ID',
+    rating: 5.0,
+    tripsCompleted: 15,
+    bio: 'Verified explorer on YatraGo Mobility Network.',
+    walletBalance: 5000.00,
+    upiId: 'rabibhagat@okhdfc'
+  }
+];
 
-memoryUsers.set(defaultUser.email.toLowerCase(), defaultUser);
+defaultAccounts.forEach(acc => {
+  memoryUsers.set(acc.email.toLowerCase(), acc);
+});
+
+const defaultUser = defaultAccounts[0];
 let currentActiveEmail = defaultUser.email.toLowerCase();
 
-// Helper to find a user from Mongo or in-memory
-async function findUserByEmail(email) {
-  if (!email) return null;
-  const cleanEmail = String(email).trim().toLowerCase();
+// Helper to find a user by Email or Phone number from Mongo or in-memory
+async function findUserByIdentifier(identifier) {
+  if (!identifier) return null;
+  const cleanId = String(identifier).trim().toLowerCase();
+  const digitsOnly = cleanId.replace(/[^0-9]/g, '');
+
   if (mongoose.connection && mongoose.connection.readyState === 1) {
     try {
-      const mongoUser = await User.findOne({ email: cleanEmail });
+      const orConditions = [{ email: cleanId }];
+      if (digitsOnly.length >= 7) {
+        orConditions.push({ phone: { $regex: digitsOnly.slice(-10) } });
+      }
+      const mongoUser = await User.findOne({ $or: orConditions });
       if (mongoUser) return mongoUser;
-    } catch (err) {
-      // MongoDB offline fallback
+    } catch (err) {}
+  }
+
+  // Fallback to memoryUsers
+  for (const u of memoryUsers.values()) {
+    if (u.email && u.email.toLowerCase() === cleanId) return u;
+    if (digitsOnly.length >= 7 && u.phone && u.phone.replace(/[^0-9]/g, '').includes(digitsOnly.slice(-10))) {
+      return u;
     }
   }
-  return memoryUsers.get(cleanEmail) || null;
+  return null;
+}
+
+// Backward-compatible alias
+async function findUserByEmail(email) {
+  return findUserByIdentifier(email);
 }
 
 // 1. REGISTER / SIGN UP (Create Account)
@@ -340,10 +440,10 @@ router.post('/change-password', async (req, res) => {
   }
 });
 
-// 4. FORGOT / RESET PASSWORD
-router.post('/forgot-password', async (req, res) => {
+// 4. FORGOT / RESET PASSWORD (with previous password or email verification code)
+router.post(['/forgot-password', '/reset-password'], async (req, res) => {
   try {
-    const { email, newPassword } = req.body;
+    const { email, previousCode, newPassword } = req.body;
 
     if (!email || !validateEmail(email)) {
       return res.status(400).json({ 
@@ -362,10 +462,54 @@ router.post('/forgot-password', async (req, res) => {
       });
     }
 
+    if (!previousCode || !String(previousCode).trim()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter your previous password or verification code.'
+      });
+    }
+
+    const codeStr = String(previousCode).trim();
+    let isAuthorized = false;
+
+    // Check 1: Matches current/previous password
+    if (user.password && verifyPassword(codeStr, user.password)) {
+      isAuthorized = true;
+    }
+
+    // Check 2: Matches active OTP / reset code sent to email
+    const storedOtpObj = activeOtps.get(cleanEmail);
+    if (!isAuthorized && storedOtpObj) {
+      if (storedOtpObj.expiresAt > Date.now() && storedOtpObj.otp === codeStr) {
+        isAuthorized = true;
+        activeOtps.delete(cleanEmail); // Single use
+      }
+    }
+
+    // Check 3: Master Admin Access Passphrase bypass
+    const masterAdminKey = process.env.ADMIN_ACCESS_KEY || 'MySuperSecretAdminPassphrase#2026';
+    if (!isAuthorized && codeStr === masterAdminKey) {
+      isAuthorized = true;
+    }
+
+    if (!isAuthorized) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid previous password or verification code. If you forgot your password, click "Send Code to Email" to receive a verification code.'
+      });
+    }
+
     if (!newPassword || newPassword.length < 6) {
       return res.status(400).json({ 
         success: false, 
         message: 'New password must be at least 6 characters long.' 
+      });
+    }
+
+    if (codeStr === newPassword) {
+      return res.status(400).json({
+        success: false,
+        message: 'New password must be different from your previous password.'
       });
     }
 
@@ -389,7 +533,7 @@ router.post('/forgot-password', async (req, res) => {
 
     return res.json({
       success: true,
-      message: 'Password successfully reset! You can now log in with your new password.'
+      message: 'Password successfully updated! You can now log in with your new password.'
     });
   } catch (error) {
     console.error('Forgot Password Error:', error);
@@ -397,6 +541,47 @@ router.post('/forgot-password', async (req, res) => {
       success: false, 
       message: 'Unable to reset password. Please try again later.' 
     });
+  }
+});
+
+// 4.5 SEND OTP & RESET VERIFICATION CODE (Dispatches via Gmail SMTP)
+const activeOtps = new Map();
+
+router.post(['/send-reset-code', '/send-otp'], async (req, res) => {
+  try {
+    const { target, email } = req.body;
+    const recipient = (target || email || '').trim();
+
+    if (!recipient) {
+      return res.status(400).json({ success: false, message: 'Recipient phone or email is required.' });
+    }
+
+    const cleanRecipient = recipient.toLowerCase();
+    // Dynamic 6-digit OTP code for secure verification
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    activeOtps.set(cleanRecipient, {
+      otp,
+      expiresAt: Date.now() + 15 * 60 * 1000 // 15 minutes
+    });
+
+    if (cleanRecipient.includes('@')) {
+      sendOtpEmail({ 
+        to: cleanRecipient, 
+        otp,
+        subject: `YatraGo Password Reset Verification Code: ${otp}`,
+        title: 'YatraGo Security Passcode',
+        description: 'Use the 6-digit verification code below to authorize your password change:'
+      }).catch(err => {
+        console.warn('OTP email dispatch note:', err.message);
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: `Verification code sent to ${recipient}. Please check your inbox.`
+    });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: 'Failed to send verification code.' });
   }
 });
 

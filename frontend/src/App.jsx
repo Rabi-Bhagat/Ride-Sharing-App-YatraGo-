@@ -24,14 +24,61 @@ import { SocketProvider, useSocket } from './context/SocketContext';
 import { Sparkles } from 'lucide-react';
 
 function MainApp() {
-  const [activeTab, setActiveTab] = useState('home'); // 'home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat'
   const { user, authModalOpen, closeAuthModal, openAuthModal } = useAuth();
 
+  // If user is not authenticated, website runs directly from the login or signup page!
+  const getInitialTab = () => {
+    const hash = window.location.hash.replace('#', '').trim();
+    if (hash === 'signup' || hash === 'login' || hash === 'auth' || hash === 'forgot') {
+      return hash;
+    }
+    // If not authenticated, always run from the login page
+    if (!user) {
+      return 'login';
+    }
+    if (hash && ['home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat', 'admin', 'driver', 'guide-portal'].includes(hash)) {
+      return hash;
+    }
+    return 'home';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+
+  // Keep URL hash in sync with activeTab so browser history and direct paths work
+  React.useEffect(() => {
+    window.location.hash = activeTab;
+  }, [activeTab]);
+
+  // Listen to browser hash changes
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash.replace('#', '').trim();
+      if (hash && hash !== activeTab) {
+        if (!user && ['driver', 'guide-portal', 'admin', 'cost-split', 'chat'].includes(hash)) {
+          openAuthModal('login', hash);
+          setActiveTab('login');
+        } else {
+          setActiveTab(hash);
+        }
+      }
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [activeTab, user]);
+
+  // If user logs out, route immediately to login page
+  React.useEffect(() => {
+    if (!user && activeTab !== 'login' && activeTab !== 'signup' && activeTab !== 'forgot' && activeTab !== 'auth' && activeTab !== 'home') {
+      setActiveTab('login');
+    }
+  }, [user]);
+
   const handleNavigateWithTransition = (targetTab, params) => {
-    // Protected routes check: redirect to auth modal and return here upon login
-    const protectedTabs = ['driver', 'guide-portal', 'admin'];
+    // Protected routes check: redirect to login/auth and return here upon login
+    const protectedTabs = ['driver', 'guide-portal', 'admin', 'cost-split', 'chat'];
     if (!user && protectedTabs.includes(targetTab)) {
       openAuthModal('login', targetTab);
+      setActiveTab('login');
       return;
     }
     if (params?.pickup) {

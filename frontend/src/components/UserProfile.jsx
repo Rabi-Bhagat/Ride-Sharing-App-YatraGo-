@@ -7,17 +7,9 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
+import UserAvatar, { isCustomPhoto } from './UserAvatar';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
-
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80'
-];
 
 export default function UserProfile({ onClose, onSelectPickupForRide }) {
   const { 
@@ -107,10 +99,10 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
     reader.readAsDataURL(file);
   };
 
-  // Instant Preset Avatar Selection
-  const handleSelectPresetAvatar = async (presetUrl) => {
-    await updateUserProfile({ avatar: presetUrl });
-    showToast('Avatar updated!');
+  // Remove Profile Avatar (Switch to Default Initials Badge)
+  const handleRemoveAvatar = async () => {
+    await updateUserProfile({ avatar: '' });
+    showToast('Default profile picture removed! Switched to clean initials badge.');
   };
 
   // Browser GPS auto-detection
@@ -338,10 +330,11 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
             {/* Avatar & Info */}
             <div className="flex items-end gap-4">
               <div className="relative group shrink-0">
-                <img
-                  src={user.avatar}
-                  alt={user.name}
-                  className="w-24 h-24 rounded-2xl object-cover ring-4 ring-slate-950 border-2 border-cyan-500 shadow-2xl bg-slate-900"
+                <UserAvatar
+                  user={user}
+                  size="2xl"
+                  showOnline={true}
+                  className="ring-4 ring-slate-950 border-2 border-cyan-500 shadow-2xl rounded-2xl overflow-hidden"
                 />
                 
                 {/* Photo Upload Trigger Overlay */}
@@ -355,14 +348,12 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                 <button
                   type="button"
                   onClick={() => photoInputRef.current?.click()}
-                  className="absolute inset-0 bg-slate-950/75 rounded-2xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-cyan-300 font-bold transition-all border-2 border-cyan-400"
+                  className="absolute inset-0 bg-slate-950/80 rounded-2xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-cyan-300 font-bold transition-all border-2 border-cyan-400 cursor-pointer"
                   title="Upload New Profile Photo"
                 >
                   <Camera size={18} className="mb-0.5" />
                   <span>Update Photo</span>
                 </button>
-
-                <span className="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-emerald-500 ring-2 ring-slate-950" title="Online & Active" />
               </div>
 
               <div className="space-y-1">
@@ -468,28 +459,42 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white flex items-center gap-1.5">
                     <Camera size={14} className="text-cyan-400" />
-                    <span>Quick Profile Avatar Switcher</span>
+                    <span>Profile Photo & Avatar</span>
                   </span>
-                  <button
-                    onClick={() => photoInputRef.current?.click()}
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1"
-                  >
-                    <Upload size={12} />
-                    <span>Upload Custom Photo</span>
-                  </button>
-                </div>
-                <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                  {PRESET_AVATARS.map((presetUrl, idx) => (
+                  <div className="flex items-center gap-2">
+                    {isCustomPhoto(user?.avatar) && (
+                      <button
+                        type="button"
+                        onClick={handleRemoveAvatar}
+                        className="text-xs text-rose-400 hover:text-rose-300 font-bold flex items-center gap-1 px-2.5 py-1 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer"
+                        title="Remove photo and use default initials avatar"
+                      >
+                        <Trash2 size={12} />
+                        <span>Remove Photo</span>
+                      </button>
+                    )}
                     <button
-                      key={idx}
-                      onClick={() => handleSelectPresetAvatar(presetUrl)}
-                      className={`w-10 h-10 rounded-xl overflow-hidden ring-2 transition-all shrink-0 ${
-                        user.avatar === presetUrl ? 'ring-cyan-400 scale-105 shadow-md shadow-cyan-500/30' : 'ring-transparent opacity-70 hover:opacity-100'
-                      }`}
+                      type="button"
+                      onClick={() => photoInputRef.current?.click()}
+                      className="text-xs text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/20 border border-cyan-500/30 transition-all cursor-pointer"
                     >
-                      <img src={presetUrl} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
+                      <Upload size={12} />
+                      <span>Upload Custom Photo</span>
                     </button>
-                  ))}
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                  <UserAvatar user={user} size="md" className="rounded-xl overflow-hidden" />
+                  <div className="flex-1 min-w-0">
+                    <strong className="text-xs font-bold text-white block">
+                      {isCustomPhoto(user?.avatar) ? 'Custom Uploaded Photo Active' : 'Default Initials Avatar Active'}
+                    </strong>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      {isCustomPhoto(user?.avatar)
+                        ? 'Your personalized photo is displayed across trips, rides, and chats.'
+                        : 'Clean, modern cryptographic initials badge. No default stock human photos.'}
+                    </p>
+                  </div>
                 </div>
               </div>
 
@@ -1142,7 +1147,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
             <div className="w-5 h-5 rounded-md bg-white p-0.5 flex items-center justify-center shrink-0">
               <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-mono text-[11px]">Member: {user.email} • YatraGo Pro</span>
+            <span className="font-mono text-[11px]">Member: {user.email} • YatraGo Member</span>
           </div>
           <button
             onClick={onClose}

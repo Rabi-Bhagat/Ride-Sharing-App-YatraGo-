@@ -37,15 +37,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     login, 
     register, 
     loginWithGoogle,
-    loginWithOtp,
     forgotPassword, 
+    sendResetCode,
     loading, 
     authModalTab, 
     setAuthModalTab 
   } = useAuth();
 
-  // Active view: 'login' | 'signup' | 'forgot' | 'otp'
-  const activeTab = authModalTab || 'login';
+  // Active view: 'login' | 'signup' | 'forgot'
+  const activeTab = (authModalTab === 'otp' ? 'login' : authModalTab) || 'login';
   const setActiveTab = (tab) => setAuthModalTab(tab);
 
   // Form states - Sign In
@@ -63,16 +63,15 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [selectedRole, setSelectedRole] = useState('traveler'); // 'traveler', 'driver', 'guide'
   const [agreeTerms, setAgreeTerms] = useState(true);
 
-  // Form states - Forgot Password
+  // Form states - Forgot / Reset Password
   const [forgotEmail, setForgotEmail] = useState('');
+  const [previousCode, setPreviousCode] = useState('');
+  const [showPreviousCode, setShowPreviousCode] = useState(false);
+  const [codeSending, setCodeSending] = useState(false);
+  const [codeSentMessage, setCodeSentMessage] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
-
-  // Form states - Quick OTP
-  const [otpTarget, setOtpTarget] = useState('+91 98765 43210');
-  const [otpCode, setOtpCode] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
 
   // Feedback notifications
   const [errorMessage, setErrorMessage] = useState('');
@@ -118,21 +117,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return { score: 3, label: 'Strong', color: 'bg-emerald-500', textCol: 'text-emerald-400', width: '100%' };
     }
   }, [activeTab, signupPassword, newPassword]);
-
-  // One-click demo credentials filler
-  const handleFillDemo = (roleType = 'traveler') => {
-    setErrorMessage('');
-    if (roleType === 'driver') {
-      setLoginIdentifier('driver.sharma@yatrago.com');
-    } else if (roleType === 'guide') {
-      setLoginIdentifier('guide.aarav@yatrago.com');
-    } else {
-      setLoginIdentifier('alex.rivera@yatrago.com');
-    }
-    setLoginPassword('password123');
-    setSuccessMessage(`Demo ${roleType} credentials filled! Click 'Sign In'.`);
-    setTimeout(() => setSuccessMessage(''), 2500);
-  };
 
   // 1. Submit Sign In
   const handleLoginSubmit = async (e) => {
@@ -232,7 +216,28 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
   };
 
-  // 4. Submit Forgot Password
+  // 4. Send Verification Code to Registered Email
+  const handleSendResetCode = async () => {
+    setErrorMessage('');
+    setCodeSentMessage('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!forgotEmail.trim() || !emailRegex.test(forgotEmail.trim())) {
+      setErrorMessage('Please enter your valid registered email address first.');
+      return;
+    }
+    setCodeSending(true);
+    const res = await sendResetCode(forgotEmail.trim());
+    setCodeSending(false);
+    if (res.success) {
+      setCodeSentMessage(res.message || '6-digit verification code sent to your email! Please check your inbox.');
+      setSuccessMessage('Verification code sent to ' + forgotEmail.trim());
+      setTimeout(() => setSuccessMessage(''), 4000);
+    } else {
+      setErrorMessage(res.error || 'Failed to dispatch code. Please check email address.');
+    }
+  };
+
+  // 5. Submit Forgot / Reset Password
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
@@ -241,6 +246,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!forgotEmail.trim() || !emailRegex.test(forgotEmail.trim())) {
       setErrorMessage('Please enter a valid registered email address.');
+      return;
+    }
+    if (!previousCode.trim()) {
+      setErrorMessage('Please enter your previous password or verification code.');
       return;
     }
     if (!newPassword || newPassword.length < 6) {
@@ -252,7 +261,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
       return;
     }
 
-    const res = await forgotPassword(forgotEmail.trim(), newPassword);
+    const res = await forgotPassword(forgotEmail.trim(), previousCode.trim(), newPassword);
     if (!res.success) {
       setErrorMessage(res.error || 'Failed to reset password.');
     } else {
@@ -261,39 +270,14 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
         setActiveTab('login');
         setLoginIdentifier(forgotEmail.trim());
         setLoginPassword(newPassword);
+        setPreviousCode('');
+        setNewPassword('');
+        setConfirmNewPassword('');
       }, 1500);
     }
   };
 
-  // 5. Submit OTP Login
-  const handleOtpSend = (e) => {
-    e.preventDefault();
-    if (!otpTarget.trim()) {
-      setErrorMessage('Please enter a phone number or email.');
-      return;
-    }
-    setOtpSent(true);
-    setOtpCode('8492');
-    setSuccessMessage('OTP generated! Code: 8492 (auto-filled for testing)');
-  };
 
-  const handleOtpVerify = async (e) => {
-    e.preventDefault();
-    if (otpCode !== '8492') {
-      setErrorMessage('Invalid OTP code. Please use 8492.');
-      return;
-    }
-    const res = await loginWithOtp(otpTarget, otpCode, selectedRole);
-    if (res.success) {
-      setSuccessMessage(res.message);
-      if (onAuthSuccess && res.nextRoute) {
-        onAuthSuccess(res.nextRoute, res.user);
-      }
-      setTimeout(() => {
-        if (onClose) onClose();
-      }, 350);
-    }
-  };
 
   if (!isOpen) return null;
 
@@ -337,7 +321,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 <div>
                   <div className="flex items-center gap-1.5">
                     <span className="text-lg font-black text-white tracking-tight">YatraGo</span>
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">PRO</span>
                   </div>
                   <p className="text-[10px] text-slate-400 font-mono tracking-wider">RIDE • SHARE • EXPLORE</p>
                 </div>
@@ -397,15 +380,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
             </div>
 
-            {/* Bottom Footer Proof */}
-            <div className="relative z-10 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
-              <span className="font-mono text-emerald-400 font-bold flex items-center gap-1">
-                <span>★ 4.96</span>
-                <span className="text-slate-400">Rating</span>
-              </span>
-              <span className="font-mono text-slate-400">50,000+ Safe Trips</span>
-            </div>
-
           </div>
 
           {/* ======================================================== */}
@@ -438,17 +412,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     }`}
                   >
                     Sign Up
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleSwitchTab('otp')}
-                    className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-                      activeTab === 'otp'
-                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
-                        : 'text-slate-400 hover:text-white'
-                    }`}
-                  >
-                    Instant OTP
                   </button>
                 </div>
               </div>
@@ -516,7 +479,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                         type="text"
                         value={loginIdentifier}
                         onChange={(e) => setLoginIdentifier(e.target.value)}
-                        placeholder="e.g. alex.rivera@yatrago.com or 9876543210"
+                        placeholder="Enter your email to sign in"
                         className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
                         required
                       />
@@ -567,14 +530,6 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       />
                       <span className="text-[11px] text-slate-300">Remember me for 30 days</span>
                     </label>
-
-                    <button
-                      type="button"
-                      onClick={() => handleFillDemo('traveler')}
-                      className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
-                    >
-                      Fill Demo Credentials
-                    </button>
                   </div>
 
                   <button
@@ -684,7 +639,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                         type="text"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        placeholder="e.g. Alex Rivera or Rabi Bhagat"
+                        placeholder="Enter your full name"
                         className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
                         required
                       />
@@ -703,7 +658,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                           type="email"
                           value={signupEmail}
                           onChange={(e) => setSignupEmail(e.target.value)}
-                          placeholder="rider@example.com"
+                          placeholder="Enter your email to sign up"
                           className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
                           required
                         />
@@ -720,7 +675,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                           type="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
-                          placeholder="+91 98765 43210"
+                          placeholder="Enter your phone number to sign up"
                           className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
                           required
                         />
@@ -811,9 +766,10 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               {activeTab === 'forgot' && (
                 <form onSubmit={handleForgotSubmit} className="mt-4 space-y-3.5">
                   <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-slate-300">
-                    Enter your registered email address and new password. We will update your password and send a confirmation alert to your inbox.
+                    Enter your registered email, previous password (or 6-digit email code), and your new password.
                   </div>
 
+                  {/* Registered Email */}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Registered Email Address
@@ -831,6 +787,49 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     </div>
                   </div>
 
+                  {/* Previous Password or Code */}
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-bold text-slate-300">
+                        Previous Password or Verification Code
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSendResetCode}
+                        disabled={codeSending}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold transition-colors cursor-pointer disabled:opacity-50"
+                      >
+                        {codeSending ? 'Sending...' : 'Send Code to Email'}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <KeyRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showPreviousCode ? 'text' : 'password'}
+                        value={previousCode}
+                        onChange={(e) => setPreviousCode(e.target.value)}
+                        placeholder="Enter previous password or 6-digit code"
+                        className="w-full h-10 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all font-mono"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPreviousCode(!showPreviousCode)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                        tabIndex={-1}
+                      >
+                        {showPreviousCode ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                    {codeSentMessage && (
+                      <p className="text-[10px] text-emerald-400 mt-1 flex items-center gap-1">
+                        <CheckCircle2 size={11} />
+                        <span>{codeSentMessage}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  {/* New Password */}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       New Password
@@ -848,7 +847,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       <button
                         type="button"
                         onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
                         tabIndex={-1}
                       >
                         {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
@@ -856,6 +855,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     </div>
                   </div>
 
+                  {/* Confirm New Password */}
                   <div>
                     <label className="block text-[11px] font-bold text-slate-300 mb-1">
                       Confirm New Password
@@ -903,82 +903,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                 </form>
               )}
 
-              {/* ==================================================== */}
-              {/* VIEW 4: INSTANT OTP LOGIN                            */}
-              {/* ==================================================== */}
-              {activeTab === 'otp' && (
-                <div className="mt-4 space-y-3.5">
-                  <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-slate-300">
-                    Sign in instantaneously via 4-digit mobile SMS / WhatsApp code without needing a password.
-                  </div>
 
-                  {!otpSent ? (
-                    <form onSubmit={handleOtpSend} className="space-y-3.5">
-                      <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                          Mobile Phone Number or Email
-                        </label>
-                        <div className="relative">
-                          <Smartphone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                          <input
-                            type="text"
-                            value={otpTarget}
-                            onChange={(e) => setOtpTarget(e.target.value)}
-                            placeholder="+91 98765 43210"
-                            className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                      >
-                        <span>Send 4-Digit OTP Code</span>
-                        <ArrowRight size={15} />
-                      </button>
-                    </form>
-                  ) : (
-                    <form onSubmit={handleOtpVerify} className="space-y-3.5">
-                      <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <label className="text-[11px] font-bold text-slate-300">
-                            Enter 4-Digit Code
-                          </label>
-                          <span className="text-[10px] font-mono text-cyan-400">Test Code: 8492</span>
-                        </div>
-                        <input
-                          type="text"
-                          maxLength={4}
-                          value={otpCode}
-                          onChange={(e) => setOtpCode(e.target.value)}
-                          placeholder="8492"
-                          className="w-full h-11 text-center font-mono text-lg font-black tracking-widest rounded-xl bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 text-cyan-300 placeholder-slate-600 focus:outline-none"
-                          required
-                        />
-                      </div>
-
-                      <div className="flex gap-2">
-                        <button
-                          type="button"
-                          onClick={() => setOtpSent(false)}
-                          className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
-                        >
-                          Change Number
-                        </button>
-                        <button
-                          type="submit"
-                          disabled={loading}
-                          className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
-                        >
-                          {loading ? <Loader2 size={15} className="animate-spin text-slate-950" /> : <span>Verify & Continue</span>}
-                        </button>
-                      </div>
-                    </form>
-                  )}
-                </div>
-              )}
 
             </div>
 

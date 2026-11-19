@@ -7,29 +7,61 @@ import {
 } from 'lucide-react';
 
 const POPULAR_PRESETS = [
-  { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', desc: 'Tech corridor & dining plaza' },
-  { name: 'Delhi Airport (DEL)', distance: '16.2 km', distKm: 16.2, type: 'airport', desc: 'Indira Gandhi International Airport T3' },
-  { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', distKm: 14.5, type: 'transit', desc: 'Northern Railway Main Junction' },
-  { name: 'Cyber City Rapid Metro', distance: '7.8 km', distKm: 7.8, type: 'transit', desc: 'Rapid Metro Station interchange' },
-  { name: 'MMU Mullana Campus & Hospital', distance: '3.2 km', distKm: 3.2, type: 'campus', desc: 'Medical Sciences & Technology Campus' },
-  { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office', desc: 'Innovation towers & business park' },
-  { name: 'Sector 17 City Center', distance: '18.4 km', distKm: 18.4, type: 'center', desc: 'Commercial shopping plaza & boulevard' },
-  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', desc: 'Retail, leisure & entertainment hub' },
-  { name: 'Metro Airport Skyway', distance: '19.5 km', distKm: 19.5, type: 'transit', desc: 'Rapid express air-rail transfer terminal' },
-  { name: 'Oceanfront Bay Pier', distance: '12.1 km', distKm: 12.1, type: 'attraction', desc: 'Waterfront promenade & scenic ferry terminal' },
-  { name: 'Mumbai Airport (BOM)', distance: '22.0 km', distKm: 22.0, type: 'airport', desc: 'Chhatrapati Shivaji Maharaj International' },
-  { name: 'Rajiv Chowk Central Metro', distance: '24.1 km', distKm: 24.1, type: 'transit', desc: 'Connaught Place yellow/blue line hub' }
+  { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', lat: 28.4950, lng: 77.0890, desc: 'Tech corridor & dining plaza' },
+  { name: 'Delhi Airport (DEL) T3', distance: '16.2 km', distKm: 16.2, type: 'airport', lat: 28.5562, lng: 77.1000, desc: 'Indira Gandhi International Airport T3' },
+  { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', distKm: 14.5, type: 'transit', lat: 30.3340, lng: 76.8370, desc: 'Northern Railway Main Junction' },
+  { name: 'Cyber City Rapid Metro', distance: '7.8 km', distKm: 7.8, type: 'transit', lat: 28.4920, lng: 77.0870, desc: 'Rapid Metro Station interchange' },
+  { name: 'MMU Mullana Campus & Hospital', distance: '3.2 km', distKm: 3.2, type: 'campus', lat: 30.2520, lng: 77.0450, desc: 'Medical Sciences & Technology Campus' },
+  { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office', lat: 28.5020, lng: 77.0780, desc: 'Innovation towers & business park' },
+  { name: 'Sector 17 City Center', distance: '18.4 km', distKm: 18.4, type: 'center', lat: 30.7410, lng: 76.7850, desc: 'Commercial shopping plaza & boulevard' },
+  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', lat: 28.5040, lng: 77.0970, desc: 'Retail, leisure & entertainment hub' },
+  { name: 'Metro Airport Skyway', distance: '19.5 km', distKm: 19.5, type: 'transit', lat: 28.5480, lng: 77.1200, desc: 'Rapid express air-rail transfer terminal' },
+  { name: 'Oceanfront Bay Pier', distance: '12.1 km', distKm: 12.1, type: 'attraction', lat: 37.8085, lng: -122.4150, desc: 'Waterfront promenade & scenic ferry terminal' },
+  { name: 'Mumbai Airport (BOM)', distance: '22.0 km', distKm: 22.0, type: 'airport', lat: 19.0896, lng: 72.8656, desc: 'Chhatrapati Shivaji Maharaj International' },
+  { name: 'Rajiv Chowk Central Metro', distance: '24.1 km', distKm: 24.1, type: 'transit', lat: 28.6328, lng: 77.2195, desc: 'Connaught Place yellow/blue line hub' }
 ];
 
 // Fallback recommendations when user searches a place that is not indexed or found
 const NEARBY_FALLBACKS = [
-  { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', tag: 'Top Business District', icon: '🏢' },
-  { name: 'Delhi Airport (DEL)', distance: '16.2 km', distKm: 16.2, type: 'airport', tag: 'Fastest Highway Route', icon: '✈️' },
-  { name: 'Cyber City Rapid Metro', distance: '7.8 km', distKm: 7.8, type: 'transit', tag: 'Public Transit Link', icon: '🚇' },
-  { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', distKm: 14.5, type: 'transit', tag: 'Major Express Junction', icon: '🚉' },
-  { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office', tag: 'Nearest Innovation Zone', icon: '💻' },
-  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', tag: 'Popular Shopping & Food', icon: '🛍️' }
+  { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', lat: 28.4950, lng: 77.0890, tag: 'Top Business District', icon: '🏢' },
+  { name: 'Delhi Airport (DEL) T3', distance: '16.2 km', distKm: 16.2, type: 'airport', lat: 28.5562, lng: 77.1000, tag: 'Fastest Highway Route', icon: '✈️' },
+  { name: 'Cyber City Rapid Metro', distance: '7.8 km', distKm: 7.8, type: 'transit', lat: 28.4920, lng: 77.0870, tag: 'Public Transit Link', icon: '🚇' },
+  { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', distKm: 14.5, type: 'transit', lat: 30.3340, lng: 76.8370, tag: 'Major Express Junction', icon: '🚉' },
+  { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office', lat: 28.5020, lng: 77.0780, tag: 'Nearest Innovation Zone', icon: '💻' },
+  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', lat: 28.5040, lng: 77.0970, tag: 'Popular Shopping & Food', icon: '🛍️' }
 ];
+
+// Calculate realistic driving/transit distance between pickup and destination coordinates
+function calculateDistanceBetween(pLat, pLng, dLat, dLng) {
+  if (!pLat || !pLng || !dLat || !dLng) return null;
+  const R = 6371; // Earth radius in km
+  const dLatRad = (dLat - pLat) * (Math.PI / 180);
+  const dLonRad = (dLng - pLng) * (Math.PI / 180);
+  const a =
+    Math.sin(dLatRad / 2) * Math.sin(dLatRad / 2) +
+    Math.cos(pLat * (Math.PI / 180)) * Math.cos(dLat * (Math.PI / 180)) *
+    Math.sin(dLonRad / 2) * Math.sin(dLonRad / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const crowFlies = R * c;
+
+  // Intercity / long haul check
+  if (crowFlies > 1200) {
+    return Math.round(crowFlies);
+  }
+  // Urban road factor (roads are ~1.28x straight line distance)
+  const roadDist = crowFlies * 1.28;
+  return Math.max(1.0, Math.round(roadDist * 10) / 10);
+}
+
+// Helper to look up coordinates for a known preset place name
+const findCoordsOf = (placeName) => {
+  if (!placeName) return null;
+  const p = POPULAR_PRESETS.find(item => item.name.toLowerCase() === placeName.toLowerCase());
+  if (p && p.lat && p.lng) return { lat: p.lat, lng: p.lng };
+  const f = NEARBY_FALLBACKS.find(item => item.name.toLowerCase() === placeName.toLowerCase());
+  if (f && f.lat && f.lng) return { lat: f.lat, lng: f.lng };
+  return null;
+};
 
 // Deterministic realistic distance calculation for custom user-entered places
 const getEstimatedDistKm = (placeName) => {
@@ -45,13 +77,35 @@ const getEstimatedDistKm = (placeName) => {
   return Number((6.5 + variance).toFixed(1));
 };
 
-export default function UberRideRequestCard({ 
+// Bike travel options (only shown when Bike mode is selected)
+const BIKE_TIERS = {
+  moto_classic: { id: 'moto_classic', name: 'YatraGo Moto Classic', vehicleType: 'YatraGo Moto', category: 'bike', eta: '2 mins away', base: 25.00, perKm: 8.50, capacity: 1, icon: Bike, desc: 'Nimble city commuter bike • Helmet provided' },
+  hyperbike: { id: 'hyperbike', name: 'HyperBike 1200R', vehicleType: 'HyperBike 1200R', category: 'bike', eta: '2 mins away', base: 35.00, perKm: 12.00, capacity: 1, icon: Bike, desc: 'High-speed electric superbike express' },
+  scooter: { id: 'scooter', name: 'AeroScooter EV', vehicleType: 'AeroScooter EV', category: 'bike', eta: '3 mins away', base: 20.00, perKm: 7.00, capacity: 1, icon: Bike, desc: 'Zero-emission lightweight e-scooter' },
+  moto_fast: { id: 'moto_fast', name: 'Moto Fast Track', vehicleType: 'Moto Fast Track', category: 'bike', eta: '2 mins away', base: 30.00, perKm: 9.50, capacity: 1, icon: Bike, desc: 'Priority lane navigation for rush hour' }
+};
+
+// Car travel options (only shown when Car mode is selected)
+const CAR_TIERS = {
+  premier: { id: 'premier', name: 'YatraGo Premier Sedan', vehicleType: 'Eco Sedan', category: 'car', eta: '4 mins away', base: 60.00, perKm: 16.50, capacity: 4, icon: Car, desc: 'Comfortable top-rated electric sedans' },
+  comfort: { id: 'comfort', name: 'YatraGo Comfort', vehicleType: 'YatraGo Comfort', category: 'car', eta: '3 mins away', base: 50.00, perKm: 14.00, capacity: 4, icon: Car, desc: 'Roomy compact sedans with extra legroom' },
+  xl: { id: 'xl', name: 'YatraGo XL Premium SUV', vehicleType: 'Premium SUV', category: 'car', eta: '6 mins away', base: 100.00, perKm: 21.00, capacity: 6, icon: Users, desc: 'Spacious SUVs with extra luggage room' },
+  auto: { id: 'auto', name: 'YatraGo Auto Express', vehicleType: 'YatraGo Auto', category: 'car', eta: '3 mins away', base: 35.00, perKm: 11.00, capacity: 3, icon: Car, desc: 'Zero-congestion city transit auto-rickshaw' }
+};
+
+// Pool travel options (only shown when Pool is selected)
+const POOL_TIERS = {
+  pool_sedan: { id: 'pool_sedan', name: 'YatraGo Eco Pool', vehicleType: 'Eco Sedan', category: 'car', eta: '5 mins away', base: 45.00, perKm: 10.00, capacity: 2, icon: Users, desc: 'Shared sedan along popular highway corridors' },
+  pool_xl: { id: 'pool_xl', name: 'YatraGo XL Pool', vehicleType: 'Electric Shuttle', category: 'car', eta: '6 mins away', base: 65.00, perKm: 13.00, capacity: 4, icon: Users, desc: 'Spacious shared SUV with verified co-riders' }
+};
+
+export default function YatraGoRideRequestCard({ 
   onBookRide, 
   initialPickup = 'Innovation Tech Park, SF',
   initialDropoff = 'Downtown Cyber Hub',
   onSelectRoute
 }) {
-  const [activeService, setActiveService] = useState('ride'); // 'ride', 'pool', 'reserve', 'courier', 'moto'
+  const [activeService, setActiveService] = useState('ride'); // 'ride', 'pool', 'reserve', 'moto'
   const [pickup, setPickup] = useState(initialPickup);
   const [dropoff, setDropoff] = useState(initialDropoff);
   const [dropoffInput, setDropoffInput] = useState(initialDropoff);
@@ -61,6 +115,16 @@ export default function UberRideRequestCard({
   const [isSearchingGeocode, setIsSearchingGeocode] = useState(false);
   const [pickupTimeMode, setPickupTimeMode] = useState('now'); // 'now' or 'later'
   const [timingDropdownOpen, setTimingDropdownOpen] = useState(false);
+  const [selectedVehicleTier, setSelectedVehicleTier] = useState('premier');
+
+  // Coords tracking for accurate distance calculation between pickup and destination
+  const [pickupCoords, setPickupCoords] = useState(() => {
+    return findCoordsOf(initialPickup) || { lat: 28.4950, lng: 77.0890 };
+  });
+  const [dropoffCoords, setDropoffCoords] = useState(() => {
+    return findCoordsOf(initialDropoff) || { lat: 28.5562, lng: 77.1000 };
+  });
+
   const timingRef = useRef(null);
   const dateInputRef = useRef(null);
   const timeInputRef = useRef(null);
@@ -72,6 +136,8 @@ export default function UberRideRequestCard({
     if (initialDropoff) {
       setDropoff(initialDropoff);
       setDropoffInput(initialDropoff);
+      const coords = findCoordsOf(initialDropoff);
+      if (coords) setDropoffCoords(coords);
     }
   }, [initialDropoff]);
 
@@ -79,8 +145,64 @@ export default function UberRideRequestCard({
   useEffect(() => {
     if (initialPickup) {
       setPickup(initialPickup);
+      const coords = findCoordsOf(initialPickup);
+      if (coords) setPickupCoords(coords);
     }
   }, [initialPickup]);
+
+  // Debounced geocoding for pickup address to keep coordinates updated
+  useEffect(() => {
+    const q = (pickup || '').trim();
+    if (!q || q.length < 3) return;
+    const existing = findCoordsOf(q);
+    if (existing) {
+      setPickupCoords(existing);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setPickupCoords({
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+          });
+        }
+      } catch (e) {}
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [pickup]);
+
+  // Debounced geocoding for destination address to keep coordinates updated
+  useEffect(() => {
+    const q = (dropoffInput || '').trim();
+    if (!q || q.length < 3) return;
+    const existing = findCoordsOf(q);
+    if (existing) {
+      setDropoffCoords(existing);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=1`,
+          { headers: { 'Accept-Language': 'en' } }
+        );
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          setDropoffCoords({
+            lat: parseFloat(data[0].lat),
+            lng: parseFloat(data[0].lon)
+          });
+        }
+      } catch (e) {}
+    }, 600);
+    return () => clearTimeout(timer);
+  }, [dropoffInput]);
 
   // Handle live search & autocomplete for destination input
   useEffect(() => {
@@ -113,12 +235,18 @@ export default function UberRideRequestCard({
             const geocodedItems = data.map((item) => {
               const shortName = item.display_name.split(',').slice(0, 2).join(', ').trim();
               const fullName = item.display_name;
-              const estDist = getEstimatedDistKm(shortName);
+              const lat = parseFloat(item.lat);
+              const lng = parseFloat(item.lon);
+              const estDist = pickupCoords?.lat 
+                ? calculateDistanceBetween(pickupCoords.lat, pickupCoords.lng, lat, lng)
+                : getEstimatedDistKm(shortName);
               return {
                 name: shortName,
                 fullName,
                 distance: `${estDist} km`,
                 distKm: estDist,
+                lat,
+                lng,
                 type: 'geocoded',
                 isLiveResult: true
               };
@@ -141,32 +269,45 @@ export default function UberRideRequestCard({
     } else {
       setIsSearchingGeocode(false);
     }
-  }, [dropoffInput]);
+  }, [dropoffInput, pickupCoords]);
 
   // Destination selection handlers
   const handleSelectDestination = (item) => {
     const name = item.name || item.shortName || item;
-    const distanceKm = item.distKm || getEstimatedDistKm(name);
+    const itemCoords = (item.lat && item.lng) ? { lat: item.lat, lng: item.lng } : findCoordsOf(name);
+    if (itemCoords) {
+      setDropoffCoords(itemCoords);
+    }
+    const distanceKm = (pickupCoords?.lat && itemCoords?.lat)
+      ? calculateDistanceBetween(pickupCoords.lat, pickupCoords.lng, itemCoords.lat, itemCoords.lng)
+      : (item.distKm || getEstimatedDistKm(name));
     setDropoff(name);
     setDropoffInput(name);
     setCustomDistKm(distanceKm);
     setShowDestDropdown(false);
     if (onSelectRoute) {
-      onSelectRoute({ name, distanceKm });
+      onSelectRoute({ name, distanceKm, coords: itemCoords });
     }
   };
 
   const handleSelectCustomPlace = (customName) => {
     const trimmed = (customName || '').trim();
     if (!trimmed) return;
-    const estDist = getEstimatedDistKm(trimmed);
+    const foundCoords = findCoordsOf(trimmed);
+    if (foundCoords) {
+      setDropoffCoords(foundCoords);
+      setCustomDistKm(null);
+    } else {
+      const estDist = getEstimatedDistKm(trimmed);
+      setCustomDistKm(estDist);
+      setDropoffCoords({
+        lat: (pickupCoords?.lat || 28.6139) + (estDist / 111) * 0.7,
+        lng: (pickupCoords?.lng || 77.2090) + (estDist / 111) * 0.7
+      });
+    }
     setDropoff(trimmed);
     setDropoffInput(trimmed);
-    setCustomDistKm(estDist);
     setShowDestDropdown(false);
-    if (onSelectRoute) {
-      onSelectRoute({ name: trimmed, distanceKm: estDist });
-    }
   };
 
   const handleDropoffInputChange = (e) => {
@@ -238,7 +379,6 @@ export default function UberRideRequestCard({
   const [reserveDate, setReserveDate] = useState(tmrwISO);
   const [reserveTime, setReserveTime] = useState('09:30');
   const [locating, setLocating] = useState(false);
-  const [selectedVehicleTier, setSelectedVehicleTier] = useState('go'); // 'moto', 'auto', 'go', 'xl'
 
   // Format date nicely for display
   const formatDateDisplay = (dateStr) => {
@@ -270,19 +410,26 @@ export default function UberRideRequestCard({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Distance calculation based on destination (known presets or dynamic custom estimation)
-  const activeDest = POPULAR_PRESETS.find(p => p.name.toLowerCase() === dropoff.toLowerCase());
-  const dist = customDistKm || (activeDest ? activeDest.distKm : getEstimatedDistKm(dropoff));
+  // REAL DYNAMIC DISTANCE CALCULATION BETWEEN PICKUP AND DESTINATION
+  const calculatedDist = (pickupCoords?.lat && dropoffCoords?.lat)
+    ? calculateDistanceBetween(pickupCoords.lat, pickupCoords.lng, dropoffCoords.lat, dropoffCoords.lng)
+    : null;
 
-  // Tier base pricing (Indian Rupee ₹)
-  const TIER_PRICING = {
-    moto: { name: 'YatraGo Moto', eta: '2 mins away', base: 25.00, perKm: 9.00, capacity: 1, icon: Bike, desc: 'Affordable, fast motorcycle rides' },
-    auto: { name: 'YatraGo Auto', eta: '3 mins away', base: 35.00, perKm: 11.00, capacity: 3, icon: Car, desc: 'Zero-congestion city transit' },
-    go: { name: 'YatraGo Premier', eta: '4 mins away', base: 60.00, perKm: 16.50, capacity: 4, icon: Car, desc: 'Comfortable, top-rated electric sedans' },
-    xl: { name: 'YatraGo XL Pool', eta: '6 mins away', base: 100.00, perKm: 21.00, capacity: 6, icon: Users, desc: 'Spacious SUVs with extra legroom & luggage' }
-  };
+  const dist = calculatedDist || customDistKm || 8.4;
+  const etaMinutes = Math.max(2, Math.round(dist * 1.5));
 
-  const currentTier = TIER_PRICING[selectedVehicleTier] || TIER_PRICING.go;
+  // Vehicle travel options separation: Bike vs Car vs Pool
+  const isBikeMode = activeService === 'moto';
+  const isPoolMode = activeService === 'pool';
+
+  const activeTierOptions = isBikeMode 
+    ? BIKE_TIERS 
+    : isPoolMode 
+      ? POOL_TIERS 
+      : CAR_TIERS;
+
+  // Selected tier resolution
+  const currentTier = activeTierOptions[selectedVehicleTier] || Object.values(activeTierOptions)[0];
   const standardCost = (currentTier.base + dist * currentTier.perKm);
   const poolCost = (standardCost * 0.56); // 44% savings with stranger pooling
   const displayCost = activeService === 'pool' ? poolCost.toFixed(2) : standardCost.toFixed(2);
@@ -302,9 +449,11 @@ export default function UberRideRequestCard({
           if (data && data.display_name) {
             const shortName = data.display_name.split(',').slice(0, 3).join(', ').trim();
             setPickup(shortName);
+            setPickupCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
           }
         } catch (e) {
           setPickup('Current GPS Location');
+          setPickupCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         } finally {
           setLocating(false);
         }
@@ -318,12 +467,23 @@ export default function UberRideRequestCard({
     const finalDropoff = dropoffInput.trim() || dropoff || 'Downtown Cyber Hub';
     if (onBookRide) {
       onBookRide({
-        pickup,
-        dropoff: finalDropoff,
+        pickup: {
+          name: pickup,
+          lat: pickupCoords?.lat,
+          lng: pickupCoords?.lng
+        },
+        dropoff: {
+          name: finalDropoff,
+          lat: dropoffCoords?.lat,
+          lng: dropoffCoords?.lng
+        },
         service: activeService,
-        tier: selectedVehicleTier,
+        tier: currentTier.id,
+        vehicleType: currentTier.vehicleType,
+        vehicleCategory: isBikeMode ? 'bike' : 'car',
         fare: displayCost,
         distanceKm: dist,
+        etaMinutes,
         reserveDate: pickupTimeMode === 'later' ? reserveDate : null,
         reserveTime: pickupTimeMode === 'later' ? reserveTime : null
       });
@@ -333,11 +493,14 @@ export default function UberRideRequestCard({
   return (
     <div className="bg-slate-900/95 border border-slate-800 rounded-3xl p-5 sm:p-6 shadow-2xl backdrop-blur-2xl flex flex-col justify-between space-y-5 text-white">
       
-      {/* 1. UBER-STYLE SERVICE MODE TABS */}
+      {/* 1. YATRAGO SERVICE MODE TABS */}
       <div className="flex items-center gap-1 p-1 bg-slate-950/90 rounded-2xl border border-slate-800">
         <button
-          onClick={() => setActiveService('ride')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+          onClick={() => {
+            setActiveService('ride');
+            setSelectedVehicleTier('premier');
+          }}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeService === 'ride'
               ? 'bg-white text-slate-950 shadow-md font-extrabold'
               : 'text-slate-400 hover:text-white'
@@ -348,8 +511,11 @@ export default function UberRideRequestCard({
         </button>
 
         <button
-          onClick={() => setActiveService('pool')}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+          onClick={() => {
+            setActiveService('pool');
+            setSelectedVehicleTier('pool_sedan');
+          }}
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeService === 'pool'
               ? 'bg-emerald-500 text-slate-950 shadow-md font-extrabold'
               : 'text-slate-400 hover:text-white'
@@ -365,9 +531,10 @@ export default function UberRideRequestCard({
         <button
           onClick={() => {
             setActiveService('reserve');
+            setSelectedVehicleTier('premier');
             setPickupTimeMode('later');
           }}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeService === 'reserve'
               ? 'bg-white text-slate-950 shadow-md font-extrabold'
               : 'text-slate-400 hover:text-white'
@@ -380,16 +547,16 @@ export default function UberRideRequestCard({
         <button
           onClick={() => {
             setActiveService('moto');
-            setSelectedVehicleTier('moto');
+            setSelectedVehicleTier('moto_classic');
           }}
-          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 ${
+          className={`flex-1 py-2 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
             activeService === 'moto'
               ? 'bg-cyan-400 text-slate-950 shadow-md font-extrabold'
               : 'text-slate-400 hover:text-white'
           }`}
         >
           <Bike size={15} />
-          <span>Moto</span>
+          <span>Moto (Bike)</span>
         </button>
       </div>
 
@@ -608,7 +775,7 @@ export default function UberRideRequestCard({
         </div>
       )}
 
-      {/* 3. UBER'S ICONIC CONNECTED LOCATION INPUTS */}
+      {/* 3. YATRAGO CONNECTED LOCATION INPUTS */}
       <div className="relative space-y-2">
         
         {/* Connecting Vertical Track Line */}
@@ -630,7 +797,12 @@ export default function UberRideRequestCard({
             <input
               type="text"
               value={pickup}
-              onChange={(e) => setPickup(e.target.value)}
+              onChange={(e) => {
+                const val = e.target.value;
+                setPickup(val);
+                const coords = findCoordsOf(val);
+                if (coords) setPickupCoords(coords);
+              }}
               placeholder="Enter pickup address"
               className="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none truncate"
             />
@@ -640,7 +812,7 @@ export default function UberRideRequestCard({
           <button
             onClick={handleLocateMe}
             disabled={locating}
-            className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-800 text-xs transition-all shrink-0"
+            className="p-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-cyan-400 border border-slate-800 text-xs transition-all shrink-0 cursor-pointer"
             title="Use current GPS location"
           >
             <LocateFixed size={15} className={locating ? 'animate-spin' : ''} />
@@ -872,6 +1044,33 @@ export default function UberRideRequestCard({
           )}
         </div>
 
+        {/* Dynamic Calculated Route Distance Bar between Pickup & Destination */}
+        <div className="p-3 rounded-2xl bg-slate-950/90 border border-slate-800 flex items-center justify-between text-xs font-mono shadow-inner">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="p-1.5 rounded-lg bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 shrink-0">
+              <Navigation size={14} />
+            </div>
+            <div className="min-w-0">
+              <span className="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">
+                Calculated Distance
+              </span>
+              <span className="text-white font-bold truncate block">
+                {pickup?.split(',')[0] || 'Pickup'} ➔ {dropoff?.split(',')[0] || 'Destination'}
+              </span>
+            </div>
+          </div>
+          <div className="text-right shrink-0 ml-3">
+            <div className="flex items-center gap-1.5 justify-end">
+              <span className="text-emerald-400 font-black text-sm bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/30 font-mono">
+                {dist} km
+              </span>
+            </div>
+            <span className="text-[10px] text-slate-400 mt-0.5 block font-mono">
+              Est. ~{etaMinutes} mins trip
+            </span>
+          </div>
+        </div>
+
       </div>
 
       {/* 4. POPULAR CORRIDORS QUICK CHIPS */}
@@ -903,20 +1102,28 @@ export default function UberRideRequestCard({
         </div>
       </div>
 
-      {/* 5. UBER VEHICLE TIER SELECTOR */}
+      {/* 5. VEHICLE TIER SELECTOR (DISTINCT BIKE VS CAR OPTIONS) */}
       <div className="space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="text-[10px] uppercase font-mono font-bold text-slate-400">
-            Select Ride Tier:
+            {isBikeMode 
+              ? 'Select Bike Option (Solo & Fast):' 
+              : isPoolMode 
+                ? 'Select Pool Travel Option (44% Off):' 
+                : 'Select Car Option (Electric Sedan & SUV):'}
           </span>
-          <span className="text-[10px] text-emerald-400 font-mono font-bold">
-            {activeService === 'pool' ? '44% Discount Active' : 'Transparent Upfront Pricing'}
+          <span className={`text-[10px] font-mono font-bold ${isBikeMode ? 'text-cyan-400' : 'text-emerald-400'}`}>
+            {isBikeMode 
+              ? '🏍️ Helmet Included • Beat City Traffic' 
+              : isPoolMode 
+                ? '👥 44% Route Savings Active' 
+                : '🚗 Doorstep Pickup & Fast Dispatch'}
           </span>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
-          {Object.entries(TIER_PRICING).map(([key, t]) => {
-            const isSelected = selectedVehicleTier === key;
+          {Object.entries(activeTierOptions).map(([key, t]) => {
+            const isSelected = (selectedVehicleTier === key) || (!activeTierOptions[selectedVehicleTier] && key === Object.keys(activeTierOptions)[0]);
             const Icon = t.icon;
             const cost = activeService === 'pool' ? (t.base + dist * t.perKm) * 0.56 : (t.base + dist * t.perKm);
 
@@ -926,17 +1133,19 @@ export default function UberRideRequestCard({
                 onClick={() => setSelectedVehicleTier(key)}
                 className={`p-2.5 rounded-2xl border cursor-pointer transition-all flex flex-col justify-between ${
                   isSelected
-                    ? 'bg-slate-800/90 border-cyan-400 shadow-md ring-1 ring-cyan-400/40'
+                    ? isBikeMode
+                      ? 'bg-slate-800/90 border-cyan-400 shadow-md ring-1 ring-cyan-400/40'
+                      : 'bg-slate-800/90 border-emerald-400 shadow-md ring-1 ring-emerald-400/40'
                     : 'bg-slate-950/60 border-slate-800 hover:bg-slate-900'
                 }`}
               >
                 <div className="flex items-start justify-between gap-1">
-                  <div className="flex items-center gap-1.5">
-                    <div className="p-1.5 rounded-xl bg-slate-900 border border-slate-800 text-cyan-400">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <div className={`p-1.5 rounded-xl bg-slate-900 border border-slate-800 shrink-0 ${isBikeMode ? 'text-cyan-400' : 'text-emerald-400'}`}>
                       <Icon size={14} />
                     </div>
-                    <div>
-                      <strong className="text-xs font-black text-white block leading-tight">{t.name.split(' ')[1] || t.name}</strong>
+                    <div className="min-w-0">
+                      <strong className="text-xs font-black text-white block leading-tight truncate">{t.name}</strong>
                       <span className="text-[10px] text-slate-400 font-mono block">{t.eta}</span>
                     </div>
                   </div>
@@ -947,9 +1156,9 @@ export default function UberRideRequestCard({
                   <span className="flex items-center gap-1">
                     <Users size={10} /> {t.capacity} {t.capacity === 1 ? 'seat' : 'seats'}
                   </span>
-                  {activeService === 'pool' && (
-                    <span className="text-emerald-400 font-bold">Pool Save</span>
-                  )}
+                  <span className={isBikeMode ? 'text-cyan-400 font-bold' : 'text-emerald-400 font-bold'}>
+                    {isBikeMode ? '🏍️ Moto' : isPoolMode ? '👥 Pool' : '🚗 Car'}
+                  </span>
                 </div>
               </div>
             );
@@ -971,15 +1180,18 @@ export default function UberRideRequestCard({
         </span>
       </div>
 
-      {/* 7. PRIMARY ACTION CTA BUTTON (UBER-STYLE FULL WIDTH) */}
+      {/* 7. PRIMARY ACTION CTA BUTTON (YATRAGO FULL WIDTH) */}
       <button
         onClick={handleConfirmRequest}
         className="w-full py-4 px-6 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-sm sm:text-base transition-all duration-200 shadow-xl shadow-white/10 hover:shadow-white/20 active:scale-[0.99] flex items-center justify-between group cursor-pointer"
       >
-        <span className="text-slate-950 font-black tracking-tight">
-          {activeService === 'reserve' || pickupTimeMode === 'later'
-            ? `Reserve for ${formatDateDisplay(reserveDate)} • ${reserveTime}`
-            : `Request ${currentTier.name}`}
+        <span className="text-slate-950 font-black tracking-tight flex items-center gap-2">
+          {isBikeMode ? <Bike size={18} /> : <Car size={18} />}
+          <span>
+            {activeService === 'reserve' || pickupTimeMode === 'later'
+              ? `Reserve ${currentTier.name} for ${formatDateDisplay(reserveDate)} • ${reserveTime}`
+              : `Request ${currentTier.name}`}
+          </span>
         </span>
         
         <div className="flex items-center gap-2">

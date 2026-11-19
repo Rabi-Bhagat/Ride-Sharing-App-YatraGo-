@@ -37,7 +37,8 @@ const rideSchema = new mongoose.Schema({
     name: String,
     fee: Number
   },
-  vehicleType: { type: String, enum: ['Eco Sedan', 'Premium SUV', 'Electric Shuttle', 'Guider Co-Ride'], default: 'Eco Sedan' },
+  vehicleType: { type: String, default: 'Eco Sedan' },
+  vehicleCategory: { type: String, enum: ['car', 'bike', 'pool', 'shuttle'], default: 'car' },
   status: { type: String, enum: ['Requested', 'Matched', 'In Progress', 'Completed', 'Cancelled'], default: 'Requested' },
   isStrangerCombined: { type: Boolean, default: false },
   strangerSavingsPercentage: { type: Number, default: 0 },

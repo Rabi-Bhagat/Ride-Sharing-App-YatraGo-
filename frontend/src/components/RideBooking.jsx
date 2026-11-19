@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { 
-  Navigation, MapPin, Car, Shield, Bus, Compass, 
+  Navigation, MapPin, Car, Bike, Shield, Bus, Compass, 
   ArrowRight, LocateFixed, Search, X, Loader2, Sparkles, Check
 } from 'lucide-react';
 import { VEHICLE_TIERS } from '../data/mockData';
@@ -34,12 +34,32 @@ export default function RideBooking({
   setPickup, 
   selectedDestination, 
   setSelectedDestination, 
-  selectedGuider 
+  selectedGuider,
+  activeRide
 }) {
-  const [selectedVehicle, setSelectedVehicle] = useState('eco');
+  const isInitialBike = activeRide?.vehicleCategory === 'bike' || 
+    activeRide?.vehicleType?.toLowerCase().includes('bike') || 
+    activeRide?.vehicleType?.toLowerCase().includes('moto');
+
+  const [vehicleCategory, setVehicleCategory] = useState(isInitialBike ? 'bike' : 'car');
+  const [selectedVehicle, setSelectedVehicle] = useState(isInitialBike ? 'moto' : 'eco');
   const [addGuider, setAddGuider] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locatingUser, setLocatingUser] = useState(false);
+
+  // Sync category if activeRide changes from parent
+  useEffect(() => {
+    const isBike = activeRide?.vehicleCategory === 'bike' || 
+      activeRide?.vehicleType?.toLowerCase().includes('bike') || 
+      activeRide?.vehicleType?.toLowerCase().includes('moto');
+    if (isBike) {
+      setVehicleCategory('bike');
+      setSelectedVehicle('moto');
+    } else if (activeRide?.vehicleCategory === 'car') {
+      setVehicleCategory('car');
+      setSelectedVehicle('eco');
+    }
+  }, [activeRide?.vehicleCategory, activeRide?.vehicleType]);
 
   // Search states for Destination
   const [destQuery, setDestQuery] = useState(selectedDestination?.name || '');
@@ -164,7 +184,7 @@ export default function RideBooking({
     return () => clearTimeout(timer);
   }, [pickupQuery]);
 
-  // Route metrics calculation
+  // Route metrics calculation between pickup and destination
   const pLat = pickup?.lat;
   const pLng = pickup?.lng;
   const dLat = selectedDestination?.lat;
@@ -172,14 +192,19 @@ export default function RideBooking({
 
   const hasValidRoute = pLat && pLng && dLat && dLng;
   const rawDistance = hasValidRoute ? calculateDistance(pLat, pLng, dLat, dLng) : 0;
-  const isIntercontinental = rawDistance > 1000;
-  const distanceKm = hasValidRoute && !isIntercontinental ? Math.max(1.2, Math.round(rawDistance * 10) / 10) : 0;
-  const etaMinutes = hasValidRoute ? Math.max(4, Math.round(distanceKm * 1.6)) : 0;
+  const isIntercontinental = rawDistance > 1200;
+  // Apply urban road factor of 1.28x
+  const distanceKm = hasValidRoute 
+    ? (isIntercontinental ? Math.round(rawDistance) : Math.max(1.2, Math.round(rawDistance * 1.28 * 10) / 10))
+    : 8.5;
+  const etaMinutes = Math.max(3, Math.round(distanceKm * 1.5));
 
   // Fare Calculation (in Indian Rupees ₹)
-  const basePrice = hasValidRoute 
-    ? Math.max(60.00, Math.round((50.00 + Math.min(distanceKm, 100) * 16.0) * vehicleObj.multiplier))
-    : 140.00;
+  const isBike = vehicleCategory === 'bike';
+  const basePrice = Math.max(
+    isBike ? 35.00 : 60.00,
+    Math.round(((isBike ? 25.00 : 50.00) + Math.min(distanceKm, 100) * (isBike ? 9.5 : 16.0)) * (vehicleObj?.multiplier || 1.0))
+  );
   const guiderFee = (addGuider || selectedGuider) ? (selectedGuider?.hourlyRate || 350) : 0;
   const totalPrice = (basePrice + guiderFee).toFixed(2);
 
@@ -286,6 +311,7 @@ export default function RideBooking({
         pickup,
         destination: selectedDestination,
         vehicleType: vehicleObj.name,
+        vehicleCategory,
         guiderId: selectedGuider?._id || selectedGuider?.id || (addGuider ? 'gdr_1' : null),
         guiderFee,
         totalPrice,
@@ -550,14 +576,62 @@ export default function RideBooking({
         </div>
       )}
 
-      {/* Vehicle Tier Selector (Compact & Clean) */}
-      <div className="space-y-2">
-        <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block">Choose Vehicle</label>
+      {/* Vehicle Category Selector: Bike vs Car */}
+      <div className="space-y-2.5">
+        <div className="flex items-center justify-between">
+          <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block font-mono">
+            {vehicleCategory === 'bike' ? '🏍️ Select Bike Option' : '🚗 Select Car Option'}
+          </label>
+          <span className={`text-[10px] font-mono font-bold ${vehicleCategory === 'bike' ? 'text-cyan-400' : 'text-emerald-400'}`}>
+            {vehicleCategory === 'bike' ? 'Bike Travel Mode' : 'Car Travel Mode'}
+          </span>
+        </div>
+
+        {/* Travel Mode Switcher Tabs */}
+        <div className="grid grid-cols-2 gap-1.5 p-1 bg-slate-950 rounded-xl border border-slate-800">
+          <button
+            type="button"
+            onClick={() => {
+              setVehicleCategory('bike');
+              setSelectedVehicle('moto');
+            }}
+            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              vehicleCategory === 'bike'
+                ? 'bg-cyan-500 text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Bike size={15} />
+            <span>Motorcycle / Bike</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setVehicleCategory('car');
+              setSelectedVehicle('eco');
+            }}
+            className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-2 cursor-pointer ${
+              vehicleCategory === 'car'
+                ? 'bg-white text-slate-950 font-black shadow-md'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            <Car size={15} />
+            <span>Car / Sedan / SUV</span>
+          </button>
+        </div>
+
+        {/* Display ONLY vehicles matching the selected travel category */}
         <div className="space-y-2">
-          {VEHICLE_TIERS.map(v => {
+          {VEHICLE_TIERS.filter(v => v.category === vehicleCategory).map(v => {
             const isSelected = selectedVehicle === v.id;
             const cappedDist = Math.min(distanceKm || 10, 100);
-            const tierPrice = Math.max(60.00, Math.round((50.00 + cappedDist * 16.0) * v.multiplier));
+            const isBikeMode = vehicleCategory === 'bike';
+            const tierPrice = Math.max(
+              isBikeMode ? 35.00 : 60.00,
+              Math.round(((isBikeMode ? 25.00 : 50.00) + cappedDist * (isBikeMode ? 9.5 : 16.0)) * v.multiplier)
+            );
 
             return (
               <div
@@ -565,28 +639,38 @@ export default function RideBooking({
                 onClick={() => setSelectedVehicle(v.id)}
                 className={`p-3 rounded-xl border cursor-pointer transition-all flex items-center justify-between ${
                   isSelected
-                    ? 'bg-gradient-to-r from-cyan-950/70 to-slate-900 border-cyan-500 shadow-md shadow-cyan-500/20'
+                    ? isBikeMode
+                      ? 'bg-gradient-to-r from-cyan-950/70 to-slate-900 border-cyan-400 shadow-md shadow-cyan-500/20'
+                      : 'bg-gradient-to-r from-emerald-950/70 to-slate-900 border-emerald-400 shadow-md shadow-emerald-500/20'
                     : 'bg-slate-900/60 border-slate-800 hover:border-slate-700'
                 }`}
               >
                 <div className="flex items-center gap-3">
                   <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-                    isSelected ? 'bg-cyan-500/20 text-cyan-400' : 'bg-slate-800 text-slate-400'
+                    isSelected 
+                      ? (isBikeMode ? 'bg-cyan-500/20 text-cyan-400' : 'bg-emerald-500/20 text-emerald-400') 
+                      : 'bg-slate-800 text-slate-400'
                   }`}>
-                    <Car size={18} />
+                    {isBikeMode ? <Bike size={18} /> : <Car size={18} />}
                   </div>
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-bold text-white">{v.name}</span>
                       <span className="text-[10px] text-slate-400 font-mono">({v.capacity})</span>
                     </div>
-                    <span className="text-[11px] text-emerald-400 font-mono block">ETA ~{v.etaMinutes} mins away</span>
+                    <span className="text-[11px] text-emerald-400 font-mono block">
+                      {isBikeMode ? 'Helmet included • ' : ''}ETA ~{v.etaMinutes} mins away
+                    </span>
                   </div>
                 </div>
 
                 <div className="text-right">
                   <span className="text-sm font-extrabold text-white block">₹{tierPrice.toFixed(2)}</span>
-                  {isSelected && <span className="text-[10px] text-cyan-400 font-bold block">Selected</span>}
+                  {isSelected && (
+                    <span className={`text-[10px] font-bold block ${isBikeMode ? 'text-cyan-400' : 'text-emerald-400'}`}>
+                      Selected
+                    </span>
+                  )}
                 </div>
               </div>
             );

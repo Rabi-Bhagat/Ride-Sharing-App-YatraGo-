@@ -11,10 +11,10 @@ import yatraGoLogo from '../logo/yatrago-logo.png';
 import Interactive3DRideScene from '../components/Interactive3DRideScene';
 import HeroImageSlider from '../components/HeroImageSlider';
 import VehicleFleetShowcase, { VEHICLE_FLEET_DATA } from '../components/VehicleFleetShowcase';
-import UberRideRequestCard from '../components/UberRideRequestCard';
-import UberReserveSection from '../components/UberReserveSection';
-import UberAirportAndIntercityHub from '../components/UberAirportAndIntercityHub';
-import UberFaqSection from '../components/UberFaqSection';
+import YatraGoRideRequestCard from '../components/YatraGoRideRequestCard';
+import YatraGoReserveSection from '../components/YatraGoReserveSection';
+import YatraGoAirportIntercityHub from '../components/YatraGoAirportIntercityHub';
+import YatraGoFaqSection from '../components/YatraGoFaqSection';
 
 export default function HomePage({ onNavigate, user }) {
   const [heroDisplayMode, setHeroDisplayMode] = useState('slider'); // 'slider' or '3d'
@@ -23,13 +23,30 @@ export default function HomePage({ onNavigate, user }) {
   const [quickDropoff, setQuickDropoff] = useState('Downtown Cyber Hub');
 
   const handleInstantBook = (bookingInfo) => {
-    if (bookingInfo?.pickup) setQuickPickup(bookingInfo.pickup);
-    if (bookingInfo?.dropoff) setQuickDropoff(bookingInfo.dropoff);
+    const isBike = bookingInfo?.vehicleCategory === 'bike' || 
+      bookingInfo?.service === 'moto' || 
+      bookingInfo?.tier?.includes('moto') || 
+      bookingInfo?.tier?.includes('bike');
+
+    if (bookingInfo?.pickup) {
+      setQuickPickup(typeof bookingInfo.pickup === 'string' ? bookingInfo.pickup : bookingInfo.pickup.name);
+    }
+    if (bookingInfo?.dropoff) {
+      setQuickDropoff(typeof bookingInfo.dropoff === 'string' ? bookingInfo.dropoff : bookingInfo.dropoff.name);
+    }
+    if (isBike) {
+      setSelectedVehicleId('superbike');
+    } else {
+      setSelectedVehicleId('ecosudan');
+    }
+
     onNavigate('book', {
       pickup: bookingInfo?.pickup,
       destination: bookingInfo?.dropoff,
       distanceKm: bookingInfo?.distanceKm,
       tier: bookingInfo?.tier,
+      vehicleType: bookingInfo?.vehicleType,
+      vehicleCategory: isBike ? 'bike' : 'car',
       fare: bookingInfo?.fare
     });
   };
@@ -38,7 +55,7 @@ export default function HomePage({ onNavigate, user }) {
     <div className="space-y-12 animate-fadeIn text-slate-100">
       
       {/* ======================================================== */}
-      {/* 1. UBER HERO SPLIT: RIDE REQUEST CARD + HERO IMAGE SLIDER */}
+      {/* 1. YATRAGO HERO SPLIT: RIDE REQUEST CARD + HERO IMAGE SLIDER */}
       {/* ======================================================== */}
       <section className="relative">
         
@@ -48,9 +65,9 @@ export default function HomePage({ onNavigate, user }) {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch relative z-10">
           
-          {/* Left Column (5 Cols): Iconic Uber Request a Ride Card */}
+          {/* Left Column (5 Cols): YatraGo Request a Ride Card */}
           <div className="lg:col-span-5 flex flex-col justify-between">
-            <UberRideRequestCard
+            <YatraGoRideRequestCard
               initialPickup={quickPickup}
               initialDropoff={quickDropoff}
               onBookRide={handleInstantBook}
@@ -119,7 +136,7 @@ export default function HomePage({ onNavigate, user }) {
       </section>
 
       {/* ======================================================== */}
-      {/* 2. EXPLORE WHAT YOU CAN DO WITH YATRAGO (UBER OFFERINGS) */}
+      {/* 2. EXPLORE WHAT YOU CAN DO WITH YATRAGO OFFERINGS        */}
       {/* ======================================================== */}
       <section className="space-y-4 pt-4">
         <div>
@@ -288,7 +305,7 @@ export default function HomePage({ onNavigate, user }) {
       {/* 3. YATRAGO RESERVE SHOWCASE (PLAN FOR LATER)             */}
       {/* ======================================================== */}
       <section>
-        <UberReserveSection
+        <YatraGoReserveSection
           onReserveClick={(details) => {
             if (details?.destination) setQuickDropoff(details.destination);
             onNavigate('book');
@@ -337,10 +354,10 @@ export default function HomePage({ onNavigate, user }) {
       </section>
 
       {/* ======================================================== */}
-      {/* 6. AIRPORTS, HIGHWAYS & COURIER HUB (FROM USER'S FILE)   */}
+      {/* 6. AIRPORTS, HIGHWAYS & COURIER HUB (YATRAGO EXPANDED) */}
       {/* ======================================================== */}
       <section>
-        <UberAirportAndIntercityHub
+        <YatraGoAirportIntercityHub
           onSelectRoute={(route) => {
             if (route?.pickup) setQuickPickup(route.pickup);
             if (route?.dropoff) setQuickDropoff(route.dropoff);
@@ -391,11 +408,11 @@ export default function HomePage({ onNavigate, user }) {
       {/* 8. FREQUENTLY ASKED QUESTIONS ACCORDION                  */}
       {/* ======================================================== */}
       <section>
-        <UberFaqSection />
+        <YatraGoFaqSection />
       </section>
 
       {/* ======================================================== */}
-      {/* 9. DO MORE IN THE APP (UBER-STYLE DOWNLOAD BLOCK)        */}
+      {/* 9. DO MORE IN THE APP (YATRAGO DOWNLOAD BLOCK)           */}
       {/* ======================================================== */}
       <section className="rounded-3xl p-6 sm:p-8 lg:p-10 bg-gradient-to-r from-slate-900 via-slate-950 to-slate-900 border border-slate-800 grid grid-cols-1 md:grid-cols-12 gap-8 items-center shadow-2xl">
         <div className="md:col-span-8 space-y-3">

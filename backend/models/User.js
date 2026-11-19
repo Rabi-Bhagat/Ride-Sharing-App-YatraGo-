@@ -8,7 +8,11 @@ const userSchema = new mongoose.Schema({
   address: { type: String, default: 'Innovation Tech Park, SF' },
   homeAddress: { type: String, default: '450 Mission St, San Francisco, CA' },
   workAddress: { type: String, default: '1 Market St, San Francisco, CA' },
-  role: { type: String, enum: ['rider', 'driver', 'guider'], default: 'rider' },
+  role: { 
+    type: String, 
+    enum: ['traveler', 'rider', 'driver', 'guide', 'guider', 'admin'], 
+    default: 'traveler' 
+  },
   avatar: { 
     type: String, 
     default: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80' 

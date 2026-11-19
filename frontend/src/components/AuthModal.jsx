@@ -1,40 +1,55 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
-  User, Mail, Lock, Phone, MapPin, Eye, EyeOff, ShieldCheck, 
-  Sparkles, CheckCircle2, AlertTriangle, ArrowRight, Camera, 
-  Upload, X, Compass, Car, Check, RefreshCw, KeyRound, HeartHandshake, Shield
+  User, Mail, Lock, Phone, Eye, EyeOff, ShieldCheck, 
+  Sparkles, CheckCircle2, AlertCircle, ArrowRight, X, 
+  Compass, Car, MapPin, Loader2, Check, KeyRound, 
+  HeartHandshake, Shield, Smartphone, Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 
-const PRESET_AVATARS = [
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80',
-  'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=300&q=80'
-];
+// Google Official SVG Icon
+function GoogleIcon({ className = "w-4 h-4" }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24">
+      <path
+        fill="#4285F4"
+        d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
+      />
+      <path
+        fill="#EA4335"
+        d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"
+      />
+    </svg>
+  );
+}
 
-export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
+export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const { 
     login, 
-    loginWithOtp,
     register, 
+    loginWithGoogle,
+    loginWithOtp,
     forgotPassword, 
     loading, 
     authModalTab, 
     setAuthModalTab 
   } = useAuth();
 
-  const fileInputRef = useRef(null);
-
-  // Active view: 'login' | 'signup' | 'forgot'
-  const activeTab = authModalTab || initialTab;
+  // Active view: 'login' | 'signup' | 'forgot' | 'otp'
+  const activeTab = authModalTab || 'login';
   const setActiveTab = (tab) => setAuthModalTab(tab);
 
-  // Form states - Login
-  const [loginEmail, setLoginEmail] = useState('');
+  // Form states - Sign In
+  const [loginIdentifier, setLoginIdentifier] = useState('');
   const [loginPassword, setLoginPassword] = useState('');
   const [showLoginPassword, setShowLoginPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -43,179 +58,90 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
   const [name, setName] = useState('');
   const [signupEmail, setSignupEmail] = useState('');
   const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
-  const [homeAddress, setHomeAddress] = useState('');
-  const [workAddress, setWorkAddress] = useState('');
-  const [role, setRole] = useState('rider');
-  const [avatar, setAvatar] = useState(PRESET_AVATARS[0]);
   const [signupPassword, setSignupPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [showSignupPassword, setShowSignupPassword] = useState(false);
-  const [emergencyName, setEmergencyName] = useState('');
-  const [emergencyPhone, setEmergencyPhone] = useState('');
-  const [emergencyRelation, setEmergencyRelation] = useState('Family');
+  const [selectedRole, setSelectedRole] = useState('traveler'); // 'traveler', 'driver', 'guide'
   const [agreeTerms, setAgreeTerms] = useState(true);
-  const [isDetectingGps, setIsDetectingGps] = useState(false);
 
-  // Form states - Forgot / Change Password
+  // Form states - Forgot Password
   const [forgotEmail, setForgotEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
 
-  // Form states - Instant OTP Authentication
+  // Form states - Quick OTP
   const [otpTarget, setOtpTarget] = useState('+91 98765 43210');
   const [otpCode, setOtpCode] = useState('');
-  const [otpGenerated, setOtpGenerated] = useState('');
-  const [otpRole, setOtpRole] = useState('rider');
-  const [otpStep, setOtpStep] = useState('send'); // 'send' or 'verify'
-  const [otpCustomName, setOtpCustomName] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
 
-  // UI Feedback
+  // Feedback notifications
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  if (!isOpen) return null;
+  // Close modal on Escape key
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && isOpen && onClose) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose]);
 
-  // Clear messages on tab change
+  // Clear messages when switching tabs
   const handleSwitchTab = (tab) => {
     setErrorMessage('');
     setSuccessMessage('');
     setActiveTab(tab);
   };
 
-  // One-click demo credentials filler
-  const handleFillDemo = () => {
-    setLoginEmail('alex.rivera@yatrago.com');
-    setLoginPassword('password123');
-    setErrorMessage('');
-  };
+  // Live Password Strength Calculation
+  const passwordStrength = useMemo(() => {
+    const pass = activeTab === 'signup' ? signupPassword : newPassword;
+    if (!pass) return { score: 0, label: '', color: 'bg-slate-700', textCol: 'text-slate-500', width: '0%' };
 
-  // OTP handlers
-  const handleSendOtp = (e) => {
-    if (e) e.preventDefault();
-    if (!otpTarget.trim()) {
-      setErrorMessage('Please enter a valid phone number or email.');
-      return;
-    }
-    const code = '8492';
-    setOtpGenerated(code);
-    setOtpStep('verify');
-    setErrorMessage('');
-    setSuccessMessage(`Instant OTP Generated! Your 4-digit code is: ${code}`);
-  };
-
-  const handleVerifyOtp = async (e) => {
-    if (e) e.preventDefault();
-    if (!otpCode.trim()) {
-      setErrorMessage('Please enter the 4-digit OTP code.');
-      return;
-    }
-    if (otpCode.trim() !== '8492' && otpCode.trim() !== otpGenerated) {
-      setErrorMessage('Incorrect OTP! Please use 8492.');
-      return;
-    }
-    const res = await loginWithOtp(otpTarget, otpCode, otpRole, otpCustomName);
-    if (res.success) {
-      setSuccessMessage(res.message);
-      setTimeout(() => {
-        if (onClose) onClose();
-      }, 400);
-    }
-  };
-
-  // Image Upload handler for Profile Photo
-  const handlePhotoUpload = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setErrorMessage('Please select a valid image file (PNG, JPG, WebP).');
-      return;
-    }
-
-    if (file.size > 8 * 1024 * 1024) {
-      setErrorMessage('Image size should be less than 8MB.');
-      return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const base64Data = event.target?.result;
-      if (base64Data) {
-        setAvatar(base64Data);
-        setSuccessMessage('Photo ready! It will be saved with your profile.');
-        setTimeout(() => setSuccessMessage(''), 2500);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Browser GPS auto-detection for pickup address
-  const handleDetectAddress = () => {
-    if (!navigator.geolocation) {
-      setErrorMessage('Geolocation is not supported by your browser.');
-      return;
-    }
-    setIsDetectingGps(true);
-    setErrorMessage('');
-    navigator.geolocation.getCurrentPosition(
-      async (pos) => {
-        const { latitude, longitude } = pos.coords;
-        try {
-          const res = await fetch(
-            `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`,
-            { headers: { 'Accept-Language': 'en' } }
-          );
-          const data = await res.json();
-          if (data && data.display_name) {
-            const cleanAddr = data.display_name.split(',').slice(0, 3).join(', ').trim();
-            setAddress(cleanAddr);
-            if (!homeAddress) setHomeAddress(cleanAddr);
-            setSuccessMessage(`GPS location detected: ${cleanAddr}`);
-            setTimeout(() => setSuccessMessage(''), 3000);
-          } else {
-            setAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-          }
-        } catch (e) {
-          setAddress(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
-        } finally {
-          setIsDetectingGps(false);
-        }
-      },
-      () => {
-        setIsDetectingGps(false);
-        setErrorMessage('Location permission was denied. You can enter your address manually.');
-      },
-      { timeout: 8000 }
-    );
-  };
-
-  // Calculate live password strength
-  const getPasswordStrength = (pass) => {
-    if (!pass) return { score: 0, text: 'Empty', color: 'bg-slate-700' };
     let score = 0;
     if (pass.length >= 6) score += 1;
     if (pass.length >= 8) score += 1;
-    if (/[A-Z]/.test(pass)) score += 1;
-    if (/[0-9]/.test(pass)) score += 1;
+    if (/[A-Z]/.test(pass) && /[a-z]/.test(pass)) score += 1;
+    if (/\d/.test(pass)) score += 1;
     if (/[^A-Za-z0-9]/.test(pass)) score += 1;
 
-    if (score <= 2) return { score: 33, text: 'Weak', color: 'bg-red-500' };
-    if (score <= 4) return { score: 66, text: 'Good', color: 'bg-amber-500' };
-    return { score: 100, text: 'Strong', color: 'bg-emerald-500' };
+    if (score <= 2) {
+      return { score: 1, label: 'Weak', color: 'bg-red-500', textCol: 'text-red-400', width: '33%' };
+    } else if (score <= 3) {
+      return { score: 2, label: 'Medium', color: 'bg-amber-500', textCol: 'text-amber-400', width: '66%' };
+    } else {
+      return { score: 3, label: 'Strong', color: 'bg-emerald-500', textCol: 'text-emerald-400', width: '100%' };
+    }
+  }, [activeTab, signupPassword, newPassword]);
+
+  // One-click demo credentials filler
+  const handleFillDemo = (roleType = 'traveler') => {
+    setErrorMessage('');
+    if (roleType === 'driver') {
+      setLoginIdentifier('driver.sharma@yatrago.com');
+    } else if (roleType === 'guide') {
+      setLoginIdentifier('guide.aarav@yatrago.com');
+    } else {
+      setLoginIdentifier('alex.rivera@yatrago.com');
+    }
+    setLoginPassword('password123');
+    setSuccessMessage(`Demo ${roleType} credentials filled! Click 'Sign In'.`);
+    setTimeout(() => setSuccessMessage(''), 2500);
   };
 
-  const strength = getPasswordStrength(activeTab === 'signup' ? signupPassword : newPassword);
-
-  // 1. SUBMIT LOGIN
-  const handleSubmitLogin = async (e) => {
+  // 1. Submit Sign In
+  const handleLoginSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
-    if (!loginEmail.trim()) {
-      setErrorMessage('Please enter your email address.');
+    if (!loginIdentifier.trim()) {
+      setErrorMessage('Please enter your email or mobile phone number.');
       return;
     }
     if (!loginPassword) {
@@ -223,83 +149,91 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
       return;
     }
 
-    const res = await login(loginEmail, loginPassword);
+    const res = await login(loginIdentifier.trim(), loginPassword, rememberMe);
     if (!res.success) {
       setErrorMessage(res.error || 'Invalid credentials.');
     } else {
-      setSuccessMessage('Logged in successfully!');
+      setSuccessMessage(res.message || 'Login successful!');
+      if (onAuthSuccess && res.nextRoute) {
+        onAuthSuccess(res.nextRoute, res.user);
+      }
       setTimeout(() => {
-        onClose();
-      }, 500);
+        if (onClose) onClose();
+      }, 350);
     }
   };
 
-  // 2. SUBMIT SIGN UP
-  const handleSubmitSignup = async (e) => {
+  // 2. Submit Sign Up
+  const handleSignupSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
 
     if (!name.trim() || name.trim().length < 2) {
-      setErrorMessage('Full name must be at least 2 characters.');
+      setErrorMessage('Please enter your full legal name (at least 2 characters).');
       return;
     }
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!signupEmail.trim() || !emailRegex.test(signupEmail.trim())) {
       setErrorMessage('Please enter a valid email address (e.g. rider@example.com).');
       return;
     }
-
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length < 7) {
-      setErrorMessage('Please provide a valid contact phone number (at least 7 digits).');
+    const cleanPhone = phone.replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setErrorMessage('Please provide a valid 10-digit mobile phone number.');
       return;
     }
-
     if (!signupPassword || signupPassword.length < 6) {
       setErrorMessage('Password must be at least 6 characters long.');
       return;
     }
-
-    if (signupPassword !== confirmPassword) {
-      setErrorMessage('Passwords do not match. Please re-enter.');
-      return;
-    }
-
     if (!agreeTerms) {
-      setErrorMessage('Please accept the YatraGo Transit Safety & Community guidelines.');
+      setErrorMessage('Please agree to YatraGo Terms of Service & Privacy Policy.');
       return;
     }
 
-    const payload = {
+    const formData = {
       name: name.trim(),
-      email: signupEmail.trim(),
-      password: signupPassword,
+      email: signupEmail.trim().toLowerCase(),
       phone: phone.trim(),
-      address: address.trim() || 'San Francisco, CA',
-      homeAddress: homeAddress.trim() || address.trim() || '450 Mission St, SF',
-      workAddress: workAddress.trim() || 'Downtown Cyber Hub',
-      avatar,
-      role,
-      emergencyContactName: emergencyName.trim(),
-      emergencyContactPhone: emergencyPhone.trim(),
-      emergencyContactRelation: emergencyRelation
+      password: signupPassword,
+      role: selectedRole,
+      address: 'Innovation Tech Park, SF',
+      homeAddress: '450 Mission St, San Francisco, CA',
+      workAddress: 'Downtown Cyber Hub'
     };
 
-    const res = await register(payload);
+    const res = await register(formData);
     if (!res.success) {
-      setErrorMessage(res.error || 'Failed to create account.');
+      setErrorMessage(res.error || 'Registration failed.');
     } else {
-      setSuccessMessage('Account created! Welcome to YatraGo Mobility.');
+      setSuccessMessage('Account created successfully! Welcome to YatraGo.');
+      if (onAuthSuccess && res.nextRoute) {
+        onAuthSuccess(res.nextRoute, res.user);
+      }
       setTimeout(() => {
-        onClose();
-      }, 600);
+        if (onClose) onClose();
+      }, 400);
     }
   };
 
-  // 3. SUBMIT FORGOT / CHANGE PASSWORD
-  const handleSubmitForgot = async (e) => {
+  // 3. Submit Google SSO
+  const handleGoogleSubmit = async () => {
+    setErrorMessage('');
+    const res = await loginWithGoogle(selectedRole);
+    if (res.success) {
+      setSuccessMessage('Signed in with Google successfully!');
+      if (onAuthSuccess && res.nextRoute) {
+        onAuthSuccess(res.nextRoute, res.user);
+      }
+      setTimeout(() => {
+        if (onClose) onClose();
+      }, 350);
+    }
+  };
+
+  // 4. Submit Forgot Password
+  const handleForgotSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
@@ -309,885 +243,776 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login' }) {
       setErrorMessage('Please enter a valid registered email address.');
       return;
     }
-
     if (!newPassword || newPassword.length < 6) {
-      setErrorMessage('New password must be at least 6 characters.');
+      setErrorMessage('New password must be at least 6 characters long.');
       return;
     }
-
     if (newPassword !== confirmNewPassword) {
-      setErrorMessage('New passwords do not match. Please verify.');
+      setErrorMessage('Passwords do not match. Please recheck.');
       return;
     }
 
-    const res = await forgotPassword(forgotEmail, newPassword);
+    const res = await forgotPassword(forgotEmail.trim(), newPassword);
     if (!res.success) {
-      setErrorMessage(res.error || 'Could not reset password.');
+      setErrorMessage(res.error || 'Failed to reset password.');
     } else {
-      setSuccessMessage('Password reset successfully! Please log in with your new credentials.');
+      setSuccessMessage(res.message || 'Password reset successfully! Redirecting to Sign In...');
       setTimeout(() => {
-        setLoginEmail(forgotEmail);
-        setLoginPassword('');
-        handleSwitchTab('login');
+        setActiveTab('login');
+        setLoginIdentifier(forgotEmail.trim());
+        setLoginPassword(newPassword);
       }, 1500);
     }
   };
 
+  // 5. Submit OTP Login
+  const handleOtpSend = (e) => {
+    e.preventDefault();
+    if (!otpTarget.trim()) {
+      setErrorMessage('Please enter a phone number or email.');
+      return;
+    }
+    setOtpSent(true);
+    setOtpCode('8492');
+    setSuccessMessage('OTP generated! Code: 8492 (auto-filled for testing)');
+  };
+
+  const handleOtpVerify = async (e) => {
+    e.preventDefault();
+    if (otpCode !== '8492') {
+      setErrorMessage('Invalid OTP code. Please use 8492.');
+      return;
+    }
+    const res = await loginWithOtp(otpTarget, otpCode, selectedRole);
+    if (res.success) {
+      setSuccessMessage(res.message);
+      if (onAuthSuccess && res.nextRoute) {
+        onAuthSuccess(res.nextRoute, res.user);
+      }
+      setTimeout(() => {
+        if (onClose) onClose();
+      }, 350);
+    }
+  };
+
+  if (!isOpen) return null;
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
-      <div className="glass-panel w-full max-w-xl rounded-3xl border border-cyan-500/40 shadow-2xl relative overflow-hidden flex flex-col max-h-[94vh]">
-        
-        {/* Glow Effects */}
-        <div className="absolute top-0 right-0 w-72 h-72 bg-gradient-to-br from-cyan-500/15 via-blue-600/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-72 h-72 bg-gradient-to-tr from-emerald-500/15 via-cyan-500/10 to-transparent rounded-full blur-3xl pointer-events-none"></div>
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-slate-950/80 backdrop-blur-md overflow-y-auto animate-fadeIn"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="auth-modal-title"
+    >
+      <div 
+        className="relative w-full max-w-4xl bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl overflow-hidden my-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close Button */}
+        <button
+          onClick={onClose}
+          aria-label="Close dialog"
+          className="absolute top-4 right-4 z-20 p-2 rounded-full bg-slate-800/80 hover:bg-slate-700 text-slate-400 hover:text-white transition-all cursor-pointer"
+        >
+          <X size={18} />
+        </button>
 
-        {/* Modal Header */}
-        <div className="p-5 sm:p-6 border-b border-slate-800/80 flex items-center justify-between relative z-10">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl p-1 bg-white border border-cyan-500/40 shadow-md flex items-center justify-center shrink-0">
-              <img src={yatraGoLogo} alt="YatraGo Logo" className="w-full h-full object-contain" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 min-h-[580px]">
+          
+          {/* ======================================================== */}
+          {/* LEFT PANEL (DESKTOP): BRAND SHOWCASE & TRUST BADGES       */}
+          {/* ======================================================== */}
+          <div className="hidden lg:flex lg:col-span-5 flex-col justify-between p-8 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/50 border-r border-slate-800/80 relative overflow-hidden">
+            
+            {/* Ambient Background Glows */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+            {/* Header Brand */}
+            <div className="relative z-10 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-white p-1 border border-cyan-400/40 shadow-md flex items-center justify-center shrink-0">
+                  <img src={yatraGoLogo} alt="YatraGo Logo" className="w-full h-full object-contain" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-lg font-black text-white tracking-tight">YatraGo</span>
+                    <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">PRO</span>
+                  </div>
+                  <p className="text-[10px] text-slate-400 font-mono tracking-wider">RIDE • SHARE • EXPLORE</p>
+                </div>
+              </div>
+
+              <div className="pt-2">
+                <h2 id="auth-modal-title" className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                  Smart Urban & Highway Mobility Network
+                </h2>
+                <p className="text-xs text-slate-300 mt-2 leading-relaxed">
+                  Join verified riders, experienced highway drivers, and certified local guides across India.
+                </p>
+              </div>
             </div>
+
+            {/* 3 Trust Badges */}
+            <div className="relative z-10 space-y-3.5 my-6">
+              
+              {/* Trust Badge 1 */}
+              <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex items-start gap-3 backdrop-blur-sm shadow-sm hover:border-cyan-500/30 transition-all">
+                <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-400 border border-cyan-500/25 shrink-0 mt-0.5">
+                  <ShieldCheck size={18} />
+                </div>
+                <div className="min-w-0">
+                  <strong className="text-xs font-bold text-white block">Verified Riders & Guides</strong>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    Mandatory Government ID badge and photo verification for 100% community safety.
+                  </p>
+                </div>
+              </div>
+
+              {/* Trust Badge 2 */}
+              <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex items-start gap-3 backdrop-blur-sm shadow-sm hover:border-emerald-500/30 transition-all">
+                <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 shrink-0 mt-0.5">
+                  <Sparkles size={18} />
+                </div>
+                <div className="min-w-0">
+                  <strong className="text-xs font-bold text-white block">Smart Cost Splitting</strong>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    Save up to 44% on highway & airport corridors with automated Razorpay & UPI escrow pooling.
+                  </p>
+                </div>
+              </div>
+
+              {/* Trust Badge 3 */}
+              <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800/90 flex items-start gap-3 backdrop-blur-sm shadow-sm hover:border-red-500/30 transition-all">
+                <div className="p-2 rounded-xl bg-red-500/15 text-red-400 border border-red-500/25 shrink-0 mt-0.5">
+                  <HeartHandshake size={18} />
+                </div>
+                <div className="min-w-0">
+                  <strong className="text-xs font-bold text-white block">24/7 SOS Safety Guardians</strong>
+                  <p className="text-[11px] text-slate-400 mt-0.5 leading-snug">
+                    Live GPS telemetry, instant family tracking links, and 3-second rapid emergency dispatch.
+                  </p>
+                </div>
+              </div>
+
+            </div>
+
+            {/* Bottom Footer Proof */}
+            <div className="relative z-10 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400">
+              <span className="font-mono text-emerald-400 font-bold flex items-center gap-1">
+                <span>★ 4.96</span>
+                <span className="text-slate-400">Rating</span>
+              </span>
+              <span className="font-mono text-slate-400">50,000+ Safe Trips</span>
+            </div>
+
+          </div>
+
+          {/* ======================================================== */}
+          {/* RIGHT PANEL: DISTRACTION-FREE AUTH FORM CONTAINER         */}
+          {/* ======================================================== */}
+          <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between">
+            
+            {/* Top Bar: Segmented Pill Switcher */}
             <div>
-              <div className="flex items-center gap-2">
-                <h2 className="text-lg font-black text-white tracking-tight">YatraGo Access</h2>
-                <span className="text-[10px] uppercase font-mono px-2 py-0.5 rounded-full bg-cyan-500/15 text-cyan-300 font-bold border border-cyan-500/30">
-                  Secure ID
-                </span>
-              </div>
-              <p className="text-xs text-slate-400">Next-Gen Urban Transit & Pooling Network</p>
-            </div>
-          </div>
-
-          <button
-            onClick={onClose}
-            className="p-2 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white border border-slate-800 transition-all hover:scale-105"
-            title="Close"
-          >
-            <X size={18} />
-          </button>
-        </div>
-
-        {/* Tab Navigation Switches */}
-        <div className="px-6 pt-4 pb-2 relative z-10 flex border-b border-slate-800/60 bg-slate-950/40">
-          <div className="grid grid-cols-4 w-full p-1 rounded-2xl bg-slate-900/80 border border-slate-800">
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('login')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center ${
-                activeTab === 'login'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Sign In
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('otp')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center flex items-center justify-center gap-1 ${
-                activeTab === 'otp'
-                  ? 'bg-gradient-to-r from-emerald-400 to-teal-500 text-slate-950 shadow-md font-black'
-                  : 'text-emerald-400 hover:text-emerald-300'
-              }`}
-            >
-              <span>OTP</span>
-              <Sparkles size={11} />
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('signup')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center ${
-                activeTab === 'signup'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Register
-            </button>
-            <button
-              type="button"
-              onClick={() => handleSwitchTab('forgot')}
-              className={`py-2 px-2 rounded-xl text-xs font-bold transition-all text-center ${
-                activeTab === 'forgot'
-                  ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
-                  : 'text-slate-400 hover:text-white'
-              }`}
-            >
-              Reset
-            </button>
-          </div>
-        </div>
-
-        {/* Feedback Alert Banners */}
-        {errorMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-2xl bg-red-500/10 border border-red-500/40 text-red-300 text-xs flex items-center gap-2.5 animate-slideDown shadow-lg">
-            <AlertTriangle size={16} className="text-red-400 shrink-0" />
-            <span className="font-medium">{errorMessage}</span>
-          </div>
-        )}
-
-        {successMessage && (
-          <div className="mx-6 mt-4 p-3 rounded-2xl bg-emerald-500/10 border border-emerald-500/40 text-emerald-300 text-xs flex items-center gap-2.5 animate-slideDown shadow-lg">
-            <CheckCircle2 size={16} className="text-emerald-400 shrink-0" />
-            <span className="font-medium">{successMessage}</span>
-          </div>
-        )}
-
-        {/* Scrollable Form Body */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-5 relative z-10">
-
-          {/* ========================================================= */}
-          {/* 1. SIGN IN (LOGIN) VIEW */}
-          {/* ========================================================= */}
-          {activeTab === 'login' && (
-            <form onSubmit={handleSubmitLogin} className="space-y-4">
-              
-              {/* Quick Demo Login Pill */}
-              <div className="p-3 rounded-2xl bg-gradient-to-r from-cyan-950/60 via-slate-900 to-slate-900 border border-cyan-500/30 flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2 text-cyan-300 font-medium">
-                  <Sparkles size={16} className="text-cyan-400 shrink-0" />
-                  <span>Test with Demo Account?</span>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleFillDemo}
-                  className="px-3 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 border border-cyan-500/40 font-bold transition-all hover:scale-105"
-                >
-                  Fill Demo (Alex Rivera)
-                </button>
-              </div>
-
-              {/* Email Input */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Mail size={14} className="text-cyan-400" />
-                  <span>Email Address</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="email"
-                    required
-                    value={loginEmail}
-                    onChange={(e) => setLoginEmail(e.target.value)}
-                    placeholder="e.g. alex.rivera@yatrago.com"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Password Input */}
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <Lock size={14} className="text-cyan-400" />
-                    <span>Password</span>
-                  </label>
+              <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+                <div className="flex p-1 bg-slate-950 rounded-2xl border border-slate-800 w-full sm:w-auto">
                   <button
                     type="button"
-                    onClick={() => handleSwitchTab('forgot')}
-                    className="text-xs text-cyan-400 hover:text-cyan-300 font-medium transition-colors"
+                    onClick={() => handleSwitchTab('login')}
+                    className={`flex-1 sm:flex-none px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'login'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
                   >
-                    Forgot password?
+                    Sign In
                   </button>
-                </div>
-                <div className="relative">
-                  <input
-                    type={showLoginPassword ? 'text' : 'password'}
-                    required
-                    value={loginPassword}
-                    onChange={(e) => setLoginPassword(e.target.value)}
-                    placeholder="Enter your account password"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-4 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
                   <button
                     type="button"
-                    onClick={() => setShowLoginPassword(!showLoginPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    onClick={() => handleSwitchTab('signup')}
+                    className={`flex-1 sm:flex-none px-4 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'signup'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
                   >
-                    {showLoginPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    Sign Up
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchTab('otp')}
+                    className={`flex-1 sm:flex-none px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      activeTab === 'otp'
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-black'
+                        : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    Instant OTP
                   </button>
                 </div>
               </div>
 
-              {/* Remember Me Checkbox */}
-              <div className="flex items-center justify-between pt-1 text-xs">
-                <label className="flex items-center gap-2 cursor-pointer text-slate-300">
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={(e) => setRememberMe(e.target.checked)}
-                    className="w-4 h-4 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 focus:ring-offset-0 cursor-pointer"
-                  />
-                  <span>Keep me logged in on this browser</span>
-                </label>
-              </div>
-
-              {/* Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-cyan-500/20 disabled:opacity-50 mt-2"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    <span>Verifying Credentials...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Log In to YatraGo</span>
-                    <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-
-              {/* Footer Switch */}
-              <div className="pt-2 text-center text-xs text-slate-400">
-                <span>New to YatraGo? </span>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchTab('signup')}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4"
-                >
-                  Create your rider account
-                </button>
-              </div>
-
-            </form>
-          )}
-
-          {/* ========================================================= */}
-          {/* 1.5 INSTANT OTP AUTHENTICATION VIEW                       */}
-          {/* ========================================================= */}
-          {activeTab === 'otp' && (
-            <div className="space-y-4 animate-fadeIn">
-              
-              <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/40 text-xs text-emerald-300 flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Sparkles size={16} className="text-emerald-400 shrink-0" />
-                  <span>Passwordless OTP Login</span>
+              {/* Toast Messages */}
+              {errorMessage && (
+                <div className="mt-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-xs text-red-300 flex items-start justify-between gap-2 animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle size={15} className="text-red-400 shrink-0" />
+                    <span>{errorMessage}</span>
+                  </div>
+                  <button onClick={() => setErrorMessage('')} className="text-red-400 hover:text-red-200">
+                    <X size={14} />
+                  </button>
                 </div>
-                <span className="font-mono text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-500/30">
-                  Universal Role Access
-                </span>
-              </div>
+              )}
 
-              {otpStep === 'send' ? (
-                <form onSubmit={handleSendOtp} className="space-y-4">
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <Phone size={14} className="text-emerald-400" />
-                      <span>Mobile Number or Email Address</span>
+              {successMessage && (
+                <div className="mt-4 p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 flex items-start justify-between gap-2 animate-fadeIn">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={15} className="text-emerald-400 shrink-0" />
+                    <span>{successMessage}</span>
+                  </div>
+                  <button onClick={() => setSuccessMessage('')} className="text-emerald-400 hover:text-emerald-200">
+                    <X size={14} />
+                  </button>
+                </div>
+              )}
+
+              {/* Google SSO Button */}
+              {activeTab !== 'forgot' && (
+                <div className="mt-4 space-y-3">
+                  <button
+                    type="button"
+                    onClick={handleGoogleSubmit}
+                    disabled={loading}
+                    className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-2.5 shadow-sm group cursor-pointer disabled:opacity-50"
+                  >
+                    <GoogleIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    <span>Continue with Google</span>
+                  </button>
+
+                  <div className="flex items-center gap-3">
+                    <div className="flex-1 h-px bg-slate-800"></div>
+                    <span className="text-[10px] uppercase font-mono text-slate-400 tracking-wider">
+                      or continue with email
+                    </span>
+                    <div className="flex-1 h-px bg-slate-800"></div>
+                  </div>
+                </div>
+              )}
+
+              {/* ==================================================== */}
+              {/* VIEW 1: SIGN IN FORM                                 */}
+              {/* ==================================================== */}
+              {activeTab === 'login' && (
+                <form onSubmit={handleLoginSubmit} className="mt-4 space-y-3.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Email or Mobile Phone
                     </label>
-                    <input
-                      type="text"
-                      required
-                      value={otpTarget}
-                      onChange={(e) => setOtpTarget(e.target.value)}
-                      placeholder="+91 98765 43210 or user@yatrago.com"
-                      className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-emerald-400 transition-all font-mono"
-                    />
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={loginIdentifier}
+                        onChange={(e) => setLoginIdentifier(e.target.value)}
+                        placeholder="e.g. alex.rivera@yatrago.com or 9876543210"
+                        className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[11px] font-bold text-slate-300">
+                        Password
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => handleSwitchTab('forgot')}
+                        className="text-[11px] text-cyan-400 hover:text-cyan-300 transition-colors font-medium cursor-pointer"
+                      >
+                        Forgot Password?
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showLoginPassword ? 'text' : 'password'}
+                        value={loginPassword}
+                        onChange={(e) => setLoginPassword(e.target.value)}
+                        placeholder="••••••••••••"
+                        className="w-full h-10 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowLoginPassword(!showLoginPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        tabIndex={-1}
+                      >
+                        {showLoginPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
+                    <label className="flex items-center gap-2 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={rememberMe}
+                        onChange={(e) => setRememberMe(e.target.checked)}
+                        className="w-3.5 h-3.5 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-0 focus:ring-offset-0"
+                      />
+                      <span className="text-[11px] text-slate-300">Remember me for 30 days</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => handleFillDemo('traveler')}
+                      className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
+                    >
+                      Fill Demo Credentials
+                    </button>
                   </div>
 
                   <button
                     type="submit"
-                    className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 text-slate-950 font-black text-sm hover:scale-[1.01] active:scale-[0.99] transition-all shadow-lg shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
+                    disabled={loading}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
-                    <span>Get 4-Digit Verification OTP</span>
-                    <ArrowRight size={16} />
+                    {loading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin text-slate-950" />
+                        <span>Signing In...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Sign In to YatraGo</span>
+                        <ArrowRight size={15} />
+                      </>
+                    )}
                   </button>
                 </form>
-              ) : (
-                <form onSubmit={handleVerifyOtp} className="space-y-4">
+              )}
+
+              {/* ==================================================== */}
+              {/* VIEW 2: SIGN UP FORM WITH INTERACTIVE ROLE CARDS     */}
+              {/* ==================================================== */}
+              {activeTab === 'signup' && (
+                <form onSubmit={handleSignupSubmit} className="mt-4 space-y-3.5">
                   
-                  {/* Enter OTP Field */}
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                        <KeyRound size={14} className="text-emerald-400" />
-                        <span>Enter 4-Digit Verification OTP</span>
-                      </label>
+                  {/* Interactive Role Selection Cards */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
+                      I want to join YatraGo as:
+                    </label>
+                    <div className="grid grid-cols-3 gap-2">
+                      
+                      {/* Role 1: Traveler */}
                       <button
                         type="button"
-                        onClick={() => setOtpCode('8492')}
-                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono font-bold bg-cyan-500/10 px-2 py-0.5 rounded border border-cyan-500/30"
+                        onClick={() => setSelectedRole('traveler')}
+                        className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          selectedRole === 'traveler'
+                            ? 'bg-cyan-500/15 border-cyan-400 ring-1 ring-cyan-400/40 text-white'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
                       >
-                        Auto-fill: 8492
+                        <div className="flex items-center justify-between mb-1">
+                          <Compass size={16} className={selectedRole === 'traveler' ? 'text-cyan-400' : 'text-slate-400'} />
+                          {selectedRole === 'traveler' && <Check size={12} className="text-cyan-400" />}
+                        </div>
+                        <strong className="text-xs font-bold block text-white">Traveler</strong>
+                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                          Book rides & split costs
+                        </p>
+                      </button>
+
+                      {/* Role 2: Driver / Rider */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRole('driver')}
+                        className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          selectedRole === 'driver'
+                            ? 'bg-emerald-500/15 border-emerald-400 ring-1 ring-emerald-400/40 text-white'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <Car size={16} className={selectedRole === 'driver' ? 'text-emerald-400' : 'text-slate-400'} />
+                          {selectedRole === 'driver' && <Check size={12} className="text-emerald-400" />}
+                        </div>
+                        <strong className="text-xs font-bold block text-white">Rider / Driver</strong>
+                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                          Offer rides & share routes
+                        </p>
+                      </button>
+
+                      {/* Role 3: Local Guide / Host */}
+                      <button
+                        type="button"
+                        onClick={() => setSelectedRole('guide')}
+                        className={`p-2.5 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                          selectedRole === 'guide'
+                            ? 'bg-purple-500/15 border-purple-400 ring-1 ring-purple-400/40 text-white'
+                            : 'bg-slate-950 border-slate-800 text-slate-400 hover:border-slate-700'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <MapPin size={16} className={selectedRole === 'guide' ? 'text-purple-400' : 'text-slate-400'} />
+                          {selectedRole === 'guide' && <Check size={12} className="text-purple-400" />}
+                        </div>
+                        <strong className="text-xs font-bold block text-white">Local Guide</strong>
+                        <p className="text-[10px] text-slate-400 leading-tight mt-0.5">
+                          Guide tourists & stays
+                        </p>
+                      </button>
+
+                    </div>
+                  </div>
+
+                  {/* Full Name */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Full Legal Name
+                    </label>
+                    <div className="relative">
+                      <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        placeholder="e.g. Alex Rivera or Rabi Bhagat"
+                        className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  {/* Email & Phone Grid */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="email"
+                          value={signupEmail}
+                          onChange={(e) => setSignupEmail(e.target.value)}
+                          placeholder="rider@example.com"
+                          className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                          required
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Mobile Phone Number
+                      </label>
+                      <div className="relative">
+                        <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                          type="tel"
+                          value={phone}
+                          onChange={(e) => setPhone(e.target.value)}
+                          placeholder="+91 98765 43210"
+                          className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                          required
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Password & Live Strength Meter */}
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Create Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showSignupPassword ? 'text' : 'password'}
+                        value={signupPassword}
+                        onChange={(e) => setSignupPassword(e.target.value)}
+                        placeholder="At least 6 characters with letters & numbers"
+                        className="w-full h-10 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignupPassword(!showSignupPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        tabIndex={-1}
+                      >
+                        {showSignupPassword ? <EyeOff size={15} /> : <Eye size={15} />}
                       </button>
                     </div>
 
-                    <input
-                      type="text"
-                      maxLength={4}
-                      required
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      placeholder="• • • •"
-                      className="w-full bg-slate-900 border border-emerald-500/50 rounded-2xl py-3 text-center text-xl font-mono tracking-widest font-black text-white focus:outline-none focus:border-emerald-400"
-                    />
+                    {/* Live Strength Meter Bar */}
+                    {signupPassword && (
+                      <div className="mt-2 space-y-1 animate-fadeIn">
+                        <div className="flex items-center justify-between text-[10px]">
+                          <span className="text-slate-400 font-mono">Password Strength:</span>
+                          <span className={`font-bold ${passwordStrength.textCol}`}>{passwordStrength.label}</span>
+                        </div>
+                        <div className="w-full h-1.5 rounded-full bg-slate-800 overflow-hidden">
+                          <div 
+                            className={`h-full transition-all duration-300 ${passwordStrength.color}`} 
+                            style={{ width: passwordStrength.width }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
-                  {/* Account Role Selector */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-300 block">
-                      Select Access Role:
+                  {/* Terms & Conditions Checkbox */}
+                  <div className="pt-1">
+                    <label className="flex items-start gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={agreeTerms}
+                        onChange={(e) => setAgreeTerms(e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-700 bg-slate-950 text-cyan-500 focus:ring-0 mt-0.5"
+                      />
+                      <span className="text-[11px] text-slate-400 leading-tight">
+                        I agree to the <span className="text-cyan-400 underline">Terms of Service</span>, <span className="text-cyan-400 underline">Community Guidelines</span>, and consent to safety telemetry.
+                      </span>
                     </label>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                      {[
-                        { id: 'rider', label: 'Rider', icon: User },
-                        { id: 'driver', label: 'Driver', icon: Car },
-                        { id: 'guider', label: 'Guider', icon: Compass },
-                        { id: 'admin', label: 'Admin', icon: ShieldCheck }
-                      ].map(r => {
-                        const Icon = r.icon;
-                        const isSelected = otpRole === r.id;
-                        return (
-                          <button
-                            key={r.id}
-                            type="button"
-                            onClick={() => setOtpRole(r.id)}
-                            className={`p-2.5 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all cursor-pointer ${
-                              isSelected
-                                ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 shadow-sm'
-                                : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white'
-                            }`}
-                          >
-                            <Icon size={16} className={isSelected ? 'text-emerald-400' : 'text-slate-500'} />
-                            <span className="text-[11px]">{r.label}</span>
-                          </button>
-                        );
-                      })}
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin text-slate-950" />
+                        <span>Creating Account...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Create Account as {selectedRole.toUpperCase()}</span>
+                        <ArrowRight size={15} />
+                      </>
+                    )}
+                  </button>
+                </form>
+              )}
+
+              {/* ==================================================== */}
+              {/* VIEW 3: FORGOT / RESET PASSWORD                      */}
+              {/* ==================================================== */}
+              {activeTab === 'forgot' && (
+                <form onSubmit={handleForgotSubmit} className="mt-4 space-y-3.5">
+                  <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-slate-300">
+                    Enter your registered email address and new password. We will update your password and send a confirmation alert to your inbox.
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Registered Email Address
+                    </label>
+                    <div className="relative">
+                      <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="email"
+                        value={forgotEmail}
+                        onChange={(e) => setForgotEmail(e.target.value)}
+                        placeholder="rider@example.com"
+                        className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                        required
+                      />
                     </div>
                   </div>
 
-                  {/* Optional Custom Display Name */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-bold text-slate-400">Display Name (Optional)</label>
-                    <input
-                      type="text"
-                      value={otpCustomName}
-                      onChange={(e) => setOtpCustomName(e.target.value)}
-                      placeholder="e.g. Alex Rivera or Rabi Bhagat"
-                      className="w-full bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-500"
-                    />
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      New Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type={showNewPassword ? 'text' : 'password'}
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Enter minimum 6 characters"
+                        className="w-full h-10 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowNewPassword(!showNewPassword)}
+                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+                        tabIndex={-1}
+                      >
+                        {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                      </button>
+                    </div>
                   </div>
 
-                  <div className="flex gap-2">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      Confirm New Password
+                    </label>
+                    <div className="relative">
+                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="password"
+                        value={confirmNewPassword}
+                        onChange={(e) => setConfirmNewPassword(e.target.value)}
+                        placeholder="Confirm password"
+                        className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-1">
                     <button
                       type="button"
-                      onClick={() => setOtpStep('send')}
-                      className="w-1/3 py-3 rounded-xl bg-slate-900 border border-slate-800 text-xs font-bold text-slate-400 hover:text-white"
+                      onClick={() => handleSwitchTab('login')}
+                      className="text-xs text-cyan-400 hover:text-cyan-300 transition-colors font-bold cursor-pointer"
                     >
-                      Resend
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="flex-1 py-3 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-400 text-slate-950 font-black text-xs hover:scale-105 active:scale-95 transition-all shadow-md shadow-emerald-500/20 flex items-center justify-center gap-2 cursor-pointer"
-                    >
-                      <CheckCircle2 size={16} />
-                      <span>Verify & Authenticate</span>
+                      ← Back to Sign In
                     </button>
                   </div>
 
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <Loader2 size={16} className="animate-spin text-slate-950" />
+                        <span>Updating Password...</span>
+                      </>
+                    ) : (
+                      <>
+                        <span>Reset Password & Send Alert</span>
+                        <ArrowRight size={15} />
+                      </>
+                    )}
+                  </button>
                 </form>
+              )}
+
+              {/* ==================================================== */}
+              {/* VIEW 4: INSTANT OTP LOGIN                            */}
+              {/* ==================================================== */}
+              {activeTab === 'otp' && (
+                <div className="mt-4 space-y-3.5">
+                  <div className="p-3 rounded-2xl bg-cyan-500/10 border border-cyan-500/20 text-xs text-slate-300">
+                    Sign in instantaneously via 4-digit mobile SMS / WhatsApp code without needing a password.
+                  </div>
+
+                  {!otpSent ? (
+                    <form onSubmit={handleOtpSend} className="space-y-3.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                          Mobile Phone Number or Email
+                        </label>
+                        <div className="relative">
+                          <Smartphone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="text"
+                            value={otpTarget}
+                            onChange={(e) => setOtpTarget(e.target.value)}
+                            placeholder="+91 98765 43210"
+                            className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                      >
+                        <span>Send 4-Digit OTP Code</span>
+                        <ArrowRight size={15} />
+                      </button>
+                    </form>
+                  ) : (
+                    <form onSubmit={handleOtpVerify} className="space-y-3.5">
+                      <div>
+                        <div className="flex items-center justify-between mb-1">
+                          <label className="text-[11px] font-bold text-slate-300">
+                            Enter 4-Digit Code
+                          </label>
+                          <span className="text-[10px] font-mono text-cyan-400">Test Code: 8492</span>
+                        </div>
+                        <input
+                          type="text"
+                          maxLength={4}
+                          value={otpCode}
+                          onChange={(e) => setOtpCode(e.target.value)}
+                          placeholder="8492"
+                          className="w-full h-11 text-center font-mono text-lg font-black tracking-widest rounded-xl bg-slate-950 border border-cyan-500/40 focus:border-cyan-400 text-cyan-300 placeholder-slate-600 focus:outline-none"
+                          required
+                        />
+                      </div>
+
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setOtpSent(false)}
+                          className="py-2.5 px-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-all"
+                        >
+                          Change Number
+                        </button>
+                        <button
+                          type="submit"
+                          disabled={loading}
+                          className="flex-1 py-2.5 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer"
+                        >
+                          {loading ? <Loader2 size={15} className="animate-spin text-slate-950" /> : <span>Verify & Continue</span>}
+                        </button>
+                      </div>
+                    </form>
+                  )}
+                </div>
               )}
 
             </div>
-          )}
 
-          {/* ========================================================= */}
-          {/* 2. CREATE ACCOUNT (SIGN UP) VIEW */}
-          {/* ========================================================= */}
-          {activeTab === 'signup' && (
-            <form onSubmit={handleSubmitSignup} className="space-y-5">
-              
-              {/* Profile Photo Uploader & Avatar Selector */}
-              <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-3">
-                <label className="text-xs font-bold text-slate-200 flex items-center justify-between">
-                  <div className="flex items-center gap-1.5">
-                    <Camera size={14} className="text-cyan-400" />
-                    <span>Profile Photo (Upload or Choose)</span>
-                  </div>
-                  <span className="text-[10px] text-cyan-400 font-mono">Used for Driver & Co-Rider ID</span>
-                </label>
-
-                <div className="flex flex-wrap items-center gap-4">
-                  {/* Current Active Preview */}
-                  <div className="relative group shrink-0">
-                    <img
-                      src={avatar}
-                      alt="Selected Profile"
-                      className="w-16 h-16 rounded-2xl object-cover ring-2 ring-cyan-500/50 shadow-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="absolute inset-0 bg-slate-950/70 rounded-2xl opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-[10px] text-cyan-300 font-bold transition-all"
-                    >
-                      <Upload size={14} />
-                      <span>Change</span>
-                    </button>
-                  </div>
-
-                  {/* Upload from file button */}
-                  <div>
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      onChange={handlePhotoUpload}
-                      className="hidden"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-3.5 py-1.5 rounded-xl bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-300 border border-cyan-500/40 text-xs font-bold flex items-center gap-1.5 transition-all"
-                    >
-                      <Upload size={13} />
-                      <span>Upload Photo from Device</span>
-                    </button>
-                    <span className="text-[10px] text-slate-400 block mt-1">Supports PNG, JPG, WebP up to 8MB</span>
-                  </div>
-                </div>
-
-                {/* Preset Avatars Row */}
-                <div>
-                  <span className="text-[10px] text-slate-400 block mb-1.5 font-medium">Or select an instant traveler avatar:</span>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {PRESET_AVATARS.map((presetUrl, idx) => (
-                      <button
-                        key={idx}
-                        type="button"
-                        onClick={() => setAvatar(presetUrl)}
-                        className={`w-9 h-9 rounded-xl overflow-hidden ring-2 transition-all shrink-0 ${
-                          avatar === presetUrl ? 'ring-cyan-400 scale-105 shadow-md shadow-cyan-500/30' : 'ring-transparent opacity-70 hover:opacity-100'
-                        }`}
-                      >
-                        <img src={presetUrl} alt={`Avatar ${idx}`} className="w-full h-full object-cover" />
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              {/* Personal Details: Full Name & Email */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <User size={14} className="text-cyan-400" />
-                    <span>Full Legal Name</span>
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="e.g. John Doe"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <Mail size={14} className="text-cyan-400" />
-                    <span>Email Address</span>
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={signupEmail}
-                    onChange={(e) => setSignupEmail(e.target.value)}
-                    placeholder="rider@example.com"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Phone & Pickup Address */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <Phone size={14} className="text-cyan-400" />
-                    <span>Mobile Phone Number</span>
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    placeholder="+1 (555) 000-0000"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
-                </div>
-
-                <div className="space-y-1.5">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                      <MapPin size={14} className="text-cyan-400" />
-                      <span>Primary Ride Address</span>
-                    </label>
-                    <button
-                      type="button"
-                      onClick={handleDetectAddress}
-                      disabled={isDetectingGps}
-                      className="text-[10px] text-cyan-400 hover:text-cyan-300 font-bold flex items-center gap-1"
-                    >
-                      {isDetectingGps ? <RefreshCw size={10} className="animate-spin" /> : <Compass size={10} />}
-                      <span>Auto GPS</span>
-                    </button>
-                  </div>
-                  <input
-                    type="text"
-                    value={address}
-                    onChange={(e) => setAddress(e.target.value)}
-                    placeholder="Street or Tech Park address"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Commute Presets: Home & Work Address */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <MapPin size={14} className="text-emerald-400" />
-                    <span>Home Address (Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={homeAddress}
-                    onChange={(e) => setHomeAddress(e.target.value)}
-                    placeholder="e.g. 450 Mission St, SF"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-all"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <MapPin size={14} className="text-blue-400" />
-                    <span>Work Address (Optional)</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={workAddress}
-                    onChange={(e) => setWorkAddress(e.target.value)}
-                    placeholder="e.g. Downtown Cyber Hub"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-2.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 transition-all"
-                  />
-                </div>
-              </div>
-
-              {/* Emergency SOS Contact (Ride-Sharing Safety Requirement) */}
-              <div className="p-3.5 rounded-2xl bg-red-950/20 border border-red-500/30 space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2 text-xs font-bold text-red-300">
-                    <Shield size={14} className="text-red-400" />
-                    <span>Emergency SOS Contact (For Ride Safety)</span>
-                  </div>
-                  <span className="text-[10px] text-red-400/80 font-mono">Auto-notified on SOS</span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                  <input
-                    type="text"
-                    value={emergencyName}
-                    onChange={(e) => setEmergencyName(e.target.value)}
-                    placeholder="Contact Name (e.g. Elena)"
-                    className="bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-400"
-                  />
-                  <input
-                    type="tel"
-                    value={emergencyPhone}
-                    onChange={(e) => setEmergencyPhone(e.target.value)}
-                    placeholder="Emergency Phone #"
-                    className="bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-red-400"
-                  />
-                  <select
-                    value={emergencyRelation}
-                    onChange={(e) => setEmergencyRelation(e.target.value)}
-                    className="bg-slate-900/90 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-red-400"
-                  >
-                    <option value="Family">Family</option>
-                    <option value="Spouse">Spouse</option>
-                    <option value="Friend">Friend</option>
-                    <option value="Colleague">Colleague</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Password & Confirm Password */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <Lock size={14} className="text-cyan-400" />
-                    <span>Create Password</span>
-                  </label>
-                  <div className="relative">
-                    <input
-                      type={showSignupPassword ? 'text' : 'password'}
-                      required
-                      value={signupPassword}
-                      onChange={(e) => setSignupPassword(e.target.value)}
-                      placeholder="Min 6 characters"
-                      className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-4 pr-10 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowSignupPassword(!showSignupPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
-                    >
-                      {showSignupPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                    <CheckCircle2 size={14} className="text-cyan-400" />
-                    <span>Confirm Password</span>
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="Re-type password"
-                    className={`w-full bg-slate-900/90 border rounded-2xl px-4 py-2.5 text-sm text-white placeholder-slate-500 focus:outline-none transition-all ${
-                      confirmPassword && confirmPassword === signupPassword
-                        ? 'border-emerald-500/80 focus:ring-1 focus:ring-emerald-400'
-                        : 'border-slate-700/80 focus:border-cyan-400'
-                    }`}
-                  />
-                </div>
-              </div>
-
-              {/* Password Strength Indicator */}
-              {signupPassword && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Password Strength:</span>
-                    <span className={`font-bold ${
-                      strength.score <= 33 ? 'text-red-400' : strength.score <= 66 ? 'text-amber-400' : 'text-emerald-400'
-                    }`}>
-                      {strength.text}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${strength.color}`}
-                      style={{ width: `${strength.score}%` }}
-                    ></div>
-                  </div>
-                </div>
-              )}
-
-              {/* Account Role Selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300">Account Role:</label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                  {[
-                    { id: 'rider', label: 'Rider', icon: User },
-                    { id: 'driver', label: 'Driver', icon: Car },
-                    { id: 'guider', label: 'Guider', icon: Compass },
-                    { id: 'admin', label: 'Admin', icon: ShieldCheck }
-                  ].map(r => {
-                    const Icon = r.icon;
-                    const isSelected = role === r.id;
-                    return (
-                      <button
-                        key={r.id}
-                        type="button"
-                        onClick={() => setRole(r.id)}
-                        className={`p-2 rounded-xl border text-xs font-bold flex flex-col items-center gap-1 transition-all ${
-                          isSelected
-                            ? 'bg-cyan-500/20 text-cyan-300 border-cyan-500/50 shadow-md'
-                            : 'bg-slate-900/60 text-slate-400 border-slate-800 hover:text-white'
-                        }`}
-                      >
-                        <Icon size={16} className={isSelected ? 'text-cyan-400' : 'text-slate-500'} />
-                        <span className="text-[11px]">{r.label}</span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Terms Acceptance */}
-              <div className="pt-1">
-                <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-400">
-                  <input
-                    type="checkbox"
-                    checked={agreeTerms}
-                    onChange={(e) => setAgreeTerms(e.target.checked)}
-                    className="mt-0.5 w-4 h-4 rounded bg-slate-900 border-slate-700 text-cyan-500 focus:ring-0 cursor-pointer"
-                  />
-                  <span>
-                    I accept the YatraGo <strong className="text-slate-300">Transit Safety Protocol</strong>, Verified Identity Terms, and zero-tolerance passenger safety guarantee.
-                  </span>
-                </label>
-              </div>
-
-              {/* Submit Sign Up Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-cyan-500/20 disabled:opacity-50"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    <span>Creating Verified Account...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Complete YatraGo Registration</span>
-                    <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-
-              {/* Footer Switch */}
-              <div className="text-center text-xs text-slate-400">
-                <span>Already registered with YatraGo? </span>
-                <button
-                  type="button"
-                  onClick={() => handleSwitchTab('login')}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4"
-                >
-                  Log In directly
-                </button>
-              </div>
-
-            </form>
-          )}
-
-          {/* ========================================================= */}
-          {/* 3. FORGOT / CHANGE PASSWORD VIEW */}
-          {/* ========================================================= */}
-          {activeTab === 'forgot' && (
-            <form onSubmit={handleSubmitForgot} className="space-y-4">
-              
-              <div className="p-3.5 rounded-2xl bg-cyan-950/40 border border-cyan-500/30 text-xs text-cyan-300 flex items-center gap-2.5">
-                <KeyRound size={18} className="text-cyan-400 shrink-0" />
-                <span>
-                  Enter your registered YatraGo email address and choose a new, secure password.
-                </span>
-              </div>
-
-              {/* Email Address */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Mail size={14} className="text-cyan-400" />
-                  <span>Registered Account Email</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={forgotEmail}
-                  onChange={(e) => setForgotEmail(e.target.value)}
-                  placeholder="e.g. alex.rivera@yatrago.com"
-                  className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                />
-              </div>
-
-              {/* New Password */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <Lock size={14} className="text-cyan-400" />
-                  <span>New Password</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    required
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="Enter at least 6 characters"
-                    className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl pl-4 pr-11 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                  />
+            {/* Bottom Switch Links */}
+            <div className="pt-4 mt-4 border-t border-slate-800/80 text-center text-xs text-slate-400">
+              {activeTab === 'login' ? (
+                <p>
+                  Don't have an account?{' '}
                   <button
                     type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                    onClick={() => handleSwitchTab('signup')}
+                    className="text-cyan-400 hover:text-cyan-300 font-bold underline transition-colors cursor-pointer"
                   >
-                    {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                    Sign Up for Free
                   </button>
-                </div>
-              </div>
-
-              {/* Confirm New Password */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
-                  <CheckCircle2 size={14} className="text-cyan-400" />
-                  <span>Confirm New Password</span>
-                </label>
-                <input
-                  type="password"
-                  required
-                  value={confirmNewPassword}
-                  onChange={(e) => setConfirmNewPassword(e.target.value)}
-                  placeholder="Re-type new password"
-                  className="w-full bg-slate-900/90 border border-slate-700/80 rounded-2xl px-4 py-3 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan-400 focus:ring-1 focus:ring-cyan-400 transition-all"
-                />
-              </div>
-
-              {/* Password Strength */}
-              {newPassword && (
-                <div className="space-y-1">
-                  <div className="flex items-center justify-between text-[11px]">
-                    <span className="text-slate-400">Password Strength:</span>
-                    <span className={`font-bold ${
-                      strength.score <= 33 ? 'text-red-400' : strength.score <= 66 ? 'text-amber-400' : 'text-emerald-400'
-                    }`}>
-                      {strength.text}
-                    </span>
-                  </div>
-                  <div className="w-full h-1.5 bg-slate-800 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${strength.color}`}
-                      style={{ width: `${strength.score}%` }}
-                    ></div>
-                  </div>
-                </div>
+                </p>
+              ) : (
+                <p>
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => handleSwitchTab('login')}
+                    className="text-cyan-400 hover:text-cyan-300 font-bold underline transition-colors cursor-pointer"
+                  >
+                    Sign In
+                  </button>
+                </p>
               )}
+            </div>
 
-              {/* Reset Submit Button */}
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-cyan-500 via-teal-400 to-emerald-400 text-slate-950 font-extrabold text-sm flex items-center justify-center gap-2 hover:opacity-95 hover:scale-[1.01] active:scale-[0.99] transition-all shadow-xl shadow-cyan-500/20 disabled:opacity-50 mt-2"
-              >
-                {loading ? (
-                  <>
-                    <RefreshCw size={16} className="animate-spin" />
-                    <span>Updating Password...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Reset & Save New Password</span>
-                    <ArrowRight size={16} />
-                  </>
-                )}
-              </button>
-
-              {/* Return to Sign In */}
-              <div className="text-center text-xs text-slate-400 pt-1">
-                <button
-                  type="button"
-                  onClick={() => handleSwitchTab('login')}
-                  className="text-cyan-400 hover:text-cyan-300 font-bold underline underline-offset-4"
-                >
-                  Return to Sign In
-                </button>
-              </div>
-
-            </form>
-          )}
+          </div>
 
         </div>
-
       </div>
     </div>
   );
 }
-

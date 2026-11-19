@@ -101,6 +101,7 @@ export const VEHICLE_TIERS = [
   {
     id: 'eco',
     name: 'Eco Sedan',
+    category: 'car',
     icon: 'Car',
     tagline: 'Fast, comfortable, electric hybrid',
     multiplier: 1.0,
@@ -111,6 +112,7 @@ export const VEHICLE_TIERS = [
   {
     id: 'premium',
     name: 'Premium SUV',
+    category: 'car',
     icon: 'Shield',
     tagline: 'Luxury leather seating, extra room',
     multiplier: 1.6,
@@ -121,6 +123,7 @@ export const VEHICLE_TIERS = [
   {
     id: 'shuttle',
     name: 'Electric Shuttle',
+    category: 'car',
     icon: 'Bus',
     tagline: 'Zero-emission group vehicle',
     multiplier: 0.85,
@@ -131,11 +134,45 @@ export const VEHICLE_TIERS = [
   {
     id: 'guider',
     name: 'Guider Co-Ride',
+    category: 'car',
     icon: 'Compass',
     tagline: 'Includes local expert travel guider',
     multiplier: 1.4,
     etaMinutes: 5,
     capacity: '1-3 passengers + Guider',
     co2Saved: '1.5 kg'
+  },
+  {
+    id: 'moto',
+    name: 'HyperBike 1200R',
+    category: 'bike',
+    icon: 'Bike',
+    tagline: 'High-speed electric superbike, helmet provided',
+    multiplier: 0.65,
+    etaMinutes: 2,
+    capacity: '1 passenger',
+    co2Saved: '2.1 kg'
+  },
+  {
+    id: 'scooter',
+    name: 'AeroScooter EV',
+    category: 'bike',
+    icon: 'Bike',
+    tagline: 'Nimble zero-emission electric city scooter',
+    multiplier: 0.50,
+    etaMinutes: 3,
+    capacity: '1 passenger',
+    co2Saved: '2.4 kg'
+  },
+  {
+    id: 'moto_express',
+    name: 'YatraGo Moto Classic',
+    category: 'bike',
+    icon: 'Bike',
+    tagline: 'Fast city commute cutting through traffic',
+    multiplier: 0.55,
+    etaMinutes: 2,
+    capacity: '1 passenger',
+    co2Saved: '1.9 kg'
   }
 ];

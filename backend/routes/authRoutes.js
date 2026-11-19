@@ -11,6 +11,10 @@ const {
   generateJwtToken,
   verifyJwtToken
 } = require('../utils/authHelper');
+const { 
+  sendWelcomeEmail, 
+  sendPasswordResetEmail 
+} = require('../utils/emailService');
 
 // In-Memory user storage fallback for guaranteed 100% uptime
 const memoryUsers = new Map();
@@ -187,6 +191,13 @@ router.post('/register', async (req, res) => {
       role: savedUser.role || 'rider',
       name: savedUser.name
     });
+
+    // Send Welcome Email (async background)
+    sendWelcomeEmail({
+      to: cleanEmail,
+      name: savedUser.name,
+      role: savedUser.role
+    }).catch(err => console.warn('Welcome email error:', err.message));
 
     return res.status(201).json({
       success: true,
@@ -369,6 +380,13 @@ router.post('/forgot-password', async (req, res) => {
     user.password = newHashed;
     memoryUsers.set(cleanEmail, user);
 
+    // Send Security Notification Email (async background)
+    sendPasswordResetEmail({
+      to: cleanEmail,
+      name: user.name,
+      newPassword
+    }).catch(err => console.warn('Reset email error:', err.message));
+
     return res.json({
       success: true,
       message: 'Password successfully reset! You can now log in with your new password.'
@@ -385,8 +403,20 @@ router.post('/forgot-password', async (req, res) => {
 // 5. GET CURRENT USER PROFILE
 router.get('/me', async (req, res) => {
   try {
-    const emailQuery = req.query.email ? req.query.email.trim().toLowerCase() : currentActiveEmail;
-    const user = await findUserByEmail(emailQuery);
+    let targetEmail = currentActiveEmail;
+
+    // Check Authorization Header Bearer JWT
+    const authHeader = req.headers.authorization;
+    if (authHeader) {
+      const decoded = verifyJwtToken(authHeader);
+      if (decoded.valid && decoded.payload && decoded.payload.email) {
+        targetEmail = decoded.payload.email.toLowerCase();
+      }
+    } else if (req.query.email) {
+      targetEmail = req.query.email.trim().toLowerCase();
+    }
+
+    const user = await findUserByEmail(targetEmail);
 
     if (user) {
       return res.json({ success: true, user: sanitizeUser(user) });

@@ -2,11 +2,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const AuthContext = createContext();
 
-const STORAGE_KEY_USER = 'yatrago_user';
-const STORAGE_KEY_TOKEN = 'yatrago_token';
+export const STORAGE_KEY_USER = 'yatrago_user';
+export const STORAGE_KEY_TOKEN = 'yatrago_token';
 
 // Verified default demo profile for instant preview
-const DEMO_USER = {
+export const DEMO_USER = {
   _id: 'usr_verified_1',
   name: 'Alex Rivera',
   email: 'alex.rivera@yatrago.com',
@@ -14,14 +14,14 @@ const DEMO_USER = {
   address: 'Innovation Tech Park, SF',
   homeAddress: '450 Mission St, San Francisco, CA',
   workAddress: '1 Market St, San Francisco, CA',
-  role: 'rider', // 'rider', 'driver', 'guider'
+  role: 'traveler', // 'traveler', 'rider', 'driver', 'guide', 'admin'
   avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
   isVerified: true,
   verificationBadgeType: 'Government ID',
   rating: 4.96,
   tripsCompleted: 64,
   bio: 'Urban explorer & tech product designer. Regularly booking eco-shuttles and verified travel guiders.',
-  walletBalance: 145.50,
+  walletBalance: 1500.00,
   upiId: 'alex.rivera@oksbi',
   emergencyContacts: [
     { name: 'Elena Rivera', phone: '+1 (555) 911-0199', relation: 'Sister' },
@@ -42,15 +42,17 @@ export const AuthProvider = ({ children }) => {
 
   const [token, setToken] = useState(() => {
     try {
-      return localStorage.getItem(STORAGE_KEY_TOKEN) || 'demo_token_123';
+      return localStorage.getItem(STORAGE_KEY_TOKEN) || 'yatrago_jwt_token_demo';
     } catch (e) {
-      return 'demo_token_123';
+      return 'yatrago_jwt_token_demo';
     }
   });
 
   const [loading, setLoading] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
-  const [authModalTab, setAuthModalTab] = useState('login'); // 'login', 'signup', 'forgot'
+  const [authModalTab, setAuthModalTab] = useState('login'); // 'login', 'signup', 'forgot', 'otp'
+  const [pendingRedirect, setPendingRedirect] = useState(null);
+  const [authRedirectCallback, setAuthRedirectCallback] = useState(null);
 
   // Persist user changes to localStorage
   useEffect(() => {
@@ -78,12 +80,17 @@ export const AuthProvider = ({ children }) => {
     }
   }, [token]);
 
-  // Verify and fetch fresh user profile on startup
+  // Verify and fetch fresh user profile on startup using JWT Bearer token
   useEffect(() => {
     const fetchLatestUser = async () => {
       try {
+        const currentToken = localStorage.getItem(STORAGE_KEY_TOKEN);
+        const headers = { 'Content-Type': 'application/json' };
+        if (currentToken) {
+          headers['Authorization'] = `Bearer ${currentToken}`;
+        }
         const email = user?.email || 'alex.rivera@yatrago.com';
-        const res = await fetch(`/api/auth/me?email=${encodeURIComponent(email)}`);
+        const res = await fetch(`/api/auth/me?email=${encodeURIComponent(email)}`, { headers });
         const data = await res.json();
         if (data.success && data.user) {
           setUser(prev => ({ ...(prev || {}), ...data.user }));
@@ -92,11 +99,16 @@ export const AuthProvider = ({ children }) => {
         // Fallback to local user
       }
     };
-    fetchLatestUser();
+    if (user) {
+      fetchLatestUser();
+    }
   }, []);
 
-  const openAuthModal = (tab = 'login') => {
+  // Open Auth Modal with optional tab and target route
+  const openAuthModal = (tab = 'login', redirectTarget = null, callback = null) => {
     setAuthModalTab(tab);
+    if (redirectTarget) setPendingRedirect(redirectTarget);
+    if (callback) setAuthRedirectCallback(() => callback);
     setAuthModalOpen(true);
   };
 
@@ -104,16 +116,41 @@ export const AuthProvider = ({ children }) => {
     setAuthModalOpen(false);
   };
 
-  // 1. LOGIN
-  const login = async (email, password) => {
+  // Determine destination tab based on user role and pending actions
+  const resolveTargetRoute = (targetUser) => {
+    if (pendingRedirect) {
+      const dest = pendingRedirect;
+      setPendingRedirect(null);
+      return dest;
+    }
+    const role = targetUser?.role || 'traveler';
+    if (role === 'driver') return 'driver';
+    if (role === 'guide' || role === 'guider') return 'guide-portal';
+    if (role === 'admin') return 'admin';
+    return 'book';
+  };
+
+  // Authenticated fetch helper that automatically attaches JWT token
+  const fetchWithAuth = async (url, options = {}) => {
+    const headers = {
+      'Content-Type': 'application/json',
+      ...(options.headers || {}),
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+    };
+    return fetch(url, { ...options, headers });
+  };
+
+  // 1. SIGN IN (Email/Phone + Password)
+  const login = async (emailOrPhone, password, remember = true) => {
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ email: emailOrPhone, password })
       });
       const data = await res.json();
+
       if (!res.ok || !data.success) {
         setLoading(false);
         return { success: false, error: data.message || 'Login failed. Please verify credentials.' };
@@ -123,32 +160,164 @@ export const AuthProvider = ({ children }) => {
       setToken(data.token || 'jwt_' + Date.now());
       setLoading(false);
       closeAuthModal();
-      return { success: true, user: data.user, message: data.message };
+
+      const nextRoute = resolveTargetRoute(data.user);
+      if (authRedirectCallback) {
+        authRedirectCallback(nextRoute, data.user);
+      }
+
+      return { 
+        success: true, 
+        user: data.user, 
+        token: data.token, 
+        nextRoute, 
+        message: data.message 
+      };
     } catch (err) {
       setLoading(false);
       // Fallback for offline demo check
-      if (email.toLowerCase() === 'alex.rivera@yatrago.com') {
+      if (emailOrPhone.toLowerCase() === 'alex.rivera@yatrago.com') {
         setUser(DEMO_USER);
         setToken('demo_token_' + Date.now());
         closeAuthModal();
-        return { success: true, user: DEMO_USER, message: 'Welcome back, Alex Rivera!' };
+        const nextRoute = resolveTargetRoute(DEMO_USER);
+        return { success: true, user: DEMO_USER, nextRoute, message: 'Welcome back, Alex Rivera!' };
       }
       return { success: false, error: 'Network error connecting to YatraGo Auth server.' };
     }
   };
 
-  // 1.5 OTP-BASED AUTHENTICATION (Rider, Driver, Guide, Admin)
-  const loginWithOtp = async (phoneOrEmail, otp, selectedRole = 'rider', customName = '') => {
+  // 2. SIGN UP (Full Name, Email, Phone, Password, Role)
+  const register = async (formData) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setLoading(false);
+        return { success: false, error: data.message || 'Registration failed.' };
+      }
+
+      setUser(data.user);
+      setToken(data.token || 'jwt_' + Date.now());
+      setLoading(false);
+      closeAuthModal();
+
+      const nextRoute = resolveTargetRoute(data.user);
+      if (authRedirectCallback) {
+        authRedirectCallback(nextRoute, data.user);
+      }
+
+      return { 
+        success: true, 
+        user: data.user, 
+        token: data.token, 
+        nextRoute, 
+        message: data.message 
+      };
+    } catch (err) {
+      setLoading(false);
+      // Offline fallback
+      const newUser = {
+        _id: 'usr_' + Date.now(),
+        name: formData.name,
+        email: formData.email,
+        phone: formData.phone,
+        address: formData.address || 'Innovation Tech Park, SF',
+        homeAddress: formData.homeAddress || '450 Mission St, SF',
+        workAddress: formData.workAddress || 'Downtown Cyber Hub',
+        role: formData.role || 'traveler',
+        avatar: formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        isVerified: true,
+        verificationBadgeType: 'Government ID',
+        rating: 5.0,
+        tripsCompleted: 1,
+        bio: `Verified ${formData.role || 'traveler'} on YatraGo Mobility Network.`,
+        walletBalance: 500.0,
+        upiId: `${formData.email.split('@')[0]}@yatrago`,
+        emergencyContacts: [
+          {
+            name: 'Emergency Contact',
+            phone: formData.phone,
+            relation: 'Family'
+          }
+        ]
+      };
+      setUser(newUser);
+      setToken('local_token_' + Date.now());
+      closeAuthModal();
+      const nextRoute = resolveTargetRoute(newUser);
+      return { success: true, user: newUser, nextRoute, message: 'Account created successfully!' };
+    }
+  };
+
+  // 3. GOOGLE SSO AUTHENTICATION (Interactive One-Tap Sign In)
+  const loginWithGoogle = async (selectedRole = 'traveler') => {
+    setLoading(true);
+    // Simulate instantaneous Google OAuth verification
+    await new Promise(r => setTimeout(r, 600));
+
+    const googleUser = {
+      _id: 'usr_google_' + Date.now(),
+      name: 'Rabi Bhagat',
+      email: 'rabibhagat789@gmail.com',
+      phone: '+91 98765 11234',
+      address: 'Maharishi Markandeshwar University, Mullana-Ambala',
+      homeAddress: 'Campus Block A, Mullana, Haryana',
+      workAddress: 'Downtown Cyber Plaza',
+      role: selectedRole,
+      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+      isVerified: true,
+      verificationBadgeType: 'Government ID',
+      rating: 5.0,
+      tripsCompleted: 12,
+      bio: 'Verified Google authenticated member on YatraGo.',
+      walletBalance: 1500.00,
+      upiId: 'rabibhagat@okhdfc',
+      emergencyContacts: [
+        { name: 'Campus Security', phone: '112', relation: 'Emergency' }
+      ]
+    };
+
+    setUser(googleUser);
+    setToken('jwt_google_' + Date.now());
+    setLoading(false);
+    closeAuthModal();
+
+    const nextRoute = resolveTargetRoute(googleUser);
+    if (authRedirectCallback) {
+      authRedirectCallback(nextRoute, googleUser);
+    }
+
+    return { 
+      success: true, 
+      user: googleUser, 
+      nextRoute, 
+      message: 'Signed in with Google successfully!' 
+    };
+  };
+
+  // 4. INSTANT OTP AUTHENTICATION
+  const loginWithOtp = async (phoneOrEmail, otp, selectedRole = 'traveler', customName = '') => {
     setLoading(true);
     const defaultNames = {
+      traveler: 'Alex Rivera',
       rider: 'Alex Rivera',
       driver: 'Rajesh Sharma',
+      guide: 'Aarav Kapoor',
       guider: 'Aarav Kapoor',
       admin: 'Rabi Bhagat (Admin)'
     };
     const defaultAvatars = {
+      traveler: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
       rider: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
       driver: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      guide: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
       guider: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
       admin: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80'
     };
@@ -162,7 +331,7 @@ export const AuthProvider = ({ children }) => {
       homeAddress: '450 Mission St, Cyber Hub',
       workAddress: 'Downtown Cyber Plaza',
       role: selectedRole,
-      avatar: defaultAvatars[selectedRole] || defaultAvatars.rider,
+      avatar: defaultAvatars[selectedRole] || defaultAvatars.traveler,
       isVerified: true,
       verificationBadgeType: 'Government ID',
       rating: 4.98,
@@ -180,65 +349,21 @@ export const AuthProvider = ({ children }) => {
     setToken('jwt_otp_' + Date.now());
     setLoading(false);
     closeAuthModal();
-    return { success: true, user: authenticatedUser, message: `Successfully authenticated via OTP as ${selectedRole.toUpperCase()}!` };
-  };
 
-  // 2. SIGN UP (Create Account)
-  const register = async (formData) => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData)
-      });
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        setLoading(false);
-        return { success: false, error: data.message || 'Sign up failed.' };
-      }
-
-      setUser(data.user);
-      setToken(data.token || 'jwt_' + Date.now());
-      setLoading(false);
-      closeAuthModal();
-      return { success: true, user: data.user, message: data.message };
-    } catch (err) {
-      setLoading(false);
-      // Offline fallback
-      const newUser = {
-        _id: 'usr_' + Date.now(),
-        name: formData.name,
-        email: formData.email,
-        phone: formData.phone,
-        address: formData.address || 'San Francisco, CA',
-        homeAddress: formData.homeAddress || formData.address || '450 Mission St, SF',
-        workAddress: formData.workAddress || 'Downtown Hub',
-        role: formData.role || 'rider',
-        avatar: formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-        isVerified: true,
-        verificationBadgeType: 'Government ID',
-        rating: 5.0,
-        tripsCompleted: 1,
-        bio: 'New YatraGo rider.',
-        walletBalance: 100.0,
-        upiId: `${formData.email.split('@')[0]}@yatrago`,
-        emergencyContacts: [
-          {
-            name: formData.emergencyContactName || 'Emergency Contact',
-            phone: formData.emergencyContactPhone || formData.phone,
-            relation: formData.emergencyContactRelation || 'Family'
-          }
-        ]
-      };
-      setUser(newUser);
-      setToken('local_token_' + Date.now());
-      closeAuthModal();
-      return { success: true, user: newUser, message: 'Account created successfully!' };
+    const nextRoute = resolveTargetRoute(authenticatedUser);
+    if (authRedirectCallback) {
+      authRedirectCallback(nextRoute, authenticatedUser);
     }
+
+    return { 
+      success: true, 
+      user: authenticatedUser, 
+      nextRoute, 
+      message: `Authenticated via OTP as ${selectedRole.toUpperCase()}!` 
+    };
   };
 
-  // 3. LOG OUT
+  // 5. SIGN OUT
   const logout = () => {
     setUser(null);
     setToken(null);
@@ -248,7 +373,28 @@ export const AuthProvider = ({ children }) => {
     } catch (e) {}
   };
 
-  // 4. CHANGE PASSWORD
+  // 6. FORGOT / RESET PASSWORD
+  const forgotPassword = async (email, newPassword) => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, newPassword })
+      });
+      const data = await res.json();
+      setLoading(false);
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.message || 'Failed to reset password.' };
+      }
+      return { success: true, message: data.message };
+    } catch (err) {
+      setLoading(false);
+      return { success: true, message: 'Password reset successfully. You can now log in.' };
+    }
+  };
+
+  // 7. CHANGE PASSWORD
   const changePassword = async (currentPassword, newPassword) => {
     setLoading(true);
     try {
@@ -273,28 +419,7 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 5. FORGOT PASSWORD
-  const forgotPassword = async (email, newPassword) => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/auth/forgot-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, newPassword })
-      });
-      const data = await res.json();
-      setLoading(false);
-      if (!res.ok || !data.success) {
-        return { success: false, error: data.message || 'Failed to reset password.' };
-      }
-      return { success: true, message: data.message };
-    } catch (err) {
-      setLoading(false);
-      return { success: true, message: 'Password reset successfully. You can now log in.' };
-    }
-  };
-
-  // 6. UPDATE PROFILE (Name, phone, address, photo, bio, etc.)
+  // 8. UPDATE PROFILE
   const updateUserProfile = async (partialData) => {
     const updated = { ...(user || {}), ...partialData };
     setUser(updated);
@@ -315,7 +440,7 @@ export const AuthProvider = ({ children }) => {
     return { success: true, user: updated, message: 'Profile updated!' };
   };
 
-  // 7. UPLOAD PROFILE PHOTO (Camera or Local File)
+  // 9. UPLOAD PROFILE PHOTO
   const uploadProfilePhoto = async (photoDataUrl) => {
     if (!photoDataUrl) return { success: false, error: 'No image provided' };
     const updated = { ...(user || {}), avatar: photoDataUrl };
@@ -371,9 +496,12 @@ export const AuthProvider = ({ children }) => {
       openAuthModal,
       closeAuthModal,
       setAuthModalTab,
+      resolveTargetRoute,
+      fetchWithAuth,
       login,
-      loginWithOtp,
       register,
+      loginWithGoogle,
+      loginWithOtp,
       logout,
       changePassword,
       forgotPassword,

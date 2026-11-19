@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
-import { Bike, Navigation, ChevronUp, ChevronDown, Sparkles, MapPin, Zap } from 'lucide-react';
+import { Bike, Car, Navigation, ChevronUp, ChevronDown, Sparkles, MapPin, Zap } from 'lucide-react';
 
 export default function FloatingRideTracker({ onNavigate, activeRide }) {
   const [collapsed, setCollapsed] = useState(false);
+  const isBike = activeRide?.vehicleCategory === 'bike' || 
+    activeRide?.vehicleType?.toLowerCase().includes('bike') || 
+    activeRide?.vehicleType?.toLowerCase().includes('moto');
 
   return (
     <div className="fixed bottom-5 right-5 z-30 select-none animate-fadeIn">
@@ -15,7 +18,7 @@ export default function FloatingRideTracker({ onNavigate, activeRide }) {
         >
           <div className="flex items-center gap-2">
             <div className="relative w-7 h-7 rounded-lg bg-gradient-to-tr from-cyan-500 to-emerald-500 text-slate-950 flex items-center justify-center font-bold">
-              <Bike size={16} />
+              {isBike ? <Bike size={16} /> : <Car size={16} />}
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-400 ring-2 ring-slate-950 animate-ping"></span>
             </div>
             <div>
@@ -34,7 +37,7 @@ export default function FloatingRideTracker({ onNavigate, activeRide }) {
         {/* Expanded Info Body */}
         {!collapsed && (
           <div className="p-3.5 space-y-3 w-64 text-xs">
-            {/* Animated Mini Roadway with Cruising Bike */}
+            {/* Animated Mini Roadway with Cruising Vehicle */}
             <div className="relative h-10 w-full rounded-xl bg-slate-950 border border-slate-800 overflow-hidden flex items-center px-2">
               <div className="absolute inset-x-0 h-0.5 top-1/2 -translate-y-1/2 flex justify-between gap-2 overflow-hidden opacity-50">
                 {[...Array(10)].map((_, i) => (
@@ -42,11 +45,12 @@ export default function FloatingRideTracker({ onNavigate, activeRide }) {
                 ))}
               </div>
 
-              {/* Cruising bike */}
-              <div className="absolute top-1/2 -translate-y-1/2 left-2 animate-[spin_4s_linear_infinite] hidden"></div>
+              {/* Cruising bike/car */}
               <div className="flex items-center gap-1.5 px-2 py-1 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                <Bike size={14} className="animate-pulse" />
-                <span className="text-[10px] font-mono font-bold">64 km/h • On Track</span>
+                {isBike ? <Bike size={14} className="animate-pulse" /> : <Car size={14} className="animate-pulse" />}
+                <span className="text-[10px] font-mono font-bold">
+                  {isBike ? '68 km/h • HyperBike' : '64 km/h • EV Sedan'}
+                </span>
               </div>
             </div>
 
@@ -59,7 +63,9 @@ export default function FloatingRideTracker({ onNavigate, activeRide }) {
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Driver / Vehicle:</span>
-                <span className="text-emerald-400 font-bold">Marcus V. • EV</span>
+                <span className="text-emerald-400 font-bold truncate max-w-[120px]">
+                  {activeRide?.driver?.vehicle || (isBike ? 'HyperBike' : 'Tesla EV')}
+                </span>
               </div>
             </div>
 

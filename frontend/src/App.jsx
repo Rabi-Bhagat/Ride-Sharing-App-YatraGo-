@@ -15,7 +15,7 @@ import UserProfile from './components/UserProfile';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
 import FloatingRideTracker from './components/FloatingRideTracker';
-import UberFooter from './components/UberFooter';
+import YatraGoFooter from './components/YatraGoFooter';
 
 import { DESTINATIONS_3D } from './data/mockData';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -24,13 +24,57 @@ import { Sparkles } from 'lucide-react';
 
 function MainApp() {
   const [activeTab, setActiveTab] = useState('home'); // 'home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat'
+  const { user, authModalOpen, closeAuthModal, openAuthModal } = useAuth();
 
   const handleNavigateWithTransition = (targetTab, params) => {
+    // Protected routes check: redirect to auth modal and return here upon login
+    const protectedTabs = ['driver', 'guide-portal', 'admin'];
+    if (!user && protectedTabs.includes(targetTab)) {
+      openAuthModal('login', targetTab);
+      return;
+    }
     if (params?.pickup) {
-      setPickupLocation(typeof params.pickup === 'string' ? { name: params.pickup, lat: 28.6139, lng: 77.2090 } : params.pickup);
+      setPickupLocation(typeof params.pickup === 'string' ? { name: params.pickup, lat: 28.4950, lng: 77.0890 } : params.pickup);
     }
     if (params?.destination) {
-      setSelectedDestination(typeof params.destination === 'string' ? { name: params.destination, address: params.destination, lat: 28.5355, lng: 77.3910 } : params.destination);
+      setSelectedDestination(typeof params.destination === 'string' ? { name: params.destination, address: params.destination, lat: 28.5562, lng: 77.1000 } : params.destination);
+    }
+    const isBike = params?.vehicleCategory === 'bike' || 
+      params?.vehicleType?.toLowerCase().includes('bike') || 
+      params?.vehicleType?.toLowerCase().includes('moto');
+
+    if (isBike) {
+      setActiveRide(prev => ({
+        ...prev,
+        vehicleType: params.vehicleType || 'HyperBike 1200R',
+        vehicleCategory: 'bike',
+        totalCost: parseFloat(params.fare) || prev.totalCost,
+        distanceKm: params.distanceKm || prev.distanceKm,
+        driver: {
+          name: 'Marcus Vance',
+          vehicle: 'HyperBike 1200R (Midnight Black • Helmet Verified)',
+          rating: 4.98,
+          phone: '+91 98765 43210',
+          lat: (params?.pickup?.lat || 28.4950) + 0.005,
+          lng: (params?.pickup?.lng || 77.0890) - 0.004
+        }
+      }));
+    } else if (params?.vehicleCategory === 'car') {
+      setActiveRide(prev => ({
+        ...prev,
+        vehicleType: params.vehicleType || 'Eco Sedan',
+        vehicleCategory: 'car',
+        totalCost: parseFloat(params.fare) || prev.totalCost,
+        distanceKm: params.distanceKm || prev.distanceKm,
+        driver: {
+          name: 'Marcus Vance',
+          vehicle: 'Tesla Model Y (Silver Electric Sedan)',
+          rating: 4.97,
+          phone: '+91 98765 43210',
+          lat: (params?.pickup?.lat || 28.4950) + 0.005,
+          lng: (params?.pickup?.lng || 77.0890) - 0.004
+        }
+      }));
     }
     setActiveTab(targetTab);
   };
@@ -45,7 +89,6 @@ function MainApp() {
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   const { strangerAlertNotification } = useSocket();
-  const { user, authModalOpen, closeAuthModal, openAuthModal } = useAuth();
 
   // Sync user's saved pickup address if available
   React.useEffect(() => {
@@ -130,6 +173,10 @@ function MainApp() {
   }, []);
 
   const handleBookRide = (bookingDetails) => {
+    if (!user) {
+      openAuthModal('login', 'book');
+      return;
+    }
     fetch('/api/rides/book', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -289,8 +336,8 @@ function MainApp() {
 
       </main>
 
-      {/* Global Uber-Style Footer */}
-      <UberFooter onNavigate={handleNavigateWithTransition} />
+      {/* Global YatraGo Footer */}
+      <YatraGoFooter onNavigate={handleNavigateWithTransition} />
 
       {/* Persistent Floating 3D Ride Companion */}
       <FloatingRideTracker
@@ -314,6 +361,11 @@ function MainApp() {
       <AuthModal
         isOpen={authModalOpen}
         onClose={closeAuthModal}
+        onAuthSuccess={(targetTab) => {
+          if (targetTab) {
+            handleNavigateWithTransition(targetTab);
+          }
+        }}
       />
 
     </div>

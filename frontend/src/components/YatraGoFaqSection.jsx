@@ -32,7 +32,7 @@ const FAQS = [
   }
 ];
 
-export default function UberFaqSection() {
+export default function YatraGoFaqSection() {
   const [openIndex, setOpenIndex] = useState(0);
 
   return (

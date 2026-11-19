@@ -108,15 +108,25 @@ router.get('/', async (req, res) => {
 
 // Book a new ride and persist to MongoDB
 router.post('/book', async (req, res) => {
-  const { pickup, destination, vehicleType, guiderId, guiderFee } = req.body;
+  const { pickup, destination, vehicleType, vehicleCategory, guiderId, guiderFee, totalCost: passedCost, distanceKm: passedDist } = req.body;
   
-  const baseDistance = 8.5;
-  let baseRate = 180.00;
+  const isBike = vehicleCategory === 'bike' || 
+    (vehicleType && (vehicleType.toLowerCase().includes('bike') || vehicleType.toLowerCase().includes('moto') || vehicleType.toLowerCase().includes('scooter')));
+
+  const baseDistance = passedDist ? parseFloat(passedDist) : 8.5;
+  let baseRate = isBike ? 85.00 : 180.00;
   if (vehicleType === 'Premium SUV') baseRate = 320.00;
   if (vehicleType === 'Electric Shuttle') baseRate = 220.00;
   if (vehicleType === 'Guider Co-Ride') baseRate = 280.00;
+  if (vehicleType === 'HyperBike 1200R') baseRate = 120.00;
+  if (vehicleType === 'AeroScooter EV') baseRate = 65.00;
+  if (vehicleType === 'YatraGo Moto') baseRate = 75.00;
 
-  let totalCost = baseRate + (guiderFee || 0);
+  let totalCost = passedCost ? parseFloat(passedCost) : (baseRate + (guiderFee || 0));
+
+  const driverVehicle = isBike 
+    ? 'HyperBike 1200R (Midnight Black • Helmet Verified)' 
+    : 'Tesla Model Y (Metallic Silver)';
 
   const rideData = {
     pickup: pickup || activeRide.pickup,
@@ -134,21 +144,22 @@ router.post('/book', async (req, res) => {
     ],
     driver: {
       name: 'Marcus Vance',
-      vehicle: 'Tesla Model Y (Metallic Silver)',
-      licensePlate: '7Velo89',
-      rating: 4.97,
-      phone: '+1 (555) 888-2311',
+      vehicle: driverVehicle,
+      licensePlate: isBike ? '9MOTO88' : '7Velo89',
+      rating: 4.98,
+      phone: '+91 98765 43210',
       lat: (pickup?.lat || 37.7749) + 0.005,
       lng: (pickup?.lng || -122.4194) - 0.004
     },
     guider: guiderId ? { guiderId, name: 'Sofia Martinez', fee: guiderFee || 25 } : null,
-    vehicleType: vehicleType || 'Eco Sedan',
+    vehicleType: vehicleType || (isBike ? 'HyperBike 1200R' : 'Eco Sedan'),
+    vehicleCategory: isBike ? 'bike' : 'car',
     status: 'In Progress',
     isStrangerCombined: false,
     strangerSavingsPercentage: 0,
     totalCost,
     distanceKm: baseDistance,
-    etaMinutes: 14,
+    etaMinutes: Math.max(3, Math.round(baseDistance * 1.5)),
     costSplits: [
       { riderName: 'Alex Rivera', amount: totalCost, percentage: 100, status: 'Pending' }
     ]

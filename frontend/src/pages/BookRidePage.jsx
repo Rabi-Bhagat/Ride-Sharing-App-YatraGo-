@@ -13,6 +13,10 @@ export default function BookRidePage({
   onOpen3DPreview,
   activeRide
 }) {
+  const isBike = activeRide?.vehicleCategory === 'bike' || 
+    activeRide?.vehicleType?.toLowerCase().includes('bike') || 
+    activeRide?.vehicleType?.toLowerCase().includes('moto');
+
   return (
     <div className="space-y-6 animate-fadeIn">
       
@@ -20,18 +24,20 @@ export default function BookRidePage({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 glass-panel p-5 rounded-2xl border border-slate-800">
         <div>
           <h1 className="text-2xl font-black text-white flex items-center gap-2.5">
-            <Car className="text-cyan-400" />
-            <span>Book Your Ride</span>
+            {isBike ? <Bike className="text-cyan-400" /> : <Car className="text-cyan-400" />}
+            <span>{isBike ? 'Book Your Bike Ride' : 'Book Your Car Ride'}</span>
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Choose your pickup and destination on the Google Map or select from presets.
+            {isBike 
+              ? 'Fast motorcycle & superbike transit with verified helmet-wearing riders.'
+              : 'Choose your pickup and destination on the map or select from presets.'}
           </p>
         </div>
 
         <div className="flex items-center gap-2">
           <div className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-300 flex items-center gap-2 font-mono">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
-            <span>Driver Marcus V. (Tesla Model Y)</span>
+            <span>Driver {activeRide?.driver?.name || 'Marcus V.'} ({activeRide?.driver?.vehicle || (isBike ? 'HyperBike 1200R' : 'Tesla Model Y')})</span>
           </div>
         </div>
       </div>
@@ -65,8 +71,8 @@ export default function BookRidePage({
 
           {/* Animated Moving Bike / Car with light trail */}
           <div className="flex items-center gap-2 z-10 px-2.5 py-1 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 font-extrabold text-[11px] shadow-lg shadow-cyan-500/20">
-            <Bike size={15} />
-            <span>Active Ride Simulation • Marcus V. Moving (68 km/h)</span>
+            {isBike ? <Bike size={15} /> : <Car size={15} />}
+            <span>Active Ride Simulation • {activeRide?.driver?.name || 'Marcus V.'} on {isBike ? 'HyperBike (72 km/h)' : 'Tesla EV (64 km/h)'}</span>
           </div>
         </div>
       </div>
@@ -84,6 +90,7 @@ export default function BookRidePage({
             setSelectedDestination={setSelectedDestination}
             selectedGuider={selectedGuider}
             onOpen3DPreview={onOpen3DPreview}
+            activeRide={activeRide}
           />
         </div>
 

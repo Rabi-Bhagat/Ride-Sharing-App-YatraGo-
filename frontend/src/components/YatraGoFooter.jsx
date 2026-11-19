@@ -5,7 +5,7 @@ import {
 } from 'lucide-react';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 
-export default function UberFooter({ onNavigate }) {
+export default function YatraGoFooter({ onNavigate }) {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
   const [showLangModal, setShowLangModal] = useState(false);
 
@@ -45,7 +45,7 @@ export default function UberFooter({ onNavigate }) {
           </button>
         </div>
 
-        {/* 4-Column Directory Grid (Exact Uber Structure) */}
+        {/* 4-Column Directory Grid (YatraGo Structure) */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
           
           {/* Column 1: Company */}

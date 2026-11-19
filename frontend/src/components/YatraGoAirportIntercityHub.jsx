@@ -50,7 +50,7 @@ const BUS_ROUTES_DATA = [
   { route: 'Lucknow to Delhi Bus', duration: '7.5 hrs', fare: 680.00, type: 'Expressway Intercity' }
 ];
 
-export default function UberAirportAndIntercityHub({ onSelectRoute }) {
+export default function YatraGoAirportIntercityHub({ onSelectRoute }) {
   const [activeTab, setActiveTab] = useState('airports'); // 'airports', 'intercity', 'courier', 'bus'
 
   const handleRouteClick = (item) => {

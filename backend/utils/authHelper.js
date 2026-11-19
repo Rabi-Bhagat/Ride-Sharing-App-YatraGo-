@@ -20,6 +20,10 @@ function sanitizeUser(user) {
   const userObj = user.toObject ? user.toObject() : { ...user };
   delete userObj.password;
   delete userObj.__v;
+  // Automatically strip default stock human photos
+  if (userObj.avatar && (userObj.avatar.includes('images.unsplash.com') || userObj.avatar.includes('photo-1534528741775-53994a69daeb'))) {
+    userObj.avatar = '';
+  }
   return userObj;
 }
 

@@ -32,7 +32,7 @@ const defaultAccounts = [
     homeAddress: '450 Mission St, San Francisco, CA',
     workAddress: '1 Market St, San Francisco, CA',
     role: 'traveler',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    avatar: '',
     isVerified: true,
     verificationBadgeType: 'Government ID',
     rating: 4.96,
@@ -55,7 +55,7 @@ const defaultAccounts = [
     homeAddress: 'Tower B, Sector 4, Cyber City',
     workAddress: 'City Corridor Route 1',
     role: 'driver',
-    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
+    avatar: '',
     isVerified: true,
     verificationBadgeType: 'Gold Driver',
     rating: 4.98,
@@ -74,7 +74,7 @@ const defaultAccounts = [
     homeAddress: 'Old City Center, Gate 2',
     workAddress: 'Downtown Tourism Corridor',
     role: 'guide',
-    avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
+    avatar: '',
     isVerified: true,
     verificationBadgeType: 'Certified Guide',
     rating: 5.0,
@@ -93,7 +93,7 @@ const defaultAccounts = [
     homeAddress: 'Campus Block A, Mullana, Haryana',
     workAddress: 'YatraGo Headquarters Operations Desk',
     role: 'admin',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+    avatar: '',
     isVerified: true,
     verificationBadgeType: 'Platform Admin',
     rating: 5.0,
@@ -112,7 +112,7 @@ const defaultAccounts = [
     homeAddress: 'Campus Block A, Mullana, Haryana',
     workAddress: 'YatraGo Operations Desk',
     role: 'traveler',
-    avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
+    avatar: '',
     isVerified: true,
     verificationBadgeType: 'Government ID',
     rating: 5.0,
@@ -236,13 +236,7 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    const defaultAvatars = [
-      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80',
-      'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-      'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80'
-    ];
-    const chosenAvatar = avatar || defaultAvatars[Math.floor(Math.random() * defaultAvatars.length)];
+    const chosenAvatar = avatar || '';
 
     const hashedPassword = hashPassword(password);
     const newUserData = {

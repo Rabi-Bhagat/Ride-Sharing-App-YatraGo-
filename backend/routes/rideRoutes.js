@@ -12,7 +12,7 @@ let activeRide = {
     {
       userId: 'usr_1',
       name: 'Alex Rivera',
-      avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+      avatar: '',
       isVerified: true,
       isPrimary: true,
       costShare: 160.00,

@@ -15,7 +15,7 @@ export const DEMO_USER = {
   homeAddress: '450 Mission St, San Francisco, CA',
   workAddress: '1 Market St, San Francisco, CA',
   role: 'traveler', // 'traveler', 'rider', 'driver', 'guide', 'admin'
-  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+  avatar: '',
   isVerified: true,
   verificationBadgeType: 'Government ID',
   rating: 4.96,
@@ -34,7 +34,15 @@ export const AuthProvider = ({ children }) => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY_USER);
       if (stored) {
-        return JSON.parse(stored);
+        const parsed = JSON.parse(stored);
+        // Strip default unsplash human photo if present
+        if (parsed && parsed.avatar && (parsed.avatar.includes('images.unsplash.com') || parsed.avatar.includes('photo-1534528741775-53994a69daeb'))) {
+          parsed.avatar = '';
+          try {
+            localStorage.setItem(STORAGE_KEY_USER, JSON.stringify(parsed));
+          } catch (e) {}
+        }
+        return parsed;
       }
     } catch (e) {}
     return null; // Start unauthenticated so website runs from login/signup page
@@ -232,7 +240,7 @@ export const AuthProvider = ({ children }) => {
         homeAddress: formData.homeAddress || '450 Mission St, SF',
         workAddress: formData.workAddress || 'Downtown Cyber Hub',
         role: formData.role || 'traveler',
-        avatar: formData.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        avatar: formData.avatar || '',
         isVerified: true,
         verificationBadgeType: 'Government ID',
         rating: 5.0,
@@ -331,7 +339,7 @@ export const AuthProvider = ({ children }) => {
       homeAddress: '450 Mission St, Cyber Hub',
       workAddress: 'Downtown Cyber Plaza',
       role: selectedRole,
-      avatar: defaultAvatars[selectedRole] || defaultAvatars.traveler,
+      avatar: '',
       isVerified: true,
       verificationBadgeType: 'Government ID',
       rating: 4.98,

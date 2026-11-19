@@ -1,35 +1,94 @@
-# Ride-Sharing-App-YatraGo-
+# 🚖 YatraGo - Smart Ride-Sharing & 3D Mobility Platform
 
-# 🏎️ YatraGo - Next-Gen Full-Stack MERN Ride Sharing Platform
-
-> **Hackathon Submission Ready** | Built with React, Node.js, Express, MongoDB, Socket.io, Three.js WebGL & Google Maps / Leaflet.
-
-YatraGo is a full-stack, highly responsive ride-sharing web application engineered for modern urban mobility. It combines real-time socket tracking, 3D WebGL destination previews, AI-assisted stranger ride pooling, automated in-app cost splitting, verified user/guider profiles, real-time group chat, and localized emergency SOS safety broadcasts.
+A modern, high-performance full-stack ride-sharing and urban mobility web platform engineered with **React 18, Vite, Node.js, Express, MongoDB, Socket.io, Three.js WebGL**, and dual-engine maps (**Google Maps & Leaflet / OpenStreetMap**).
 
 ---
 
-## ✨ Features & Hackathon Showcase Highlights
+## 🌟 Key Features
 
-1. **Interactive 3D WebGL Destination Preview (`Three.js`)**:
-   - Preview volumetric 3D cityscapes (Downtown Cyber Hub, Oceanfront Resort, Historic Plaza, Alpine Ridge) with 360° Orbit camera controls, sky atmosphere toggles (Neon Night, Sunset, Day, Cyber Fog), and interactive landmark pins.
+1. **Smart Ride Request & Doorstep Dispatch**:
+   - Instant cab hailing, scheduled reservations (up to 90 days), and vehicle selection (EV Sedan, EcoSUV, Superbike, AeroScooter).
+   - Doorstep pickup autocomplete powered by Google Places and OpenStreetMap geocoding.
 
-2. **Stranger Ride Combining (Smart Pooling Engine)**:
-   - Match pairing algorithm that evaluates route alignment ($96\%$ match score), detour time, and cost savings ($44\%$ total discount per rider).
+2. **Interactive 3D Route Preview & Digital Viewport (`Three.js`)**:
+   - Real-time 3D vehicle simulation with 360° orbit camera, chase camera, cockpit POV, speed controls (W/S acceleration & braking), and day/night atmospheric weather rendering.
 
-3. **In-App Automated Cost Splitting & Live Payment Gateway Simulator**:
-   - Multi-passenger fare matrix supporting equal or custom ratio splits.
-   - Live interactive payment simulator (UPI / Credit Card / Apple Pay) generating instant digital payment receipts and marking rider status as `PAID`.
+3. **Carpool & Shared Rides (Route Alignment Engine)**:
+   - Dynamic waypoint pairing that matches verified commuters traveling along identical routes, slashing fares by up to **44%**.
 
-4. **Verified User Profiles & Local Travel Guiders Directory**:
-   - Verification Checkmark Badge ($\checkmark$) indicating government ID verification and $98\%$ trust score.
-   - Dedicated local travel guider network directory with language spoken filters, specialties, and 1-click "Add Guider to Ride" options.
+4. **Automated Group Fare Splitting & UPI Checkout**:
+   - Multi-rider split matrix with digital payment receipts (UPI, Card, Wallet), transaction IDs, and automated rider settlement tracking.
 
-5. **Localized Emergency SOS Alert Broadcast**:
-   - High-visibility emergency SOS system with a 3-second safety countdown to prevent accidental triggers.
-   - Emits real-time Socket.io telemetry (GPS coordinates: `37.7749° N, 122.4194° W`) to nearby radius response units and emergency contacts.
+5. **Role-Based Workspaces & Portals**:
+   - **Driver Partner Console**: Online/offline toggle, ride dispatch cards, boarding OTP verification, passenger drop-off, and weekly payout dashboard.
+   - **Operations & Admin Center**: Fleet overview, user/driver license verification, fraud monitoring, and dynamic platform pricing rules.
+   - **Local Guider Network**: Certified city guides for hire per hour to accompany tourists on historical city routes.
 
-6. **Real-Time Group Chat (`Socket.io`)**:
-   - Live multi-participant messaging drawer connecting co-riders, driver, and local guiders with verified profile badges and preset quick safety status chips.
+6. **24/7 Safety Network & 1-Click Emergency SOS**:
+   - Emergency SOS trigger with 3-second safety countdown, emitting real-time GPS coordinates to nearby responders and trusted contacts.
+
+7. **Real-Time Group Ride Chat (`Socket.io`)**:
+   - In-ride multi-participant messaging drawer connecting rider, assigned driver, and local guide with verified badges.
+
+---
+
+## ⚡ Zero-Cost Quickstart (Run Without Any Paid Accounts)
+
+> **Are all API credentials required to run YatraGo?**
+> 
+> **NO!** YatraGo is built with **zero-lockout fallbacks**. If you don't provide external API keys, the app automatically switches to built-in fallback engines (Leaflet / OpenStreetMap for navigation, in-memory database sync, simulated UPI/Card checkout, and in-app SOS broadcast).
+
+For complete details on free tiers, see [CREDENTIALS.md](file:///c:/Users/Rabi%20Bhagat/Desktop/Ride%20Sharing%20app/CREDENTIALS.md).
+
+### The 100% Free Setup (Only 2 Credentials Needed):
+
+1. **`MONGO_URI`**: Free Forever via [MongoDB Atlas M0 Tier](https://cloud.mongodb.com) (512MB storage, no credit card required).
+2. **`JWT_SECRET`**: Generate locally in 5 seconds via:
+   ```powershell
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+---
+
+## 🚀 Installation & Local Development
+
+### 1. Clone & Install Dependencies
+
+```powershell
+# Install backend dependencies
+cd backend
+npm install
+
+# Install frontend dependencies
+cd ../frontend
+npm install
+```
+
+### 2. Configure Environment Files
+
+Create your local `.env` files from the provided templates:
+
+```powershell
+# Copy backend template
+cp backend/.env.example backend/.env
+
+# Copy frontend template
+cp frontend/.env.example frontend/.env
+```
+
+*(See [CREDENTIALS.md](file:///c:/Users/Rabi%20Bhagat/Desktop/Ride%20Sharing%20app/CREDENTIALS.md) for full explanations of every variable).*
+
+### 3. Launch Development Servers
+
+```powershell
+# Terminal 1: Backend API & Socket Server (port 5000)
+npm --prefix backend start
+
+# Terminal 2: Frontend Client with Vite (port 3000)
+npm --prefix frontend run dev
+```
+
+Open your browser at **`http://localhost:3000`**.
 
 ---
 
@@ -37,22 +96,40 @@ YatraGo is a full-stack, highly responsive ride-sharing web application engineer
 
 ```text
 Ride Sharing app/
+├── CREDENTIALS.md            # Complete credentials & free API guide
+├── README.md                 # Project documentation
 ├── backend/                  # Node.js + Express + Socket.io + Mongoose
+│   ├── .env.example          # Sample environment variables
 │   ├── server.js             # API & Socket Server entry point
 │   ├── config/db.js          # MongoDB connection with in-memory fallback
 │   ├── models/               # User, Guider, Ride, Message, SosAlert Schemas
 │   ├── routes/               # Auth, Rides, Guiders, SOS REST endpoints
-│   └── sockets/              # Socket.io handlers for real-time events
-└── frontend/                 # React + Vite + Tailwind CSS + Three.js + Leaflet
-    ├── index.html            # Entry HTML with Leaflet CSS & Google Fonts
+│   ├── sockets/              # Socket.io handlers for real-time events
+│   └── seed.js               # Sample data seeding script
+└── frontend/                 # React 18 + Vite + Tailwind CSS + Three.js + Leaflet
+    ├── .env.example          # Sample client environment variables
+    ├── index.html            # Entry HTML with Google Maps & Leaflet CSS
     ├── vite.config.js        # Vite build & API proxy setup
     ├── tailwind.config.js    # Glassmorphism styling configuration
     └── src/
-        ├── App.jsx           # Main orchestrator with Hackathon Demo Bar
-        ├── components/       # Feature modules (MapView, ThreeDestinationPreview, etc.)
+        ├── App.jsx           # Main application routing and shell
+        ├── components/       # UI components (Navbar, 3D Scene, Slider, Maps, Chat)
         ├── context/          # AuthContext & SocketContext
-        └── data/             # 3D presets, vehicles & guider directory
+        ├── pages/            # Home, Carpool, Driver Portal, Admin Console, SOS
+        └── data/             # Vehicle fleet specs & landmark presets
 ```
 
 ---
 
+## 🧪 Production Build Verification
+
+```powershell
+npm --prefix frontend run build
+```
+
+Build outputs are compiled into `frontend/dist` with minification and gzip compression.
+
+---
+
+## 📄 License
+MIT © 2026 YatraGo Technologies Inc.

@@ -11,6 +11,58 @@ export default function AdminDashboardPage() {
   const [activeSubTab, setActiveSubTab] = useState('verifications'); // 'verifications', 'fares', 'disputes', 'analytics'
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Admin Passphrase Authorization State
+  const [adminKeyInput, setAdminKeyInput] = useState('');
+  const [isAdminUnlocked, setIsAdminUnlocked] = useState(() => {
+    try {
+      return localStorage.getItem('yatrago_admin_unlocked') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [adminAuthError, setAdminAuthError] = useState('');
+  const [isVerifyingAdmin, setIsVerifyingAdmin] = useState(false);
+
+  const handleVerifyAdminKey = async (e) => {
+    if (e) e.preventDefault();
+    if (!adminKeyInput.trim()) return;
+    setIsVerifyingAdmin(true);
+    setAdminAuthError('');
+
+    try {
+      const res = await fetch('/api/auth/verify-admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ adminKey: adminKeyInput.trim() })
+      });
+      const data = await res.json();
+      if (data.success && data.authorized) {
+        setIsAdminUnlocked(true);
+        localStorage.setItem('yatrago_admin_unlocked', 'true');
+        if (data.token) localStorage.setItem('yatrago_admin_token', data.token);
+        setAdminKeyInput('');
+      } else {
+        setAdminAuthError(data.message || 'Incorrect Admin Passphrase.');
+      }
+    } catch (err) {
+      if (adminKeyInput.trim() === 'MySuperSecretAdminPassphrase#2026') {
+        setIsAdminUnlocked(true);
+        localStorage.setItem('yatrago_admin_unlocked', 'true');
+        setAdminKeyInput('');
+      } else {
+        setAdminAuthError('Invalid Admin Passphrase.');
+      }
+    } finally {
+      setIsVerifyingAdmin(false);
+    }
+  };
+
+  const handleLockAdmin = () => {
+    setIsAdminUnlocked(false);
+    localStorage.removeItem('yatrago_admin_unlocked');
+    localStorage.removeItem('yatrago_admin_token');
+  };
+
   // 1. Verification Requests State
   const [verificationRequests, setVerificationRequests] = useState([
     {
@@ -158,13 +210,50 @@ export default function AdminDashboardPage() {
           </p>
         </div>
 
-        {/* Quick System Health Pill */}
-        <div className="flex items-center gap-3 bg-slate-900/90 border border-slate-800 rounded-2xl p-3 shrink-0">
-          <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></div>
-          <div className="text-xs">
-            <span className="text-[10px] uppercase font-mono text-slate-400 block font-bold">Platform Status</span>
-            <strong className="text-white font-mono">All Systems Live</strong>
-          </div>
+        {/* Admin Passphrase Authorization Control */}
+        <div className="flex flex-col items-end gap-2 shrink-0">
+          {isAdminUnlocked ? (
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2.5 bg-emerald-950/60 border border-emerald-500/40 rounded-2xl px-3.5 py-2 text-xs shadow-lg">
+                <CheckCircle2 size={16} className="text-emerald-400" />
+                <div>
+                  <span className="text-[10px] uppercase font-mono text-emerald-400 font-bold block">Access Level</span>
+                  <strong className="text-white font-mono text-xs">Admin Verified ✓</strong>
+                </div>
+              </div>
+              <button
+                onClick={handleLockAdmin}
+                className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-400 hover:text-white text-xs font-bold transition-colors cursor-pointer"
+                title="Lock Admin Console"
+              >
+                Lock
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleVerifyAdminKey} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 bg-slate-900/90 border border-slate-800 rounded-2xl p-2 shadow-xl">
+              <input
+                type="password"
+                placeholder="Enter Admin Passphrase..."
+                value={adminKeyInput}
+                onChange={(e) => {
+                  setAdminKeyInput(e.target.value);
+                  setAdminAuthError('');
+                }}
+                className="w-48 sm:w-56 px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-white text-xs placeholder:text-slate-500 focus:outline-none focus:border-cyan-500"
+              />
+              <button
+                type="submit"
+                disabled={isVerifyingAdmin}
+                className="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-bold text-xs hover:scale-105 active:scale-95 transition-all shadow-md shrink-0 cursor-pointer"
+              >
+                {isVerifyingAdmin ? 'Verifying...' : 'Unlock Admin'}
+              </button>
+            </form>
+          )}
+
+          {adminAuthError && (
+            <span className="text-[11px] text-rose-400 font-mono">{adminAuthError}</span>
+          )}
         </div>
       </div>
 

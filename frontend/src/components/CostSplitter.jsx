@@ -7,6 +7,7 @@ import {
 import VerificationBadge from './VerificationBadge';
 import { useAuth } from '../context/AuthContext';
 import yatraGoLogo from '../logo/yatrago-logo.png';
+import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 
 export default function CostSplitter({ ride }) {
   const { user } = useAuth();
@@ -59,9 +60,10 @@ export default function CostSplitter({ ride }) {
 
   // Payment Gateway Modal State
   const [activePaymentModalRider, setActivePaymentModalRider] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('upi'); // 'upi', 'card', 'wallet', 'apple'
+  const [paymentMethod, setPaymentMethod] = useState('razorpay'); // 'razorpay', 'upi', 'card', 'wallet'
   const [isProcessing, setIsProcessing] = useState(false);
   const [paymentReceipt, setPaymentReceipt] = useState(null);
+  const [paymentError, setPaymentError] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
   const [shareToast, setShareToast] = useState(null);
 
@@ -158,17 +160,65 @@ export default function CostSplitter({ ride }) {
     }
   };
 
-  // Execute Simulated Payment
+  // Execute Payment (Razorpay Standard Gateway with fallback simulator)
   const handleExecutePayment = () => {
+    setPaymentError('');
+    const paidShare = parseFloat(getRiderShare(activePaymentModalRider));
+
+    if (paymentMethod === 'razorpay') {
+      setIsProcessing(true);
+      openRazorpayCheckout({
+        amountInRupees: paidShare,
+        riderName: activePaymentModalRider.name,
+        riderEmail: user?.email || 'rider@yatrago.com',
+        riderPhone: user?.phone || '+91 98765 43210',
+        description: `Ride Fare Settlement for ${activePaymentModalRider.name}`,
+        rideId: ride?._id || 'ride_101',
+        onSuccess: (verifyData, razorpayRes) => {
+          setIsProcessing(false);
+          const txnId = razorpayRes.razorpay_payment_id || `pay_${Date.now()}`;
+          const orderId = razorpayRes.razorpay_order_id || '';
+
+          setPaymentReceipt({
+            txnId,
+            orderId,
+            amount: paidShare.toFixed(2),
+            riderName: activePaymentModalRider.name,
+            method: 'RAZORPAY STANDARD (VERIFIED)',
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            date: new Date().toLocaleDateString()
+          });
+
+          // Update rider status to Paid
+          setRidersList(prev => prev.map(r => 
+            r.name === activePaymentModalRider.name 
+              ? { ...r, paymentStatus: 'Paid', paidAt: 'Verified via Razorpay' } 
+              : r
+          ));
+
+          setShareToast('Payment verified successfully via Razorpay!');
+          setTimeout(() => setShareToast(null), 3500);
+        },
+        onFailure: (errorMessage) => {
+          setIsProcessing(false);
+          setPaymentError(errorMessage);
+        },
+        onDismiss: () => {
+          setIsProcessing(false);
+        }
+      });
+      return;
+    }
+
+    // Fallback simulation for local offline demo methods (Wallet / Direct Cash)
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
-      const txnId = 'TXN_VELO_' + Math.floor(100000 + Math.random() * 900000);
-      const paidShare = getRiderShare(activePaymentModalRider);
+      const txnId = 'TXN_LOCAL_' + Math.floor(100000 + Math.random() * 900000);
 
       setPaymentReceipt({
         txnId,
-        amount: paidShare,
+        amount: paidShare.toFixed(2),
         riderName: activePaymentModalRider.name,
         method: paymentMethod.toUpperCase(),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
@@ -181,7 +231,7 @@ export default function CostSplitter({ ride }) {
           ? { ...r, paymentStatus: 'Paid', paidAt: `Just now via ${paymentMethod.toUpperCase()}` } 
           : r
       ));
-    }, 1200);
+    }, 900);
   };
 
   // Copy Split Link
@@ -567,27 +617,34 @@ export default function CostSplitter({ ride }) {
 
                 {/* Gateway Selector */}
                 <div className="space-y-2">
-                  <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
-                    Choose Payment Gateway
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="flex items-center justify-between">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
+                      Choose Payment Method
+                    </label>
+                    <span className="text-[10px] font-mono text-cyan-400 font-bold">Standard Web Checkout</span>
+                  </div>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                     {[
+                      { id: 'razorpay', label: 'Razorpay', icon: ShieldCheck, highlight: true },
                       { id: 'upi', label: 'UPI / QR', icon: QrCode },
-                      { id: 'card', label: 'Card', icon: CreditCard },
-                      { id: 'wallet', label: 'YatraGo Wallet', icon: DollarSign }
+                      { id: 'card', label: 'Card 3DS', icon: CreditCard },
+                      { id: 'wallet', label: 'Wallet', icon: DollarSign }
                     ].map(m => {
                       const Icon = m.icon;
                       return (
                         <button
                           key={m.id}
-                          onClick={() => setPaymentMethod(m.id)}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 ${
+                          onClick={() => {
+                            setPaymentMethod(m.id);
+                            setPaymentError('');
+                          }}
+                          className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
                             paymentMethod === m.id
-                              ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500 shadow-md ring-2 ring-emerald-500/30'
+                              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-md ring-2 ring-cyan-500/30'
                               : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
                           }`}
                         >
-                          <Icon size={16} />
+                          <Icon size={16} className={m.highlight ? 'text-cyan-400' : ''} />
                           <span>{m.label}</span>
                         </button>
                       );
@@ -596,6 +653,27 @@ export default function CostSplitter({ ride }) {
                 </div>
 
                 {/* Gateway Detail Preview */}
+                {paymentMethod === 'razorpay' && (
+                  <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/40 via-slate-900 to-slate-900 border border-cyan-500/40 space-y-2 text-xs">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <strong className="text-white text-xs font-bold">Razorpay Standard Checkout</strong>
+                      </div>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
+                        Live Sandbox
+                      </span>
+                    </div>
+                    <p className="text-slate-300 text-[11px] leading-relaxed">
+                      Opens the official Razorpay payment modal with support for Google Pay, PhonePe, Paytm, all Credit/Debit cards, NetBanking & Wallets.
+                    </p>
+                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1.5 border-t border-slate-800">
+                      <span>Gateway: <strong className="text-cyan-400">rzp_test_...onOUg4</strong></span>
+                      <span className="text-emerald-400">HMAC-SHA256 Verified</span>
+                    </div>
+                  </div>
+                )}
+
                 {paymentMethod === 'upi' && (
                   <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-center space-y-2">
                     <div className="w-24 h-24 mx-auto bg-white p-2 rounded-xl flex items-center justify-center shadow-lg">
@@ -628,16 +706,27 @@ export default function CostSplitter({ ride }) {
                   </div>
                 )}
 
+                {/* Error Banner if any */}
+                {paymentError && (
+                  <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center justify-between gap-2 animate-fadeIn">
+                    <span>{paymentError}</span>
+                    <button onClick={() => setPaymentError('')} className="text-red-400 hover:text-white font-bold text-xs">Dismiss</button>
+                  </div>
+                )}
+
                 <button
                   onClick={handleExecutePayment}
                   disabled={isProcessing}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500 text-slate-950 font-black text-sm shadow-xl shadow-emerald-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 font-black text-sm shadow-xl shadow-cyan-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {isProcessing ? (
-                    <span>Authenticating Bank Gateway...</span>
+                    <span className="flex items-center gap-2">
+                      <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
+                      <span>Opening Razorpay Secure Checkout...</span>
+                    </span>
                   ) : (
                     <>
-                      <span>Confirm & Authorize ₹{getRiderShare(activePaymentModalRider)}</span>
+                      <span>Pay ₹{getRiderShare(activePaymentModalRider)} {paymentMethod === 'razorpay' ? 'via Razorpay' : ''}</span>
                       <ArrowRight size={16} />
                     </>
                   )}

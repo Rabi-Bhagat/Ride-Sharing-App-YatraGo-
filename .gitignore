@@ -8,6 +8,7 @@ package-lock.json.bak
 .env.*
 *.env
 backend/.env
+frontend/.env
 
 # Production builds
 dist/

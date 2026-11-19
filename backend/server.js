@@ -16,6 +16,7 @@ const authRoutes = require('./routes/authRoutes');
 const rideRoutes = require('./routes/rideRoutes');
 const guiderRoutes = require('./routes/guiderRoutes');
 const sosRoutes = require('./routes/sosRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -51,6 +52,8 @@ app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes);
 app.use('/api/guiders', guiderRoutes);
 app.use('/api/sos', sosRoutes);
+app.use('/api/payment', paymentRoutes);
+app.use('/api', paymentRoutes); // Supports direct /api/create-order and /api/verify-payment
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

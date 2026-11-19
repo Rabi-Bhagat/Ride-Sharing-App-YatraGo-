@@ -7,7 +7,9 @@ const {
   verifyPassword, 
   sanitizeUser, 
   validateEmail, 
-  validatePhone 
+  validatePhone,
+  generateJwtToken,
+  verifyJwtToken
 } = require('../utils/authHelper');
 
 // In-Memory user storage fallback for guaranteed 100% uptime
@@ -179,11 +181,18 @@ router.post('/register', async (req, res) => {
     memoryUsers.set(cleanEmail, savedUser);
     currentActiveEmail = cleanEmail;
 
+    const token = generateJwtToken({
+      userId: savedUser._id,
+      email: savedUser.email,
+      role: savedUser.role || 'rider',
+      name: savedUser.name
+    });
+
     return res.status(201).json({
       success: true,
       message: 'Account created successfully! Welcome to YatraGo.',
       user: sanitizeUser(savedUser),
-      token: 'jwt_token_' + Date.now()
+      token
     });
   } catch (error) {
     console.error('Registration Error:', error);
@@ -227,11 +236,18 @@ router.post('/login', async (req, res) => {
 
     currentActiveEmail = cleanEmail;
 
+    const token = generateJwtToken({
+      userId: user._id,
+      email: user.email,
+      role: user.role || 'rider',
+      name: user.name
+    });
+
     return res.json({
       success: true,
       message: `Welcome back, ${user.name}!`,
       user: sanitizeUser(user),
-      token: 'jwt_token_' + Date.now()
+      token
     });
   } catch (error) {
     console.error('Login Error:', error);
@@ -505,6 +521,50 @@ router.post('/upload-avatar', async (req, res) => {
       message: 'Failed to upload photo.' 
     });
   }
+});
+
+// 8. VERIFY OPERATIONS & ADMIN PASSPHRASE
+router.post('/verify-admin', (req, res) => {
+  const inputKey = req.body.adminKey || req.headers['x-admin-key'];
+  const masterKey = process.env.ADMIN_ACCESS_KEY || 'MySuperSecretAdminPassphrase#2026';
+
+  if (!inputKey) {
+    return res.status(400).json({
+      success: false,
+      authorized: false,
+      message: 'Admin Passphrase is required.'
+    });
+  }
+
+  if (String(inputKey).trim() === String(masterKey).trim()) {
+    const adminToken = generateJwtToken({ 
+      role: 'admin', 
+      authorized: true, 
+      timestamp: Date.now() 
+    });
+    return res.json({
+      success: true,
+      authorized: true,
+      message: 'Operations & Admin Desk authenticated successfully.',
+      token: adminToken
+    });
+  } else {
+    return res.status(401).json({
+      success: false,
+      authorized: false,
+      message: 'Invalid Admin Access Passphrase. Access denied.'
+    });
+  }
+});
+
+// 9. VERIFY JWT TOKEN
+router.get('/verify-token', (req, res) => {
+  const authHeader = req.headers.authorization || req.query.token;
+  const result = verifyJwtToken(authHeader);
+  if (result.valid) {
+    return res.json({ success: true, valid: true, payload: result.payload });
+  }
+  return res.status(401).json({ success: false, valid: false, error: result.error });
 });
 
 module.exports = router;

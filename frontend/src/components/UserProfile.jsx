@@ -8,6 +8,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
 import yatraGoLogo from '../logo/yatrago-logo.png';
+import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 
 const PRESET_AVATARS = [
   'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
@@ -202,12 +203,25 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
     }
   };
 
-  // Top-Up Wallet
+  // Top-Up Wallet via Razorpay Standard Checkout
   const handleTopUpWallet = (amount) => {
-    const updated = walletBalance + amount;
-    setWalletBalance(updated);
-    updateUserProfile({ walletBalance: updated });
-    showToast(`Added ₹${amount}.00 to YatraGo Wallet!`);
+    openRazorpayCheckout({
+      amountInRupees: amount,
+      riderName: user?.name || 'Alex Rivera',
+      riderEmail: user?.email || 'alex.rivera@yatrago.com',
+      riderPhone: user?.phone || '+91 98765 43210',
+      description: `YatraGo Wallet Top-Up (₹${amount})`,
+      rideId: 'wallet_' + Date.now(),
+      onSuccess: (verifyData, razorpayRes) => {
+        const updated = walletBalance + amount;
+        setWalletBalance(updated);
+        updateUserProfile({ walletBalance: updated });
+        showToast(`Payment Verified! Added ₹${amount}.00 to YatraGo Wallet.`);
+      },
+      onFailure: (err) => {
+        showToast(`Payment Failed: ${err}`);
+      }
+    });
   };
 
   // Add Emergency Contact

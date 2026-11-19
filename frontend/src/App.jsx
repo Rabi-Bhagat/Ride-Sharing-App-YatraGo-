@@ -11,6 +11,7 @@ import GroupChatPage from './pages/GroupChatPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import DriverPortalPage from './pages/DriverPortalPage';
 import GuidePortalPage from './pages/GuidePortalPage';
+import AuthPage from './pages/AuthPage';
 import UserProfile from './components/UserProfile';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -331,6 +332,13 @@ function MainApp() {
 
           {activeTab === 'guide-portal' && (
             <GuidePortalPage onNavigate={handleNavigateWithTransition} />
+          )}
+
+          {(activeTab === 'auth' || activeTab === 'login' || activeTab === 'signup' || activeTab === 'forgot') && (
+            <AuthPage
+              onNavigate={handleNavigateWithTransition}
+              initialTab={activeTab === 'signup' ? 'signup' : (activeTab === 'forgot' ? 'forgot' : 'login')}
+            />
           )}
         </ErrorBoundary>
 

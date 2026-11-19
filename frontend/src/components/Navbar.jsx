@@ -782,15 +782,21 @@ export default function Navbar({
               ) : (
                 <div className="flex items-center gap-1.5">
                   <button
-                    onClick={() => openAuthModal && openAuthModal('login')}
-                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5"
+                    onClick={() => {
+                      if (setActiveTab) setActiveTab('login');
+                      else if (openAuthModal) openAuthModal('login');
+                    }}
+                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
                   >
                     <LogIn size={13} className="text-cyan-400" />
                     <span>Log In</span>
                   </button>
                   <button
-                    onClick={() => openAuthModal && openAuthModal('signup')}
-                    className="hidden sm:flex px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-md shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all items-center gap-1.5"
+                    onClick={() => {
+                      if (setActiveTab) setActiveTab('signup');
+                      else if (openAuthModal) openAuthModal('signup');
+                    }}
+                    className="hidden sm:flex px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-md shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all items-center gap-1.5 cursor-pointer"
                   >
                     <Sparkles size={13} />
                     <span>Sign Up</span>
@@ -865,9 +871,10 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    if (openAuthModal) openAuthModal('login');
+                    if (setActiveTab) setActiveTab('login');
+                    else if (openAuthModal) openAuthModal('login');
                   }}
-                  className="py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs border border-slate-800 flex items-center justify-center gap-1.5"
+                  className="py-2.5 rounded-xl bg-slate-900 text-white font-bold text-xs border border-slate-800 flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <LogIn size={14} className="text-cyan-400" />
                   <span>Log In</span>
@@ -875,9 +882,10 @@ export default function Navbar({
                 <button
                   onClick={() => {
                     setMobileMenuOpen(false);
-                    if (openAuthModal) openAuthModal('signup');
+                    if (setActiveTab) setActiveTab('signup');
+                    else if (openAuthModal) openAuthModal('signup');
                   }}
-                  className="py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5"
+                  className="py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <Sparkles size={14} />
                   <span>Sign Up</span>
@@ -897,6 +905,7 @@ export default function Navbar({
                 { id: 'driver', label: 'Driver Partner Console', icon: Car, badge: 'Online', badgeColor: 'bg-emerald-500/20 text-emerald-300' },
                 { id: 'admin', label: 'Operations & Admin', icon: ShieldCheck, badge: 'Staff', badgeColor: 'bg-cyan-500/20 text-cyan-300' },
                 { id: 'guide-portal', label: 'Local Guider Portal', icon: Compass, badge: '₹350/hr', badgeColor: 'bg-purple-500/20 text-purple-300' },
+                ...(!user ? [{ id: 'auth', label: 'Sign In / Register', icon: LogIn, badge: 'Access', badgeColor: 'bg-cyan-500/20 text-cyan-300' }] : []),
                 { id: 'chat', label: 'Group Ride Chat', icon: MessageSquare },
                 { id: 'sos', label: 'Emergency SOS Center', icon: AlertTriangle, danger: true }
               ].map((item) => {

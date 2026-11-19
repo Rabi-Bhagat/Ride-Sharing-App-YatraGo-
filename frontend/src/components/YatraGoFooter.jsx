@@ -56,8 +56,8 @@ export default function YatraGoFooter({ onNavigate }) {
               <li><button onClick={() => onNavigate('book')} className="hover:text-white transition-colors">Our offerings</button></li>
               <li><button onClick={() => onNavigate('stranger')} className="hover:text-white transition-colors">How pooling works</button></li>
               <li><button onClick={() => onNavigate('preview-3d')} className="hover:text-white transition-colors">3D Route Preview</button></li>
-              <li><span className="text-slate-400 hover:text-white cursor-pointer">Electric Vehicle Fleet</span></li>
-              <li><span className="text-slate-400 hover:text-white cursor-pointer">Careers & Drivers</span></li>
+              <li><button onClick={() => onNavigate('login')} className="text-cyan-400 hover:text-cyan-300 font-bold transition-colors">Sign In / Account Portal</button></li>
+              <li><button onClick={() => onNavigate('signup')} className="hover:text-white transition-colors">Register as Traveler/Driver</button></li>
             </ul>
           </div>
 

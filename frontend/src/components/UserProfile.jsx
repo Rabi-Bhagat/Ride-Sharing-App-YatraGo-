@@ -14,7 +14,6 @@ import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 export default function UserProfile({ onClose, onSelectPickupForRide }) {
   const { 
     user, 
-    toggleVerification, 
     switchRole, 
     updateUserProfile, 
     uploadProfilePhoto,
@@ -27,6 +26,48 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
 
   // Navigation Tabs: 'overview', 'details', 'security', 'wallet', 'emergency', 'badges'
   const [activeTab, setActiveTab] = useState('overview');
+
+  // Role-aware visual theme so the profile feels distinct for each account type
+  const roleKey = user?.role === 'driver' ? 'driver'
+    : (user?.role === 'guide' || user?.role === 'guider') ? 'guider'
+    : user?.role === 'admin' ? 'admin' : 'default';
+
+  const ROLE_THEMES = {
+    driver: {
+      label: 'Driver Partner',
+      cover: 'from-emerald-950 via-teal-950 to-slate-950',
+      ring: 'border-emerald-500',
+      badge: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40',
+      tabActive: 'border-emerald-400 text-emerald-300 bg-emerald-950/20',
+      icon: Car
+    },
+    guider: {
+      label: 'Local Guider',
+      cover: 'from-violet-950 via-purple-950 to-slate-950',
+      ring: 'border-violet-500',
+      badge: 'bg-violet-500/20 text-violet-300 border-violet-500/40',
+      tabActive: 'border-violet-400 text-violet-300 bg-violet-950/20',
+      icon: Compass
+    },
+    admin: {
+      label: 'Platform Admin',
+      cover: 'from-amber-950 via-orange-950 to-slate-950',
+      ring: 'border-amber-500',
+      badge: 'bg-amber-500/20 text-amber-300 border-amber-500/40',
+      tabActive: 'border-amber-400 text-amber-300 bg-amber-950/20',
+      icon: ShieldCheck
+    },
+    default: {
+      label: 'Rider Member',
+      cover: 'from-cyan-950 via-blue-950 to-slate-950',
+      ring: 'border-cyan-500',
+      badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/40',
+      tabActive: 'border-cyan-400 text-cyan-300 bg-cyan-950/20',
+      icon: Car
+    }
+  };
+  const roleTheme = ROLE_THEMES[roleKey];
+  const RoleIcon = roleTheme.icon;
 
   // Form states - Personal & Contact Details
   const [isEditing, setIsEditing] = useState(false);
@@ -321,11 +362,13 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
 
         {/* Cover & Profile Banner */}
         <div className="relative shrink-0">
-          <div className="h-28 w-full bg-gradient-to-r from-cyan-950 via-blue-950 to-slate-950 border-b border-slate-800 relative overflow-hidden">
+          <div className={`h-28 w-full bg-gradient-to-r ${roleTheme.cover} border-b border-slate-800 relative overflow-hidden transition-all duration-500`}>
             <div className="absolute inset-0 opacity-20 bg-[radial-gradient(#38bdf8_1px,transparent_1px)] [background-size:16px_16px]"></div>
+            <RoleIcon size={92} className="absolute right-6 top-1/2 -translate-y-1/2 text-white/10" />
+            <span className="absolute left-6 bottom-3 text-[10px] font-mono uppercase tracking-[0.22em] text-white/50">{roleTheme.label}</span>
           </div>
 
-          <div className="px-6 pb-2 -mt-12 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div className="relative z-10 px-6 pb-2 -mt-12 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
             
             {/* Avatar & Info */}
             <div className="flex items-end gap-4">
@@ -334,7 +377,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                   user={user}
                   size="2xl"
                   showOnline={true}
-                  className="ring-4 ring-slate-950 border-2 border-cyan-500 shadow-2xl rounded-2xl overflow-hidden"
+                  className={`ring-4 ring-slate-950 border-2 ${roleTheme.ring} shadow-2xl rounded-2xl overflow-hidden transition-all duration-300`}
                 />
                 
                 {/* Photo Upload Trigger Overlay */}
@@ -356,9 +399,9 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                 </button>
               </div>
 
-              <div className="space-y-1">
+              <div className="relative z-10 space-y-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="text-xl font-black text-white tracking-tight">{user.name}</h2>
+                  <h2 className="text-xl font-black text-white tracking-tight truncate max-w-[60vw] sm:max-w-none">{user.name}</h2>
                   {user.isVerified && <VerificationBadge type={user.verificationBadgeType || 'Government ID'} size="md" showLabel={true} />}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
@@ -379,8 +422,9 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
 
             {/* Role Badge & Quick Logout */}
             <div className="flex items-center gap-2 shrink-0">
-              <span className="text-[11px] font-extrabold uppercase px-3 py-1 rounded-xl bg-cyan-500/20 text-cyan-300 border border-cyan-500/40">
-                {user.role} Tier
+              <span className={`text-[11px] font-extrabold uppercase px-3 py-1 rounded-xl border ${roleTheme.badge} flex items-center gap-1.5 transition-all duration-300`}>
+                <RoleIcon size={12} />
+                {roleTheme.label}
               </span>
               <button
                 onClick={handleLogout}
@@ -395,35 +439,49 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
 
           {/* Quick Metrics Bar */}
           <div className="grid grid-cols-4 gap-2 px-6 pt-3 pb-2 text-center">
-            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 transition-all duration-300 hover:bg-slate-800/60">
               <span className="text-[10px] text-slate-400 block uppercase font-bold">Rating</span>
               <span className="text-sm font-black text-amber-400 flex items-center justify-center gap-1">
                 <Star size={13} fill="currentColor" /> {user.rating || 4.96}
               </span>
             </div>
-            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-[10px] text-slate-400 block uppercase font-bold">Trips</span>
-              <span className="text-sm font-black text-white">{user.tripsCompleted || 64}</span>
+            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 transition-all duration-300 hover:bg-slate-800/60">
+              <span className="text-[10px] text-slate-400 block uppercase font-bold">{roleKey === 'guider' ? 'Tours' : 'Trips'}</span>
+              <span className="text-sm font-black text-white">{user.tripsCompleted || 0}</span>
             </div>
-            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 transition-all duration-300 hover:bg-slate-800/60">
               <span className="text-[10px] text-slate-400 block uppercase font-bold">Trust Score</span>
               <span className="text-sm font-black text-emerald-400">98%</span>
             </div>
-            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
-              <span className="text-[10px] text-slate-400 block uppercase font-bold">CO2 Saved</span>
-              <span className="text-sm font-black text-cyan-400">142 kg</span>
+            <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 transition-all duration-300 hover:bg-slate-800/60">
+              {(roleKey === 'driver' || roleKey === 'guider') ? (
+                <>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Wallet</span>
+                  <span className="text-sm font-black text-emerald-400 font-mono">₹{Number(user.walletBalance || 0).toFixed(0)}</span>
+                </>
+              ) : roleKey === 'admin' ? (
+                <>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">Access</span>
+                  <span className="text-sm font-black text-amber-400">Admin</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-[10px] text-slate-400 block uppercase font-bold">CO2 Saved</span>
+                  <span className="text-sm font-black text-cyan-400">142 kg</span>
+                </>
+              )}
             </div>
           </div>
 
           {/* Tab Navigation Switches */}
           <div className="flex items-center gap-1 px-6 border-b border-slate-800 overflow-x-auto scrollbar-none pt-2">
             {[
-              { id: 'overview', label: 'Overview & Trust', icon: ShieldCheck },
-              { id: 'details', label: 'Address & Profile', icon: User },
-              { id: 'security', label: 'Password & Security', icon: Lock },
-              { id: 'wallet', label: 'Wallet & Pay', icon: Wallet },
-              { id: 'emergency', label: 'Emergency SOS', icon: AlertTriangle },
-              { id: 'badges', label: 'Impact Badges', icon: Award }
+              { id: 'overview', label: 'Overview', icon: ShieldCheck },
+              { id: 'details', label: 'Profile', icon: User },
+              { id: 'security', label: 'Security', icon: Lock },
+              { id: 'wallet', label: 'Wallet', icon: Wallet },
+              { id: 'emergency', label: 'Emergency', icon: AlertTriangle },
+              { id: 'badges', label: 'Badges', icon: Award }
             ].map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
@@ -431,13 +489,13 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-all ${
+                  className={`flex items-center gap-1.5 px-3.5 py-2.5 text-xs font-bold border-b-2 whitespace-nowrap transition-all duration-300 ${
                     isActive
-                      ? 'border-cyan-400 text-cyan-300 bg-cyan-950/20'
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                      ? roleTheme.tabActive
+                      : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/50'
                   }`}
                 >
-                  <Icon size={14} className={isActive ? 'text-cyan-400' : 'text-slate-400'} />
+                  <Icon size={14} className={isActive ? '' : 'text-slate-400'} />
                   <span>{tab.label}</span>
                 </button>
               );
@@ -515,22 +573,24 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                     </div>
                     <p className="text-xs text-slate-300 mt-0.5">
                       {user.isVerified
-                        ? 'Your national identity document and facial biometric hash have been cryptographically authenticated.'
-                        : 'Unverified profile. Complete ID verification to access premium stranger pooling & verified guiders.'}
+                        ? 'Your identity document has been reviewed and approved by a Platform Administrator.'
+                        : 'Verification is reviewed and issued by a Platform Admin. You will receive the verified badge once approved.'}
                     </p>
                   </div>
                 </div>
 
-                <button
-                  onClick={toggleVerification}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all shrink-0 ${
-                    user.isVerified
-                      ? 'bg-slate-800 text-slate-300 hover:bg-slate-700 border border-slate-700'
-                      : 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black shadow-lg shadow-cyan-500/30 hover:scale-105'
-                  }`}
-                >
-                  {user.isVerified ? 'Simulate Re-verify' : 'Verify ID Now'}
-                </button>
+                {user.isVerified ? (
+                  <span className="px-4 py-2 rounded-xl bg-emerald-500/15 text-emerald-300 border border-emerald-500/40 text-xs font-bold flex items-center gap-1.5 shrink-0">
+                    <ShieldCheck size={14} /> Verified by Admin
+                  </span>
+                ) : (
+                  <span
+                    className="px-4 py-2 rounded-xl bg-amber-500/15 text-amber-300 border border-amber-500/40 text-xs font-bold flex items-center gap-1.5 shrink-0"
+                    title="Verification is reviewed and issued by a Platform Admin"
+                  >
+                    <Lock size={14} /> Awaiting Admin Review
+                  </span>
+                )}
               </div>
 
               {/* Role Mode Selector */}
@@ -542,8 +602,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                   {[
                     { id: 'rider', title: 'Passenger Rider', desc: 'Book rides, pool with strangers & split fares.', icon: Car },
                     { id: 'driver', title: 'Driver Partner', desc: 'Drive verified electric shuttles, cars & bikes.', icon: Zap },
-                    { id: 'guider', title: 'Local Guider', desc: 'Guide tourists & earn per-hour booking fees.', icon: Compass },
-                    { id: 'admin', title: 'Platform Admin', desc: 'Superuser oversight, verifications & fare policies.', icon: ShieldCheck }
+                    { id: 'guider', title: 'Local Guider', desc: 'Guide tourists & earn per-hour booking fees.', icon: Compass }
                   ].map((r) => {
                     const Icon = r.icon;
                     const isSelected = user.role === r.id;
@@ -1147,7 +1206,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
             <div className="w-5 h-5 rounded-md bg-white p-0.5 flex items-center justify-center shrink-0">
               <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
             </div>
-            <span className="font-mono text-[11px]">Member: {user.email} • YatraGo Member</span>
+            <span className="font-mono text-[11px]">Member: {user.email} • <span className={roleTheme.badge.split(' ').find(c => c.startsWith('text-'))}>{roleTheme.label}</span></span>
           </div>
           <button
             onClick={onClose}

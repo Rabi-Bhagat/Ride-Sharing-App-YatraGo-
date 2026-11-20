@@ -72,6 +72,66 @@ export const DESTINATIONS_3D = [
     landmarks: ['Quantum Computing Lab', 'Solar Promenade', 'AI Innovation Center']
   },
   {
+    id: 'kathmandu_durbar',
+    name: 'Kathmandu Durbar Square & Basantapur',
+    category: 'UNESCO Heritage Square',
+    address: 'Durbar Square, Kathmandu, Nepal',
+    lat: 27.7043,
+    lng: 85.3074,
+    description: 'Ancient royal palace square lined with pagoda temples, carved wooden windows, and the Kumari Ghar living goddess shrine.',
+    colorTheme: '#f59e0b',
+    skyColor: '#1e1b18',
+    landmarks: ['Kumari Ghar', 'Hanuman Dhoka Palace', 'Kasthamandap Temple']
+  },
+  {
+    id: 'swayambhunath',
+    name: 'Swayambhunath Monkey Temple',
+    category: 'Hilltop Stupa',
+    address: 'Swayambhu, Kathmandu, Nepal',
+    lat: 27.7149,
+    lng: 85.2908,
+    description: 'Iconic white dome stupa crowned with a gilded spire, fluttering prayer flags, and sweeping views across the Kathmandu Valley.',
+    colorTheme: '#f43f5e',
+    skyColor: '#4c0519',
+    landmarks: ['Great Stupa', 'Prayer Wheel Walkway', 'Valley View Terrace']
+  },
+  {
+    id: 'pokhara_lakeside',
+    name: 'Phewa Lake & Lakeside Promenade',
+    category: 'Lakeside Leisure',
+    address: 'Lakeside, Pokhara, Nepal',
+    lat: 28.2096,
+    lng: 83.9556,
+    description: 'Tranquil boating lake with the Tal Barahi temple, lakeside cafes, and mirror reflections of the Annapurna mountain range.',
+    colorTheme: '#3b82f6',
+    skyColor: '#0f172a',
+    landmarks: ['Tal Barahi Temple', 'Lakeside Promenade', 'Annapurna Viewpoint']
+  },
+  {
+    id: 'everest_kalapatthar',
+    name: 'Mt. Everest Viewpoint (Kala Patthar)',
+    category: 'Himalayan Trek Summit',
+    address: 'Kala Patthar, Khumbu, Nepal',
+    lat: 28.0026,
+    lng: 86.8280,
+    description: 'Legendary high-altitude trekking viewpoint facing the summit of Mount Everest above the Khumbu glacier.',
+    colorTheme: '#10b981',
+    skyColor: '#062016',
+    landmarks: ['Everest Summit View', 'Khumbu Glacier', 'Gorak Shep Trailhead']
+  },
+  {
+    id: 'lumbini_maya_devi',
+    name: 'Lumbini Maya Devi Temple',
+    category: 'World Heritage Pilgrimage',
+    address: 'Lumbini Sacred Garden, Nepal',
+    lat: 27.4698,
+    lng: 83.2757,
+    description: 'Birthplace of Lord Buddha, home to the sacred Bodhi tree, the Ashoka pillar, and a peaceful monastic zone.',
+    colorTheme: '#8b5cf6',
+    skyColor: '#1e1b4b',
+    landmarks: ['Maya Devi Temple', 'Ashoka Pillar', 'Sacred Bodhi Tree']
+  },
+  {
     id: 'golden_gate',
     name: 'Golden Gate Scenic Vista & Bridge Overlook',
     category: 'Sightseeing & Iconic Landmarks',

@@ -18,7 +18,11 @@ const POPULAR_PRESETS = [
   { name: 'Metro Airport Skyway', distance: '19.5 km', distKm: 19.5, type: 'transit', lat: 28.5480, lng: 77.1200, desc: 'Rapid express air-rail transfer terminal' },
   { name: 'Oceanfront Bay Pier', distance: '12.1 km', distKm: 12.1, type: 'attraction', lat: 37.8085, lng: -122.4150, desc: 'Waterfront promenade & scenic ferry terminal' },
   { name: 'Mumbai Airport (BOM)', distance: '22.0 km', distKm: 22.0, type: 'airport', lat: 19.0896, lng: 72.8656, desc: 'Chhatrapati Shivaji Maharaj International' },
-  { name: 'Rajiv Chowk Central Metro', distance: '24.1 km', distKm: 24.1, type: 'transit', lat: 28.6328, lng: 77.2195, desc: 'Connaught Place yellow/blue line hub' }
+  { name: 'Rajiv Chowk Central Metro', distance: '24.1 km', distKm: 24.1, type: 'transit', lat: 28.6328, lng: 77.2195, desc: 'Connaught Place yellow/blue line hub' },
+  { name: 'Kathmandu Durbar Square', distance: '5.8 km', distKm: 5.8, type: 'attraction', lat: 27.7043, lng: 85.3074, desc: 'UNESCO heritage palace square, Nepal' },
+  { name: 'Tribhuvan Airport (KTM)', distance: '6.4 km', distKm: 6.4, type: 'airport', lat: 27.6966, lng: 85.3591, desc: 'Kathmandu Tribhuvan International, Nepal' },
+  { name: 'Pokhara Lakeside & Phewa', distance: '9.2 km', distKm: 9.2, type: 'attraction', lat: 28.2096, lng: 83.9556, desc: 'Lakeside promenade with Annapurna views, Nepal' },
+  { name: 'Lumbini Maya Devi Temple', distance: '11.5 km', distKm: 11.5, type: 'attraction', lat: 27.4698, lng: 83.2757, desc: 'Birthplace of Lord Buddha, Nepal' }
 ];
 
 // Fallback recommendations when user searches a place that is not indexed or found
@@ -28,7 +32,10 @@ const NEARBY_FALLBACKS = [
   { name: 'Cyber City Rapid Metro', distance: '7.8 km', distKm: 7.8, type: 'transit', lat: 28.4920, lng: 77.0870, tag: 'Public Transit Link', icon: '🚇' },
   { name: 'Ambala Cantt Railway Hub', distance: '14.5 km', distKm: 14.5, type: 'transit', lat: 30.3340, lng: 76.8370, tag: 'Major Express Junction', icon: '🚉' },
   { name: 'Tech Park Central', distance: '6.8 km', distKm: 6.8, type: 'office', lat: 28.5020, lng: 77.0780, tag: 'Nearest Innovation Zone', icon: '💻' },
-  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', lat: 28.5040, lng: 77.0970, tag: 'Popular Shopping & Food', icon: '🛍️' }
+  { name: 'Ambience Mall & Promenade', distance: '10.5 km', distKm: 10.5, type: 'attraction', lat: 28.5040, lng: 77.0970, tag: 'Popular Shopping & Food', icon: '🛍️' },
+  { name: 'Kathmandu Durbar Square', distance: '5.8 km', distKm: 5.8, type: 'attraction', lat: 27.7043, lng: 85.3074, tag: 'UNESCO Heritage, Nepal', icon: '🛕' },
+  { name: 'Tribhuvan Airport (KTM)', distance: '6.4 km', distKm: 6.4, type: 'airport', lat: 27.6966, lng: 85.3591, tag: 'Kathmandu Gateway, Nepal', icon: '✈️' },
+  { name: 'Pokhara Lakeside & Phewa', distance: '9.2 km', distKm: 9.2, type: 'attraction', lat: 28.2096, lng: 83.9556, tag: 'Himalayan Lakeside, Nepal', icon: '🏔️' }
 ];
 
 // Calculate realistic driving/transit distance between pickup and destination coordinates
@@ -101,9 +108,10 @@ const POOL_TIERS = {
 
 export default function YatraGoRideRequestCard({ 
   onBookRide, 
-  initialPickup = 'Innovation Tech Park, SF',
-  initialDropoff = 'Downtown Cyber Hub',
-  onSelectRoute
+  initialPickup = '',
+  initialDropoff = '',
+  onSelectRoute,
+  onRouteChange
 }) {
   const [activeService, setActiveService] = useState('ride'); // 'ride', 'pool', 'reserve', 'moto'
   const [pickup, setPickup] = useState(initialPickup);
@@ -119,10 +127,10 @@ export default function YatraGoRideRequestCard({
 
   // Coords tracking for accurate distance calculation between pickup and destination
   const [pickupCoords, setPickupCoords] = useState(() => {
-    return findCoordsOf(initialPickup) || { lat: 28.4950, lng: 77.0890 };
+    return findCoordsOf(initialPickup);
   });
   const [dropoffCoords, setDropoffCoords] = useState(() => {
-    return findCoordsOf(initialDropoff) || { lat: 28.5562, lng: 77.1000 };
+    return findCoordsOf(initialDropoff);
   });
 
   const timingRef = useRef(null);
@@ -150,10 +158,23 @@ export default function YatraGoRideRequestCard({
     }
   }, [initialPickup]);
 
+  // Stream the live pickup/dropoff pair to the parent so a map preview can follow it in real time
+  useEffect(() => {
+    if (!onRouteChange) return;
+    onRouteChange({
+      pickup: { name: pickup, lat: pickupCoords?.lat, lng: pickupCoords?.lng },
+      destination: { name: dropoffInput || dropoff, lat: dropoffCoords?.lat, lng: dropoffCoords?.lng }
+    });
+  }, [pickup, pickupCoords, dropoff, dropoffInput, dropoffCoords, onRouteChange]);
+
   // Debounced geocoding for pickup address to keep coordinates updated
   useEffect(() => {
     const q = (pickup || '').trim();
-    if (!q || q.length < 3) return;
+    if (!q) {
+      setPickupCoords(null);
+      return;
+    }
+    if (q.length < 3) return;
     const existing = findCoordsOf(q);
     if (existing) {
       setPickupCoords(existing);
@@ -180,7 +201,11 @@ export default function YatraGoRideRequestCard({
   // Debounced geocoding for destination address to keep coordinates updated
   useEffect(() => {
     const q = (dropoffInput || '').trim();
-    if (!q || q.length < 3) return;
+    if (!q) {
+      setDropoffCoords(null);
+      return;
+    }
+    if (q.length < 3) return;
     const existing = findCoordsOf(q);
     if (existing) {
       setDropoffCoords(existing);
@@ -464,11 +489,13 @@ export default function YatraGoRideRequestCard({
   };
 
   const handleConfirmRequest = () => {
-    const finalDropoff = dropoffInput.trim() || dropoff || 'Downtown Cyber Hub';
+    const finalPickup = pickup.trim();
+    const finalDropoff = dropoffInput.trim() || dropoff;
+    if (!finalPickup || !finalDropoff) return;
     if (onBookRide) {
       onBookRide({
         pickup: {
-          name: pickup,
+          name: finalPickup,
           lat: pickupCoords?.lat,
           lng: pickupCoords?.lng
         },
@@ -575,7 +602,7 @@ export default function YatraGoRideRequestCard({
         <div ref={timingRef} className="relative">
           <button
             onClick={() => setTimingDropdownOpen(!timingDropdownOpen)}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-750 border border-slate-700 hover:border-cyan-400 text-xs font-bold text-slate-200 transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 hover:border-cyan-400 text-xs font-bold text-slate-200 transition-all cursor-pointer shadow-sm"
           >
             <Clock size={13} className="text-cyan-400" />
             <span>{pickupTimeMode === 'now' ? 'Pickup now' : 'Schedule later'}</span>
@@ -779,7 +806,7 @@ export default function YatraGoRideRequestCard({
       <div className="relative space-y-2">
         
         {/* Connecting Vertical Track Line */}
-        <div className="absolute left-[19px] top-[26px] bottom-[26px] w-[2px] bg-slate-750 flex flex-col items-center justify-between pointer-events-none z-10">
+        <div className="absolute left-[19px] top-[26px] bottom-[26px] w-[2px] bg-slate-700 flex flex-col items-center justify-between pointer-events-none z-10">
           <span className="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
         </div>
 
@@ -803,8 +830,8 @@ export default function YatraGoRideRequestCard({
                 const coords = findCoordsOf(val);
                 if (coords) setPickupCoords(coords);
               }}
-              placeholder="Enter pickup address"
-              className="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none truncate"
+              placeholder="Search pickup location..."
+              className="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none placeholder:text-slate-500 placeholder:font-medium truncate"
             />
           </div>
 
@@ -845,8 +872,8 @@ export default function YatraGoRideRequestCard({
                 onChange={handleDropoffInputChange}
                 onFocus={() => setShowDestDropdown(true)}
                 onKeyDown={handleDestKeyDown}
-                placeholder="Search or type any destination..."
-                className="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none placeholder:text-slate-500 truncate"
+                placeholder="Search any destination..."
+                className="w-full bg-transparent text-xs sm:text-sm font-bold text-white focus:outline-none placeholder:text-slate-500 placeholder:font-medium truncate"
               />
             </div>
 
@@ -1016,7 +1043,7 @@ export default function YatraGoRideRequestCard({
                     <button
                       type="button"
                       onClick={() => handleSelectCustomPlace(dropoffInput)}
-                      className="w-full text-left p-3 rounded-xl bg-gradient-to-r from-cyan-950/60 to-slate-900 hover:from-cyan-900/60 hover:to-slate-850 border border-cyan-500/40 text-xs transition-all flex items-center justify-between group cursor-pointer shadow-sm"
+                      className="w-full text-left p-3 rounded-xl bg-gradient-to-r from-cyan-950/60 to-slate-900 hover:from-cyan-900/60 hover:to-slate-800 border border-cyan-500/40 text-xs transition-all flex items-center justify-between group cursor-pointer shadow-sm"
                     >
                       <div className="flex items-center gap-2.5 min-w-0">
                         <div className="p-1.5 rounded-lg bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 shrink-0">
@@ -1087,6 +1114,8 @@ export default function YatraGoRideRequestCard({
                 setDropoff(preset.name);
                 setDropoffInput(preset.name);
                 setCustomDistKm(preset.distKm);
+                const presetCoords = findCoordsOf(preset.name);
+                if (presetCoords) setDropoffCoords(presetCoords);
                 setShowDestDropdown(false);
               }}
               className={`shrink-0 px-2.5 py-1 rounded-xl text-[11px] font-bold border transition-all flex items-center gap-1 cursor-pointer ${

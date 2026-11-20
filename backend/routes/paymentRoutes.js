@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
+const mongoose = require('mongoose');
 const Razorpay = require('razorpay');
+
+const dbReady = () => mongoose.connection && mongoose.connection.readyState === 1;
 
 // Lazy-initialized Razorpay instance
 function getRazorpayInstance() {
@@ -147,7 +150,7 @@ router.post('/verify-payment', async (req, res) => {
     }
 
     // Update ride cost share in MongoDB if rideId provided
-    if (rideId) {
+    if (rideId && dbReady()) {
       try {
         const Ride = require('../models/Ride');
         const ride = await Ride.findById(rideId);

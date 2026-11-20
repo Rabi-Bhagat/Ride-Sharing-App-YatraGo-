@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const SosAlert = require('../models/SosAlert');
+
+const dbReady = () => mongoose.connection && mongoose.connection.readyState === 1;
 
 let activeSosBroadcasts = [];
 
@@ -26,17 +29,19 @@ router.post('/trigger', async (req, res) => {
 
   activeSosBroadcasts.unshift(newAlert);
 
-  try {
-    const alert = new SosAlert({
-      userId: newAlert.userId,
-      userName: newAlert.userName,
-      userPhone: newAlert.userPhone,
-      location: newAlert.location,
-      status: 'ACTIVE'
-    });
-    await alert.save();
-  } catch (err) {
-    // Ignore mongo sync fail if offline
+  if (dbReady()) {
+    try {
+      const alert = new SosAlert({
+        userId: newAlert.userId,
+        userName: newAlert.userName,
+        userPhone: newAlert.userPhone,
+        location: newAlert.location,
+        status: 'ACTIVE'
+      });
+      await alert.save();
+    } catch (err) {
+      // Ignore mongo sync fail if offline
+    }
   }
 
   return res.json({

@@ -3,11 +3,13 @@ const http = require('http');
 const cors = require('cors');
 const { Server } = require('socket.io');
 const path = require('path');
+const fs = require('fs');
 const dotenv = require('dotenv');
 
-// Robustly load .env from backend directory or project root
-dotenv.config({ path: path.join(__dirname, '.env') });
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+// Robustly load .env from backend directory or project root.
+// override:true makes the project .env authoritative over any stale shell/global vars.
+dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+dotenv.config({ path: path.join(__dirname, '..', '.env'), override: true });
 
 const connectDB = require('./config/db');
 const setupSocketHandlers = require('./sockets/socketHandler');
@@ -17,6 +19,7 @@ const rideRoutes = require('./routes/rideRoutes');
 const guiderRoutes = require('./routes/guiderRoutes');
 const sosRoutes = require('./routes/sosRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
+const partnerRoutes = require('./routes/partnerRoutes');
 
 const app = express();
 const server = http.createServer(app);
@@ -38,11 +41,12 @@ connectDB().then(async (connected) => {
       const count = await User.countDocuments();
       if (count === 0) {
         console.log('MongoDB is empty. Running auto-seeding...');
-        // require('./seed') would run the seed script
         const seed = require('./seed');
+        await seed();
+        console.log('Auto-seed complete.');
       }
     } catch (e) {
-      // ignore
+      console.warn('Auto-seed skipped:', e.message);
     }
   }
 });
@@ -51,6 +55,7 @@ connectDB().then(async (connected) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/rides', rideRoutes);
 app.use('/api/guiders', guiderRoutes);
+app.use('/api/partners', partnerRoutes);
 app.use('/api/sos', sosRoutes);
 app.use('/api/payment', paymentRoutes);
 app.use('/api', paymentRoutes); // Supports direct /api/create-order and /api/verify-payment
@@ -58,6 +63,35 @@ app.use('/api', paymentRoutes); // Supports direct /api/create-order and /api/ve
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.json({ status: 'OK', message: 'YatraGo Ride-Sharing Engine Online', timestamp: new Date() });
+});
+
+// API 404 handler — unmatched API routes return JSON, never HTML
+app.use('/api', (req, res) => {
+  res.status(404).json({
+    success: false,
+    message: `API route not found: ${req.method} ${req.originalUrl}`
+  });
+});
+
+// Serve the built frontend (if present) so `npm start` runs the whole site from PORT.
+// Dev still uses Vite on :3000; this only activates after `npm --prefix frontend run build`.
+const clientDist = path.join(__dirname, '..', 'frontend', 'dist');
+if (fs.existsSync(clientDist)) {
+  app.use(express.static(clientDist));
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
+    res.sendFile(path.join(clientDist, 'index.html'));
+  });
+}
+
+// Centralized error handler — keeps the API response shape consistent
+app.use((err, req, res, next) => { // eslint-disable-line no-unused-vars
+  console.error('Unhandled API error:', err);
+  if (res.headersSent) return next(err);
+  res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'Internal server error'
+  });
 });
 
 // Socket.io Setup

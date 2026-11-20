@@ -1,571 +1,756 @@
-import React, { useState } from 'react';
-import { 
-  DollarSign, PieChart, Users, CheckCircle2, Clock, Send, 
-  ShieldCheck, Sparkles, CreditCard, Smartphone, Check, ArrowRight, 
-  X, Plus, Trash2, QrCode, Receipt, Share2, Copy, Percent, Navigation, Sliders
+import React, { useState, useEffect, useMemo } from 'react';
+import {
+  DollarSign, PieChart, Users, CheckCircle2, Clock, ShieldCheck, CreditCard,
+  Smartphone, Check, ArrowRight, X, Plus, Trash2, QrCode, Receipt, Share2,
+  Percent, Navigation, Download, Printer, AlertTriangle, Wallet, Link2, Sparkles
 } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 import { useAuth } from '../context/AuthContext';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
+import { downloadReceipt, shareReceipt, printReceipt } from '../utils/receipt';
+
+const round2 = (value) => Math.round((Number(value) || 0) * 100) / 100;
+
+const formatINR = (value) =>
+  `₹${round2(value).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+// Distribute 100% across N riders so the percentages always total exactly 100.
+const evenPercentages = (count) => {
+  if (count <= 0) return [];
+  const base = Math.floor(100 / count);
+  const remainder = 100 - base * count;
+  return Array.from({ length: count }, (_, index) => base + (index < remainder ? 1 : 0));
+};
+
+// Split total paise by weights, distributing any remainder so shares sum to the total.
+const splitPaise = (totalPaise, weights) => {
+  const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+  if (!weights.length || weightSum <= 0) return weights.map(() => 0);
+
+  const paise = weights.map((weight) => Math.floor((totalPaise * weight) / weightSum));
+  let remainder = totalPaise - paise.reduce((sum, value) => sum + value, 0);
+
+  let index = 0;
+  while (remainder > 0) {
+    paise[index % paise.length] += 1;
+    remainder -= 1;
+    index += 1;
+  }
+
+  return paise;
+};
+
+const getInitials = (name) =>
+  String(name || 'Rider')
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('');
 
 export default function CostSplitter({ ride }) {
   const { user } = useAuth();
 
-  // Initial base cost from active ride or default standard pool fare (in INR ₹)
-  const initialBaseCost = ride?.totalCost || 320.00;
-  const isStrangerDiscounted = ride?.isStrangerCombined || false;
+  const baseFare = Number(ride?.totalCost) || 0;
+  const isStrangerDiscounted = Boolean(ride?.isStrangerCombined);
+  const rideDistanceKm = Number(ride?.distanceKm) || 0;
 
-  // Split Modes: 'equal', 'custom', 'distance'
   const [splitMode, setSplitMode] = useState('equal');
-
-  // Tip and Promo states
-  const [tip, setTip] = useState(30.00);
+  const [tip, setTip] = useState(0);
   const [promoCode, setPromoCode] = useState('');
-  const [promoDiscount, setPromoDiscount] = useState(isStrangerDiscounted ? 80.00 : 0);
+  const [promoDiscount, setPromoDiscount] = useState(isStrangerDiscounted ? 80 : 0);
   const [promoApplied, setPromoApplied] = useState(isStrangerDiscounted);
 
-  // Riders state
-  const [ridersList, setRidersList] = useState(
-    ride?.riders && ride.riders.length > 0
-      ? ride.riders
-      : [
-          {
-            userId: 'usr_1',
-            name: user?.name || 'Alex Rivera',
-            avatar: user?.avatar || '',
-            isVerified: true,
-            percentage: 50,
-            distanceKm: 12,
-            paymentStatus: 'Paid',
-            paidAt: '10:42 PM via UPI'
-          },
-          {
-            userId: 'usr_2',
-            name: 'Sarah Jenkins (Co-Rider)',
-            avatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=300&q=80',
-            isVerified: true,
-            percentage: 50,
-            distanceKm: 8,
-            paymentStatus: 'Pending',
-            paidAt: null
-          }
-        ]
-  );
+  const [ridersList, setRidersList] = useState(() => {
+    if (ride?.riders?.length) {
+      return ride.riders.map((rider) => ({ ...rider, distanceKm: rider.distanceKm || 0 }));
+    }
+    return [
+      {
+        userId: user?._id || user?.id || 'you',
+        name: user?.name || 'You',
+        avatar: user?.avatar || '',
+        isVerified: Boolean(user?.isVerified),
+        percentage: 100,
+        distanceKm: rideDistanceKm,
+        paymentStatus: 'Pending',
+        phone: user?.phone || ''
+      }
+    ];
+  });
 
-  // Add Co-Rider Form
   const [showAddRider, setShowAddRider] = useState(false);
   const [newRiderName, setNewRiderName] = useState('');
   const [newRiderPhone, setNewRiderPhone] = useState('');
 
-  // Payment Gateway Modal State
-  const [activePaymentModalRider, setActivePaymentModalRider] = useState(null);
-  const [paymentMethod, setPaymentMethod] = useState('razorpay'); // 'razorpay', 'upi', 'card', 'wallet'
+  const [activePaymentIdx, setActivePaymentIdx] = useState(null);
+  const [paymentMethod, setPaymentMethod] = useState('razorpay');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [paymentReceipt, setPaymentReceipt] = useState(null);
+  const [paidReceipt, setPaidReceipt] = useState(null);
   const [paymentError, setPaymentError] = useState('');
   const [copiedLink, setCopiedLink] = useState(false);
-  const [shareToast, setShareToast] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [showTripReceipt, setShowTripReceipt] = useState(false);
+  const [gatewayKeyId, setGatewayKeyId] = useState('');
 
-  // Financial Calculations
-  const grossTotal = Math.max(0, initialBaseCost - promoDiscount) + tip;
+  const reference = useMemo(() => {
+    const raw = String(ride?._id || ride?.id || 'ride_101').replace(/[^a-z0-9]/gi, '');
+    return `RC-${raw.slice(-6).toUpperCase() || '000101'}`;
+  }, [ride?._id, ride?.id]);
 
-  // Calculate individual cost share based on split mode
-  const getRiderShare = (rider) => {
-    if (splitMode === 'equal') {
-      return (grossTotal / ridersList.length).toFixed(2);
-    } else if (splitMode === 'custom') {
-      const pct = rider.percentage || (100 / ridersList.length);
-      return ((grossTotal * pct) / 100).toFixed(2);
-    } else {
-      // By Distance Km proportion
-      const totalKm = ridersList.reduce((acc, r) => acc + (r.distanceKm || 10), 0) || 1;
-      const riderKm = rider.distanceKm || 10;
-      return ((grossTotal * riderKm) / totalKm).toFixed(2);
-    }
+  useEffect(() => {
+    fetch('/api/config')
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.success && data.key_id) setGatewayKeyId(data.key_id);
+      })
+      .catch(() => {});
+  }, []);
+
+  const showToast = (message, tone = 'info') => {
+    setToast({ message, tone });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  // Payment Collection Stats
-  const paidCount = ridersList.filter(r => r.paymentStatus === 'Paid').length;
-  const totalCollected = ridersList.reduce((acc, r) => {
-    return r.paymentStatus === 'Paid' ? acc + parseFloat(getRiderShare(r)) : acc;
-  }, 0);
-  const percentCollected = Math.min(100, Math.round((totalCollected / (grossTotal || 1)) * 100));
+  const maskedGatewayKey = gatewayKeyId
+    ? `${gatewayKeyId.slice(0, 12)}…${gatewayKeyId.slice(-4)}`
+    : 'Not configured';
 
-  // Add a new co-passenger
+  const netTotal = round2(Math.max(0, baseFare - promoDiscount) + tip);
+
+  // Fare allocation in paise so every split mode sums exactly to the net total.
+  const shares = useMemo(() => {
+    const totalPaise = Math.round(netTotal * 100);
+    if (!ridersList.length || totalPaise <= 0) return ridersList.map(() => 0);
+
+    const weights =
+      splitMode === 'custom'
+        ? ridersList.map((rider) => Math.max(0, Number(rider.percentage) || 0))
+        : splitMode === 'distance'
+          ? ridersList.map((rider) => Math.max(0, Number(rider.distanceKm) || 0))
+          : ridersList.map(() => 1);
+
+    // A zero total weight has no proportional meaning — fall back to an equal split.
+    const effectiveWeights = weights.some((weight) => weight > 0) ? weights : ridersList.map(() => 1);
+
+    return splitPaise(totalPaise, effectiveWeights).map((paise) => paise / 100);
+  }, [ridersList, splitMode, netTotal]);
+
+  const enrichedRiders = ridersList.map((rider, index) => ({
+    ...rider,
+    share: shares[index] || 0,
+    percentOfTotal: netTotal > 0 ? ((shares[index] || 0) / netTotal) * 100 : 0
+  }));
+
+  const allocatedTotal = round2(shares.reduce((sum, share) => sum + share, 0));
+  const allocationDelta = round2(netTotal - allocatedTotal);
+  const customPercentTotal = round2(ridersList.reduce((sum, rider) => sum + (Number(rider.percentage) || 0), 0));
+
+  const paidCount = enrichedRiders.filter((rider) => rider.paymentStatus === 'Paid').length;
+  const totalCollected = round2(
+    enrichedRiders.reduce((sum, rider) => (rider.paymentStatus === 'Paid' ? sum + rider.share : sum), 0)
+  );
+  const outstanding = round2(Math.max(0, netTotal - totalCollected));
+  const percentCollected = netTotal > 0 ? Math.min(100, Math.round((totalCollected / netTotal) * 100)) : 0;
+
+  const isSettled = paidCount === enrichedRiders.length;
+
+  const activePaymentRider = activePaymentIdx != null ? enrichedRiders[activePaymentIdx] : null;
+
   const handleAddRider = () => {
     if (!newRiderName.trim()) return;
-    const newRider = {
-      userId: 'usr_' + Date.now(),
-      name: newRiderName.trim(),
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-      isVerified: true,
-      percentage: Math.round(100 / (ridersList.length + 1)),
-      distanceKm: 10,
-      paymentStatus: 'Pending',
-      phone: newRiderPhone || '+1 (555) 000-0000'
-    };
-
-    const updatedList = [...ridersList, newRider];
-    // Rebalance custom percentages
-    const equalPct = Math.round(100 / updatedList.length);
-    const rebalanced = updatedList.map(r => ({ ...r, percentage: equalPct }));
-    setRidersList(rebalanced);
+    const next = [
+      ...ridersList,
+      {
+        userId: 'usr_' + Date.now(),
+        name: newRiderName.trim(),
+        avatar: '',
+        isVerified: false,
+        distanceKm: 0,
+        paymentStatus: 'Pending',
+        phone: newRiderPhone.trim()
+      }
+    ];
+    const percentages = evenPercentages(next.length);
+    setRidersList(next.map((rider, index) => ({ ...rider, percentage: percentages[index] })));
     setNewRiderName('');
     setNewRiderPhone('');
     setShowAddRider(false);
   };
 
-  // Remove co-passenger
-  const handleRemoveRider = (idx) => {
+  const handleRemoveRider = (index) => {
     if (ridersList.length <= 1) return;
-    const filtered = ridersList.filter((_, i) => i !== idx);
-    const equalPct = Math.round(100 / filtered.length);
-    const rebalanced = filtered.map(r => ({ ...r, percentage: equalPct }));
-    setRidersList(rebalanced);
+    const filtered = ridersList.filter((_, i) => i !== index);
+    const percentages = evenPercentages(filtered.length);
+    setRidersList(filtered.map((rider, i) => ({ ...rider, percentage: percentages[i] })));
+    setActivePaymentIdx(null);
   };
 
-  // Update custom percentage
-  const handleUpdatePercentage = (idx, newPct) => {
-    const val = Math.max(0, Math.min(100, parseInt(newPct) || 0));
-    setRidersList(prev => {
-      const copy = [...prev];
-      copy[idx] = { ...copy[idx], percentage: val };
-      return copy;
-    });
+  const handleUpdatePercentage = (index, value) => {
+    const next = Math.max(0, Math.min(100, Math.round(Number(value) || 0)));
+    setRidersList((prev) => prev.map((rider, i) => (i === index ? { ...rider, percentage: next } : rider)));
   };
 
-  // Update distance
-  const handleUpdateDistance = (idx, newKm) => {
-    const val = Math.max(1, parseInt(newKm) || 1);
-    setRidersList(prev => {
-      const copy = [...prev];
-      copy[idx] = { ...copy[idx], distanceKm: val };
-      return copy;
-    });
+  const handleUpdateDistance = (index, value) => {
+    const next = Math.max(0, Number(value) || 0);
+    setRidersList((prev) => prev.map((rider, i) => (i === index ? { ...rider, distanceKm: next } : rider)));
   };
 
-  // Apply Promo
-  const handleApplyPromo = (e) => {
-    e.preventDefault();
+  const handleRebalancePercentages = () => {
+    const percentages = evenPercentages(ridersList.length);
+    setRidersList((prev) => prev.map((rider, index) => ({ ...rider, percentage: percentages[index] })));
+    showToast('Split ratios rebalanced to 100%.', 'success');
+  };
+
+  const handleApplyPromo = (event) => {
+    event.preventDefault();
     if (!promoCode.trim()) return;
-    if (promoCode.toUpperCase() === 'POOL44' || promoCode.toUpperCase() === 'VELO20') {
-      setPromoDiscount(80.00);
+    if (['POOL44', 'VELO20'].includes(promoCode.toUpperCase())) {
+      setPromoDiscount(80);
       setPromoApplied(true);
-      setShareToast('Promo Code applied! ₹80.00 pool discount deducted.');
-      setTimeout(() => setShareToast(null), 3000);
+      showToast('Promo applied — ₹80.00 pool discount deducted.', 'success');
     } else {
-      setShareToast('Invalid promo code. Try POOL44 or VELO20.');
-      setTimeout(() => setShareToast(null), 3000);
+      showToast('Invalid promo code. Try POOL44 or VELO20.', 'error');
     }
   };
 
-  // Execute Payment (Razorpay Standard Gateway with fallback simulator)
+  const handleRemovePromo = () => {
+    setPromoDiscount(0);
+    setPromoApplied(false);
+    setPromoCode('');
+    showToast('Promo discount removed.', 'info');
+  };
+
+  const markRiderPaid = (index, { txnId, method, label }) => {
+    setRidersList((prev) =>
+      prev.map((rider, i) =>
+        i === index
+          ? {
+              ...rider,
+              paymentStatus: 'Paid',
+              paidAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+              paidVia: method,
+              txnId,
+              method: label
+            }
+          : rider
+      )
+    );
+  };
+
   const handleExecutePayment = () => {
+    if (!activePaymentRider) return;
     setPaymentError('');
-    const paidShare = parseFloat(getRiderShare(activePaymentModalRider));
+
+    const share = activePaymentRider.share;
+    const index = activePaymentIdx;
+
+    if (share <= 0) {
+      setPaymentError('This passenger has no amount due for the current split.');
+      return;
+    }
 
     if (paymentMethod === 'razorpay') {
       setIsProcessing(true);
       openRazorpayCheckout({
-        amountInRupees: paidShare,
-        riderName: activePaymentModalRider.name,
+        amountInRupees: share,
+        riderName: activePaymentRider.name,
         riderEmail: user?.email || 'rider@yatrago.com',
-        riderPhone: user?.phone || '+91 98765 43210',
-        description: `Ride Fare Settlement for ${activePaymentModalRider.name}`,
-        rideId: ride?._id || 'ride_101',
+        riderPhone: activePaymentRider.phone || user?.phone || '+91 98765 43210',
+        description: `Ride Fare Settlement for ${activePaymentRider.name}`,
+        rideId: ride?._id || ride?.id || 'ride_101',
         onSuccess: (verifyData, razorpayRes) => {
           setIsProcessing(false);
-          const txnId = razorpayRes.razorpay_payment_id || `pay_${Date.now()}`;
-          const orderId = razorpayRes.razorpay_order_id || '';
-
-          setPaymentReceipt({
+          const txnId = razorpayRes?.razorpay_payment_id || `pay_${Date.now()}`;
+          markRiderPaid(index, { txnId, method: 'razorpay', label: 'Razorpay (Verified)' });
+          setPaidReceipt({
             txnId,
-            orderId,
-            amount: paidShare.toFixed(2),
-            riderName: activePaymentModalRider.name,
+            orderId: razorpayRes?.razorpay_order_id || '',
+            amount: share,
+            riderName: activePaymentRider.name,
             method: 'RAZORPAY STANDARD (VERIFIED)',
             timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-            date: new Date().toLocaleDateString()
+            date: new Date().toLocaleDateString('en-IN')
           });
-
-          // Update rider status to Paid
-          setRidersList(prev => prev.map(r => 
-            r.name === activePaymentModalRider.name 
-              ? { ...r, paymentStatus: 'Paid', paidAt: 'Verified via Razorpay' } 
-              : r
-          ));
-
-          setShareToast('Payment verified successfully via Razorpay!');
-          setTimeout(() => setShareToast(null), 3500);
+          showToast('Payment verified successfully via Razorpay.', 'success');
         },
         onFailure: (errorMessage) => {
           setIsProcessing(false);
           setPaymentError(errorMessage);
         },
-        onDismiss: () => {
-          setIsProcessing(false);
-        }
+        onDismiss: () => setIsProcessing(false)
       });
       return;
     }
 
-    // Fallback simulation for local offline demo methods (Wallet / Direct Cash)
     setIsProcessing(true);
     setTimeout(() => {
       setIsProcessing(false);
       const txnId = 'TXN_LOCAL_' + Math.floor(100000 + Math.random() * 900000);
-
-      setPaymentReceipt({
+      markRiderPaid(index, { txnId, method: paymentMethod, label: paymentMethod.toUpperCase() });
+      setPaidReceipt({
         txnId,
-        amount: paidShare.toFixed(2),
-        riderName: activePaymentModalRider.name,
+        amount: share,
+        riderName: activePaymentRider.name,
         method: paymentMethod.toUpperCase(),
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        date: new Date().toLocaleDateString()
+        date: new Date().toLocaleDateString('en-IN')
       });
-
-      // Update rider status to Paid
-      setRidersList(prev => prev.map(r => 
-        r.name === activePaymentModalRider.name 
-          ? { ...r, paymentStatus: 'Paid', paidAt: `Just now via ${paymentMethod.toUpperCase()}` } 
-          : r
-      ));
-    }, 900);
+      showToast(`Settlement recorded via ${paymentMethod.toUpperCase()}.`, 'success');
+    }, 800);
   };
 
-  // Copy Split Link
-  const handleCopySplitLink = () => {
-    navigator.clipboard.writeText(`https://yatrago.app/split/${ride?.id || 'ride_live_772'}`);
-    setCopiedLink(true);
-    setTimeout(() => setCopiedLink(false), 2500);
+  const handleCopySplitLink = async () => {
+    const link = `https://yatrago.app/split/${ride?.id || ride?._id || 'ride_live_772'}`;
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopiedLink(true);
+      setTimeout(() => setCopiedLink(false), 2500);
+      showToast('Split link copied — share it with your co-riders.', 'success');
+    } catch (error) {
+      showToast('Could not copy the link on this device.', 'error');
+    }
   };
+
+  const receiptModel = (focusRiderName = null) => ({
+    reference,
+    issuedAt: new Date().toISOString(),
+    rideId: ride?._id || ride?.id || 'ride_101',
+    route: {
+      from: ride?.pickup?.name || 'Pickup not set',
+      to: ride?.destination?.name || 'Drop-off not set'
+    },
+    vehicle: ride?.vehicleType || 'Ride',
+    driverName: ride?.driver?.name || 'Unassigned',
+    fare: baseFare,
+    promo: promoDiscount,
+    tip,
+    netTotal,
+    collected: totalCollected,
+    outstanding,
+    riders: enrichedRiders.map((rider) => ({
+      name: rider.name,
+      share: rider.share,
+      percentage: Math.round(rider.percentOfTotal),
+      status: rider.paymentStatus === 'Paid' ? 'Paid' : 'Due',
+      method: rider.paidVia ? String(rider.paidVia).toUpperCase() : null,
+      txnId: rider.txnId || null
+    })),
+    focusRiderName
+  });
+
+  const handleDownloadReceipt = (focusRiderName) => {
+    downloadReceipt(receiptModel(focusRiderName));
+    showToast('Receipt downloaded to your device.', 'success');
+  };
+
+  const handleShareReceipt = async (focusRiderName) => {
+    const result = await shareReceipt(receiptModel(focusRiderName));
+    showToast(result.message, result.ok ? 'success' : 'error');
+  };
+
+  const handlePrintReceipt = (focusRiderName) => {
+    printReceipt(receiptModel(focusRiderName));
+  };
+
+  const splitModes = [
+    { id: 'equal', label: 'Equal (1/N)', icon: Users },
+    { id: 'custom', label: 'Custom %', icon: Percent },
+    { id: 'distance', label: 'By Distance', icon: Navigation }
+  ];
+
+  const paymentMethods = [
+    { id: 'razorpay', label: 'Razorpay', icon: ShieldCheck, highlight: true },
+    { id: 'upi', label: 'UPI / QR', icon: QrCode },
+    { id: 'card', label: 'Card 3DS', icon: CreditCard },
+    { id: 'wallet', label: 'Wallet', icon: Wallet }
+  ];
+
+  const customAllocationBroken = splitMode === 'custom' && Math.abs(customPercentTotal - 100) > 0.5;
 
   return (
-    <div className="glass-panel p-6 rounded-3xl border border-slate-800 space-y-6 shadow-2xl relative">
-      
-      {/* Toast Notification */}
-      {shareToast && (
-        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs shadow-xl animate-bounce">
-          {shareToast}
+    <div className="relative space-y-4">
+      {toast && (
+        <div
+          className={`fixed bottom-6 left-1/2 z-[60] -translate-x-1/2 rounded-xl px-4 py-2.5 text-xs font-bold shadow-2xl animate-slideDown ${
+            toast.tone === 'error'
+              ? 'bg-red-500 text-white'
+              : toast.tone === 'success'
+                ? 'bg-emerald-500 text-slate-950'
+                : 'bg-slate-100 text-slate-900'
+          }`}
+          role="status"
+        >
+          {toast.message}
         </div>
       )}
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800 pb-5">
-        <div>
-          <div className="flex items-center gap-2">
-            <div className="w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+      {/* Summary */}
+      <div className="glass-panel rounded-3xl border border-slate-800 p-5 shadow-2xl space-y-4">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-400">
               <DollarSign size={20} />
             </div>
             <div>
-              <h2 className="text-xl font-extrabold text-white tracking-tight">Smart Fare Splitter & Settlement Hub</h2>
-              <p className="text-xs text-slate-400">
-                Automated multi-rider cost allocation, live UPI payment collection, and instant receipts.
+              <h2 className="text-lg font-extrabold tracking-tight text-white">Fare Split & Settlement</h2>
+              <p className="text-[11px] text-slate-400">
+                {formatINR(netTotal)} across {enrichedRiders.length} {enrichedRiders.length === 1 ? 'passenger' : 'passengers'}
               </p>
             </div>
           </div>
-        </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handleCopySplitLink}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-300 text-xs font-bold border border-slate-700/80 transition-all"
-            title="Copy payment link to share with WhatsApp or Messages"
-          >
-            {copiedLink ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} className="text-cyan-400" />}
-            <span>{copiedLink ? 'Link Copied!' : 'Share Split Link'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Financial Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-3">
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Gross Ride Fare</span>
-          <span className="text-2xl font-black text-white">₹{initialBaseCost.toFixed(2)}</span>
-          {promoDiscount > 0 && (
-            <span className="text-[10px] text-emerald-400 block font-semibold mt-0.5">
-              -₹{promoDiscount.toFixed(2)} Promo Applied
-            </span>
-          )}
-        </div>
-
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Driver Tip</span>
-          <div className="flex items-center gap-1.5 mt-1.5">
-            {[0, 20, 50, 100].map((amt) => (
-              <button
-                key={amt}
-                onClick={() => setTip(amt)}
-                className={`px-2 py-1 rounded-lg text-xs font-bold transition-all ${
-                  tip === amt
-                    ? 'bg-cyan-500 text-slate-950 shadow-md font-extrabold'
-                    : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                ₹{amt}
-              </button>
-            ))}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleCopySplitLink}
+              className="flex items-center gap-1.5 rounded-xl border border-slate-700/80 px-3 py-2 text-xs font-bold text-slate-300 transition-all hover:border-slate-600 hover:text-white"
+              title="Copy a payment link to share with co-riders"
+            >
+              {copiedLink ? <Check size={14} className="text-emerald-400" /> : <Link2 size={14} className="text-cyan-400" />}
+              {copiedLink ? 'Link Copied' : 'Share Link'}
+            </button>
+            <button
+              onClick={() => setShowTripReceipt(true)}
+              className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-3.5 py-2 text-xs font-black text-slate-950 shadow-md shadow-cyan-500/20 transition-all hover:scale-105 active:scale-95"
+              title="Preview, download and share the settlement receipt"
+            >
+              <Receipt size={14} />
+              Receipt
+            </button>
           </div>
         </div>
 
-        <div className="p-4 rounded-2xl bg-slate-900/80 border border-slate-800">
-          <span className="text-[10px] uppercase font-bold text-slate-400 block">Net Settle Total</span>
-          <span className="text-2xl font-black text-cyan-400">₹{grossTotal.toFixed(2)}</span>
-          <span className="text-[10px] text-slate-400 block font-mono">{ridersList.length} Active Co-Riders</span>
-        </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3.5 transition-colors hover:border-slate-700">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400">Ride Fare</span>
+            <span className="mt-1 block text-xl font-black text-white">{formatINR(baseFare)}</span>
+            {promoDiscount > 0 && (
+              <button
+                onClick={handleRemovePromo}
+                className="mt-0.5 flex items-center gap-1 text-[10px] font-semibold text-emerald-400 hover:text-emerald-300"
+                title="Remove the applied promo"
+              >
+                −{formatINR(promoDiscount)} promo · undo
+              </button>
+            )}
+          </div>
 
-        <div className="p-4 rounded-2xl bg-gradient-to-br from-emerald-950/60 to-slate-900 border border-emerald-500/30">
-          <span className="text-[10px] uppercase font-bold text-emerald-300 block">Settled Collection</span>
-          <span className="text-2xl font-black text-white">₹{totalCollected.toFixed(2)}</span>
-          <span className="text-[10px] text-emerald-400 block font-bold font-mono">
-            {paidCount} of {ridersList.length} Paid ({percentCollected}%)
-          </span>
-        </div>
-      </div>
-
-      {/* Progress Bar of Collection */}
-      <div className="space-y-1.5 bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
-        <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-300 font-bold flex items-center gap-1.5">
-            <CheckCircle2 size={14} className="text-emerald-400" />
-            <span>Group Collection Progress</span>
-          </span>
-          <span className="font-mono text-emerald-400 font-extrabold">
-            ₹{totalCollected.toFixed(2)} / ₹{grossTotal.toFixed(2)}
-          </span>
-        </div>
-        <div className="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden">
-          <div 
-            className="bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-400 h-full rounded-full transition-all duration-500" 
-            style={{ width: `${percentCollected}%` }}
-          />
-        </div>
-      </div>
-
-      {/* Split Mode Selector Tabs */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-            Fare Allocation Algorithm
-          </span>
-          
-          <div className="flex items-center gap-1 bg-slate-900 p-1 rounded-xl border border-slate-800">
-            {[
-              { id: 'equal', label: 'Equal Split (1/N)', icon: Users },
-              { id: 'custom', label: 'Custom Ratio (%)', icon: Percent },
-              { id: 'distance', label: 'By Distance (Km)', icon: Navigation }
-            ].map(m => {
-              const Icon = m.icon;
-              const isActive = splitMode === m.id;
-              return (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/80 p-3.5 transition-colors hover:border-slate-700">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-slate-400">Driver Tip</span>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1">
+              {[0, 20, 50, 100].map((amount) => (
                 <button
-                  key={m.id}
-                  onClick={() => setSplitMode(m.id)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                    isActive
-                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md font-extrabold'
-                      : 'text-slate-400 hover:text-white'
+                  key={amount}
+                  onClick={() => setTip(amount)}
+                  className={`rounded-lg px-2 py-1 text-[11px] font-bold transition-all active:scale-95 ${
+                    tip === amount
+                      ? 'bg-cyan-500 text-slate-950 shadow-md shadow-cyan-500/20'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                   }`}
                 >
+                  ₹{amount}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/40 to-slate-900 p-3.5">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-cyan-300">Net Payable</span>
+            <span className="mt-1 block text-xl font-black text-cyan-400 transition-all duration-300">{formatINR(netTotal)}</span>
+            <span className="text-[10px] font-mono text-slate-400">
+              {splitMode === 'equal' ? 'Equal split' : splitMode === 'custom' ? 'Custom ratio' : 'Distance based'}
+            </span>
+          </div>
+
+          <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/50 to-slate-900 p-3.5">
+            <span className="text-[9px] font-mono font-bold uppercase tracking-wider text-emerald-300">Collected</span>
+            <span className="mt-1 block text-xl font-black text-white">{formatINR(totalCollected)}</span>
+            <span className="text-[10px] font-mono font-bold text-emerald-400">
+              {paidCount}/{enrichedRiders.length} paid · {formatINR(outstanding)} due
+            </span>
+          </div>
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="flex items-center gap-1.5 font-bold text-slate-300">
+              <CheckCircle2 size={13} className={isSettled ? 'text-emerald-400' : 'text-slate-400'} />
+              {isSettled ? 'Fully settled' : 'Collection progress'}
+            </span>
+            <span className="font-mono font-extrabold text-emerald-400">
+              {formatINR(totalCollected)} / {formatINR(netTotal)}
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-teal-500 via-emerald-400 to-cyan-400 transition-[width] duration-700 ease-out"
+              style={{ width: `${percentCollected}%` }}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Split controls */}
+      <div className="glass-panel space-y-3 rounded-3xl border border-slate-800 p-5 shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+            Split method
+          </span>
+          <div className="flex items-center gap-1 rounded-xl border border-slate-800 bg-slate-950/70 p-1">
+            {splitModes.map((mode) => {
+              const Icon = mode.icon;
+              const isActive = splitMode === mode.id;
+              return (
+                <button
+                  key={mode.id}
+                  onClick={() => setSplitMode(mode.id)}
+                  className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-bold transition-all ${
+                    isActive
+                      ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-md'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  aria-pressed={isActive}
+                >
                   <Icon size={13} />
-                  <span>{m.label}</span>
+                  {mode.label}
                 </button>
               );
             })}
           </div>
         </div>
 
-        {/* Promo Code Input Bar */}
-        {!promoApplied && (
-          <form onSubmit={handleApplyPromo} className="flex items-center gap-2 max-w-md">
+        {splitMode === 'custom' && customAllocationBroken && (
+          <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-amber-500/40 bg-amber-500/10 p-2.5 text-[11px] text-amber-300">
+            <span className="flex items-center gap-1.5">
+              <AlertTriangle size={13} />
+              Ratios total {customPercentTotal}% — shares are weighted against the fare.
+            </span>
+            <button
+              onClick={handleRebalancePercentages}
+              className="rounded-lg bg-amber-500/20 px-2.5 py-1 font-bold text-amber-200 transition-colors hover:bg-amber-500/30"
+            >
+              Rebalance to 100%
+            </button>
+          </div>
+        )}
+
+        {splitMode === 'distance' && rideDistanceKm > 0 && (
+          <p className="text-[11px] text-slate-400">
+            Ride distance: <strong className="font-mono text-slate-200">{rideDistanceKm} km</strong> — enter each
+            passenger&apos;s travelled segment below.
+          </p>
+        )}
+
+        {Math.abs(allocationDelta) > 0.009 && (
+          <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 p-2.5 text-[11px] text-rose-300">
+            Allocation is off by {formatINR(allocationDelta)} — check the split inputs.
+          </div>
+        )}
+
+        {promoApplied ? (
+          <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-[11px] text-emerald-300">
+            <span className="flex items-center gap-1.5 font-bold">
+              <Sparkles size={12} /> Promo applied — {formatINR(promoDiscount)} off the fare
+            </span>
+            <button onClick={handleRemovePromo} className="text-emerald-200 hover:text-white" title="Remove promo">
+              <X size={13} />
+            </button>
+          </div>
+        ) : (
+          <form onSubmit={handleApplyPromo} className="flex items-center gap-2">
             <input
               type="text"
-              placeholder="Promo or Voucher Code (e.g. POOL44)..."
+              placeholder="Promo code (e.g. POOL44)"
               value={promoCode}
-              onChange={(e) => setPromoCode(e.target.value)}
-              className="bg-slate-900 border border-slate-700/80 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 flex-1 font-mono uppercase"
+              onChange={(event) => setPromoCode(event.target.value)}
+              className="min-w-0 flex-1 rounded-xl border border-slate-700/80 bg-slate-950 px-3 py-2 font-mono text-xs uppercase text-white transition-colors focus:border-cyan-400 focus:outline-none"
             />
             <button
               type="submit"
-              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-cyan-300 font-bold text-xs border border-slate-700"
+              className="rounded-xl border border-slate-700 bg-slate-800 px-3.5 py-2 text-xs font-bold text-cyan-300 transition-colors hover:bg-slate-700"
             >
-              Apply Discount
+              Apply
             </button>
           </form>
         )}
       </div>
 
-      {/* Co-Riders Fare Breakdown List */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-            <PieChart size={14} className="text-cyan-400" />
-            <span>Passenger Allocation & Payment Matrix</span>
+      {/* Passenger ledger */}
+      <div className="glass-panel space-y-3 rounded-3xl border border-slate-800 p-5 shadow-2xl">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="flex items-center gap-1.5 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400">
+            <PieChart size={13} className="text-cyan-400" />
+            Passenger allocation
           </h3>
-
           <button
-            onClick={() => setShowAddRider(!showAddRider)}
-            className="flex items-center gap-1 px-3 py-1 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-bold border border-cyan-500/40 transition-all"
+            onClick={() => setShowAddRider((prev) => !prev)}
+            className="flex items-center gap-1 rounded-xl border border-cyan-500/40 bg-cyan-500/15 px-3 py-1.5 text-xs font-bold text-cyan-300 transition-all hover:bg-cyan-500/25"
           >
             <Plus size={13} />
-            <span>Add Co-Rider</span>
+            Add co-rider
           </button>
         </div>
 
-        {/* Inline Add Co-Rider Dialog */}
         {showAddRider && (
-          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-700 space-y-3 animate-fadeIn">
-            <strong className="text-xs text-white block">Add Co-Passenger to Fare Split</strong>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div className="space-y-2.5 rounded-2xl border border-slate-700 bg-slate-900 p-3.5 animate-fadeIn">
+            <strong className="block text-xs text-white">Add co-passenger</strong>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <input
                 type="text"
-                placeholder="Co-Rider Name (e.g. Liam Smith)"
+                placeholder="Name (e.g. Liam Smith)"
                 value={newRiderName}
-                onChange={(e) => setNewRiderName(e.target.value)}
-                className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500"
+                onChange={(event) => setNewRiderName(event.target.value)}
+                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs text-white focus:border-cyan-400 focus:outline-none"
               />
               <input
                 type="text"
-                placeholder="Phone or UPI handle"
+                placeholder="Phone or UPI handle (optional)"
                 value={newRiderPhone}
-                onChange={(e) => setNewRiderPhone(e.target.value)}
-                className="bg-slate-950 border border-slate-700 rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-500 font-mono"
+                onChange={(event) => setNewRiderPhone(event.target.value)}
+                className="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 font-mono text-xs text-white focus:border-cyan-400 focus:outline-none"
               />
             </div>
             <div className="flex justify-end gap-2">
-              <button
-                onClick={() => setShowAddRider(false)}
-                className="px-3 py-1.5 rounded-xl text-xs text-slate-400 hover:text-white"
-              >
+              <button onClick={() => setShowAddRider(false)} className="px-3 py-1.5 text-xs text-slate-400 hover:text-white">
                 Cancel
               </button>
               <button
                 onClick={handleAddRider}
-                className="px-4 py-1.5 rounded-xl bg-cyan-500 text-slate-950 font-bold text-xs shadow-md"
+                className="rounded-xl bg-cyan-500 px-4 py-1.5 text-xs font-bold text-slate-950 shadow-md transition-all hover:bg-cyan-400"
               >
-                Add Passenger
+                Add passenger
               </button>
             </div>
           </div>
         )}
 
-        {/* Riders Rows */}
-        <div className="space-y-2.5">
-          {ridersList.map((rider, idx) => {
-            const riderShare = getRiderShare(rider);
+        <div className="space-y-2">
+          {enrichedRiders.map((rider, index) => {
             const isPaid = rider.paymentStatus === 'Paid';
-
             return (
               <div
-                key={rider.userId || idx}
-                className="p-4 rounded-2xl bg-slate-900/70 border border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all hover:border-slate-700"
+                key={rider.userId || index}
+                className={`flex flex-col gap-3 rounded-2xl border p-3.5 transition-all duration-300 sm:flex-row sm:items-center sm:justify-between ${
+                  isPaid
+                    ? 'border-emerald-500/25 bg-emerald-950/20'
+                    : 'border-slate-800 bg-slate-900/70 hover:border-slate-700'
+                }`}
               >
-                {/* Rider Info */}
-                <div className="flex items-center gap-3">
-                  <img
-                    src={rider.avatar}
-                    alt={rider.name}
-                    className="w-11 h-11 rounded-xl object-cover ring-2 ring-slate-700 shrink-0"
-                  />
-                  <div>
+                <div className="flex min-w-0 items-center gap-3">
+                  {rider.avatar ? (
+                    <img
+                      src={rider.avatar}
+                      alt={rider.name}
+                      className="h-10 w-10 shrink-0 rounded-xl object-cover ring-2 ring-slate-700"
+                      onError={(event) => {
+                        event.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  ) : (
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-cyan-500/30 to-emerald-500/20 text-xs font-black text-cyan-200 ring-2 ring-slate-700">
+                      {getInitials(rider.name)}
+                    </div>
+                  )}
+
+                  <div className="min-w-0">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-bold text-white">{rider.name}</span>
+                      <span className="truncate text-sm font-bold text-white">{rider.name}</span>
                       {rider.isVerified && <VerificationBadge type="Government ID" size="sm" />}
+                      {isPaid && <CheckCircle2 size={13} className="shrink-0 text-emerald-400" />}
                     </div>
 
-                    {/* Mode-specific detail controllers */}
-                    {splitMode === 'equal' && (
-                      <span className="text-[11px] text-slate-400 font-mono block">
-                        Equal Share: {Math.round(100 / ridersList.length)}% of total
-                      </span>
-                    )}
-
-                    {splitMode === 'custom' && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold">Split Ratio:</span>
+                    {splitMode === 'custom' ? (
+                      <div className="mt-1 flex items-center gap-2">
+                        <label htmlFor={`pct-${index}`} className="text-[10px] font-bold uppercase text-slate-400">
+                          Ratio
+                        </label>
                         <input
+                          id={`pct-${index}`}
                           type="number"
                           min="0"
                           max="100"
                           value={rider.percentage || 0}
-                          onChange={(e) => handleUpdatePercentage(idx, e.target.value)}
-                          className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-0.5 text-xs text-cyan-300 font-mono font-bold text-center"
+                          onChange={(event) => handleUpdatePercentage(index, event.target.value)}
+                          className="w-16 rounded-lg border border-slate-700 bg-slate-950 px-2 py-0.5 text-center font-mono text-xs font-bold text-cyan-300 focus:border-cyan-400 focus:outline-none"
                         />
-                        <span className="text-xs text-slate-400 font-mono">%</span>
+                        <span className="font-mono text-[11px] text-slate-500">%</span>
                       </div>
-                    )}
-
-                    {splitMode === 'distance' && (
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] text-slate-400 uppercase font-bold">Trip Distance:</span>
+                    ) : splitMode === 'distance' ? (
+                      <div className="mt-1 flex items-center gap-2">
+                        <label htmlFor={`km-${index}`} className="text-[10px] font-bold uppercase text-slate-400">
+                          Distance
+                        </label>
                         <input
+                          id={`km-${index}`}
                           type="number"
-                          min="1"
-                          value={rider.distanceKm || 10}
-                          onChange={(e) => handleUpdateDistance(idx, e.target.value)}
-                          className="w-16 bg-slate-950 border border-slate-700 rounded-lg px-2 py-0.5 text-xs text-cyan-300 font-mono font-bold text-center"
+                          min="0"
+                          step="0.1"
+                          value={rider.distanceKm || 0}
+                          onChange={(event) => handleUpdateDistance(index, event.target.value)}
+                          className="w-16 rounded-lg border border-slate-700 bg-slate-950 px-2 py-0.5 text-center font-mono text-xs font-bold text-cyan-300 focus:border-cyan-400 focus:outline-none"
                         />
-                        <span className="text-xs text-slate-400 font-mono">km</span>
+                        <span className="font-mono text-[11px] text-slate-500">km</span>
                       </div>
+                    ) : (
+                      <span className="mt-0.5 block font-mono text-[11px] text-slate-400">
+                        {rider.percentOfTotal.toFixed(1)}% of the fare
+                      </span>
                     )}
                   </div>
                 </div>
 
-                {/* Amount Due & Payment Actions */}
-                <div className="flex items-center justify-between sm:justify-end gap-4 border-t sm:border-t-0 border-slate-800 pt-3 sm:pt-0">
-                  <div className="text-left sm:text-right">
-                    <span className="text-xl font-black text-white">₹{riderShare}</span>
-                    <div className="flex items-center gap-1 text-[11px] sm:justify-end mt-0.5">
-                      {isPaid ? (
-                        <span className="text-emerald-400 flex items-center gap-1 font-bold">
-                          <CheckCircle2 size={13} /> {rider.paidAt || 'Paid'}
-                        </span>
-                      ) : (
-                        <span className="text-amber-400 flex items-center gap-1 font-bold">
-                          <Clock size={13} /> Settle Due
-                        </span>
-                      )}
-                    </div>
+                <div className="flex items-center justify-between gap-3 border-t border-slate-800 pt-2.5 sm:justify-end sm:border-t-0 sm:pt-0">
+                  <div className="sm:text-right">
+                    <span className="text-lg font-black text-white tabular-nums">{formatINR(rider.share)}</span>
+                    <span
+                      className={`mt-0.5 flex items-center gap-1 text-[11px] font-bold ${
+                        isPaid ? 'text-emerald-400' : 'text-amber-400'
+                      }`}
+                    >
+                      {isPaid ? <CheckCircle2 size={12} /> : <Clock size={12} />}
+                      {isPaid ? `Paid ${rider.paidAt || ''}` : 'Payment due'}
+                    </span>
                   </div>
 
-                  <div className="flex items-center gap-2">
-                    {!isPaid ? (
+                  <div className="flex items-center gap-1.5">
+                    {isPaid ? (
                       <button
                         onClick={() => {
-                          setActivePaymentModalRider(rider);
-                          setPaymentReceipt(null);
+                          setActivePaymentIdx(index);
+                          setPaidReceipt({
+                            txnId: rider.txnId || 'TXN_YATRA_RECORD',
+                            amount: rider.share,
+                            riderName: rider.name,
+                            method: rider.method || 'UPI / INSTANT',
+                            timestamp: rider.paidAt || 'Settled',
+                            date: new Date().toLocaleDateString('en-IN')
+                          });
                         }}
-                        className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-slate-950 font-black text-xs shadow-md shadow-emerald-500/25 hover:scale-105 active:scale-95 transition-all"
+                        className="flex items-center gap-1 rounded-xl bg-slate-800 px-3 py-2 text-xs font-semibold text-slate-300 transition-colors hover:bg-slate-700"
                       >
-                        <CreditCard size={14} />
-                        <span>Pay Share</span>
+                        <Receipt size={13} className="text-cyan-400" />
+                        Receipt
                       </button>
                     ) : (
                       <button
                         onClick={() => {
-                          setActivePaymentModalRider(rider);
-                          setPaymentReceipt({
-                            txnId: 'TXN_YATRA_EXIST_' + Math.floor(100000 + Math.random() * 900000),
-                            amount: riderShare,
-                            riderName: rider.name,
-                            method: 'UPI / INSTANT',
-                            timestamp: rider.paidAt || 'Settled',
-                            date: new Date().toLocaleDateString()
-                          });
+                          setActivePaymentIdx(index);
+                          setPaidReceipt(null);
+                          setPaymentMethod('razorpay');
+                          setPaymentError('');
                         }}
-                        className="flex items-center gap-1 px-3 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold transition-all"
+                        className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-xs font-black text-slate-950 shadow-md shadow-emerald-500/25 transition-all hover:scale-105 active:scale-95"
                       >
-                        <Receipt size={14} className="text-cyan-400" />
-                        <span>View Slip</span>
+                        <CreditCard size={13} />
+                        Pay share
                       </button>
                     )}
 
                     {ridersList.length > 1 && (
                       <button
-                        onClick={() => handleRemoveRider(idx)}
-                        className="p-2 text-slate-500 hover:text-red-400 transition-colors"
+                        onClick={() => handleRemoveRider(index)}
+                        className="p-2 text-slate-500 transition-colors hover:text-red-400"
                         title="Remove passenger from split"
                       >
                         <Trash2 size={15} />
@@ -573,230 +758,342 @@ export default function CostSplitter({ ride }) {
                     )}
                   </div>
                 </div>
-
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Interactive Payment Gateway Simulator Modal */}
-      {activePaymentModalRider && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/85 backdrop-blur-md animate-fadeIn">
-          <div className="glass-panel w-full max-w-md rounded-3xl border border-slate-800 shadow-2xl p-6 relative space-y-5">
+      {/* Payment modal */}
+      {activePaymentRider && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md animate-fadeIn">
+          <div className="glass-panel relative max-h-[92vh] w-full max-w-md space-y-4 overflow-y-auto rounded-3xl border border-slate-800 p-6 shadow-2xl">
             <button
-              onClick={() => setActivePaymentModalRider(null)}
-              className="absolute top-4 right-4 p-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-400 hover:text-white"
+              onClick={() => setActivePaymentIdx(null)}
+              className="absolute right-4 top-4 rounded-xl bg-slate-900 p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+              title="Close"
             >
               <X size={18} />
             </button>
 
-            {!paymentReceipt ? (
+            {!paidReceipt ? (
               <>
                 <div className="space-y-1">
                   <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/20 text-emerald-400">
                       <Smartphone size={18} />
                     </div>
-                    <h3 className="text-lg font-bold text-white">Instant Fare Settlement</h3>
+                    <h3 className="text-lg font-bold text-white">Settle fare share</h3>
                   </div>
                   <p className="text-xs text-slate-400">
-                    Settling share for passenger <strong className="text-white">{activePaymentModalRider.name}</strong>
+                    Paying <strong className="text-white">{activePaymentRider.name}</strong>
                   </p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-gradient-to-r from-slate-900 to-cyan-950/40 border border-cyan-500/30 flex items-center justify-between">
+                <div className="flex items-center justify-between rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-slate-900 to-cyan-950/40 p-4">
                   <div>
-                    <span className="text-[10px] text-slate-400 uppercase font-mono block">Amount to Authorize</span>
-                    <span className="text-3xl font-black text-white">₹{getRiderShare(activePaymentModalRider)}</span>
+                    <span className="block font-mono text-[10px] uppercase text-slate-400">Amount due</span>
+                    <span className="text-3xl font-black text-white tabular-nums">{formatINR(activePaymentRider.share)}</span>
                   </div>
-                  <span className="text-xs font-mono font-bold text-emerald-400 px-2.5 py-1 rounded-lg bg-emerald-500/20 border border-emerald-500/30">
-                    Live Escrow
+                  <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/20 px-2.5 py-1 font-mono text-[10px] font-bold text-emerald-300">
+                    {activePaymentRider.percentOfTotal.toFixed(0)}% of fare
                   </span>
                 </div>
 
-                {/* Gateway Selector */}
                 <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
-                      Choose Payment Method
-                    </label>
-                    <span className="text-[10px] font-mono text-cyan-400 font-bold">Standard Web Checkout</span>
-                  </div>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {[
-                      { id: 'razorpay', label: 'Razorpay', icon: ShieldCheck, highlight: true },
-                      { id: 'upi', label: 'UPI / QR', icon: QrCode },
-                      { id: 'card', label: 'Card 3DS', icon: CreditCard },
-                      { id: 'wallet', label: 'Wallet', icon: DollarSign }
-                    ].map(m => {
-                      const Icon = m.icon;
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Payment method
+                  </label>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+                    {paymentMethods.map((method) => {
+                      const Icon = method.icon;
+                      const isActive = paymentMethod === method.id;
                       return (
                         <button
-                          key={m.id}
+                          key={method.id}
                           onClick={() => {
-                            setPaymentMethod(m.id);
+                            setPaymentMethod(method.id);
                             setPaymentError('');
                           }}
-                          className={`py-2 px-2.5 rounded-xl text-xs font-bold border transition-all flex flex-col items-center gap-1 cursor-pointer ${
-                            paymentMethod === m.id
-                              ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-md ring-2 ring-cyan-500/30'
-                              : 'bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700'
+                          className={`flex flex-col items-center gap-1 rounded-xl border py-2 text-xs font-bold transition-all ${
+                            isActive
+                              ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300 shadow-md ring-2 ring-cyan-500/30'
+                              : 'border-slate-800 bg-slate-900 text-slate-400 hover:border-slate-700'
                           }`}
+                          aria-pressed={isActive}
                         >
-                          <Icon size={16} className={m.highlight ? 'text-cyan-400' : ''} />
-                          <span>{m.label}</span>
+                          <Icon size={16} className={method.highlight ? 'text-cyan-400' : ''} />
+                          {method.label}
                         </button>
                       );
                     })}
                   </div>
                 </div>
 
-                {/* Gateway Detail Preview */}
                 {paymentMethod === 'razorpay' && (
-                  <div className="p-4 rounded-xl bg-gradient-to-r from-cyan-950/40 via-slate-900 to-slate-900 border border-cyan-500/40 space-y-2 text-xs">
+                  <div className="space-y-2 rounded-xl border border-cyan-500/40 bg-gradient-to-r from-cyan-950/40 via-slate-900 to-slate-900 p-3.5 text-xs">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                        <strong className="text-white text-xs font-bold">Razorpay Standard Checkout</strong>
-                      </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 font-bold border border-emerald-500/40">
-                        Live Sandbox
+                      <span className="flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-400"></span>
+                        <strong className="text-xs font-bold text-white">Razorpay Checkout</strong>
+                      </span>
+                      <span className="rounded-full border border-emerald-500/40 bg-emerald-500/20 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-300">
+                        Sandbox
                       </span>
                     </div>
-                    <p className="text-slate-300 text-[11px] leading-relaxed">
-                      Opens the official Razorpay payment modal with support for Google Pay, PhonePe, Paytm, all Credit/Debit cards, NetBanking & Wallets.
+                    <p className="text-[11px] leading-relaxed text-slate-300">
+                      Supports UPI, cards, NetBanking and wallets. Signature verified server-side.
                     </p>
-                    <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono pt-1.5 border-t border-slate-800">
-                      <span>Gateway: <strong className="text-cyan-400">rzp_test_...onOUg4</strong></span>
-                      <span className="text-emerald-400">HMAC-SHA256 Verified</span>
+                    <div className="flex items-center justify-between border-t border-slate-800 pt-1.5 font-mono text-[10px] text-slate-400">
+                      <span>Key <strong className="text-cyan-400">{maskedGatewayKey}</strong></span>
+                      <span className="text-emerald-400">HMAC-SHA256</span>
                     </div>
                   </div>
                 )}
 
                 {paymentMethod === 'upi' && (
-                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-center space-y-2">
-                    <div className="w-24 h-24 mx-auto bg-white p-2 rounded-xl flex items-center justify-center shadow-lg">
-                      <QrCode size={80} className="text-slate-950" />
+                  <div className="space-y-2 rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 text-center">
+                    <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-xl bg-white p-2 shadow-lg">
+                      <QrCode size={64} className="text-slate-950" />
                     </div>
-                    <span className="text-[11px] font-mono text-cyan-300 block">
-                      upi://pay?pa=yatrago@icici&pn=YatraGoRideShare&am={getRiderShare(activePaymentModalRider)}
+                    <span className="block break-all font-mono text-[10px] text-cyan-300">
+                      upi://pay?pa=yatrago@icici&amp;am={activePaymentRider.share.toFixed(2)}
                     </span>
-                    <p className="text-[10px] text-slate-400">Scan using GPay, PhonePe, Paytm, or BHIM</p>
+                    <p className="text-[10px] text-slate-400">Scan with GPay, PhonePe, Paytm or BHIM</p>
                   </div>
                 )}
 
                 {paymentMethod === 'card' && (
-                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2 text-xs">
-                    <div className="flex justify-between items-center text-slate-300">
-                      <span>Visa Platinum</span>
-                      <span className="font-mono text-cyan-400">•••• 4829</span>
-                    </div>
-                    <p className="text-[10px] text-slate-400">Card on file with instant 3DS bank verification</p>
+                  <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 text-xs">
+                    <span className="text-slate-300">Visa Platinum</span>
+                    <span className="font-mono text-cyan-400">•••• 4829</span>
                   </div>
                 )}
 
                 {paymentMethod === 'wallet' && (
-                  <div className="p-3.5 rounded-xl bg-slate-900/90 border border-slate-800 text-xs flex items-center justify-between">
+                  <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900/90 p-3.5 text-xs">
                     <div>
-                      <span className="text-[10px] text-slate-400 block">YatraGo Wallet Balance</span>
-                      <strong className="text-white text-sm">₹{(user?.walletBalance || 1500.00).toFixed(2)}</strong>
+                      <span className="block text-[10px] text-slate-400">YatraGo Wallet</span>
+                      <strong className="text-sm text-white">
+                        {formatINR(user?.walletBalance ?? 0)}
+                      </strong>
                     </div>
-                    <span className="text-[10px] text-emerald-400 font-bold">Sufficient Funds ✓</span>
+                    <span className="text-[10px] font-bold text-emerald-400">
+                      {(user?.walletBalance ?? 0) >= activePaymentRider.share ? 'Sufficient ✓' : 'Low balance'}
+                    </span>
                   </div>
                 )}
 
-                {/* Error Banner if any */}
                 {paymentError && (
-                  <div className="p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-300 text-xs flex items-center justify-between gap-2 animate-fadeIn">
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-red-500/40 bg-red-950/60 p-3 text-xs text-red-300">
                     <span>{paymentError}</span>
-                    <button onClick={() => setPaymentError('')} className="text-red-400 hover:text-white font-bold text-xs">Dismiss</button>
+                    <button onClick={() => setPaymentError('')} className="font-bold text-red-400 hover:text-white">
+                      Dismiss
+                    </button>
                   </div>
                 )}
 
                 <button
                   onClick={handleExecutePayment}
                   disabled={isProcessing}
-                  className="w-full py-3.5 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 text-slate-950 font-black text-sm shadow-xl shadow-cyan-500/25 hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 py-3.5 text-sm font-black text-slate-950 shadow-xl shadow-cyan-500/25 transition-all hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50"
                 >
                   {isProcessing ? (
-                    <span className="flex items-center gap-2">
-                      <span className="w-4 h-4 border-2 border-slate-950 border-t-transparent rounded-full animate-spin"></span>
-                      <span>Opening Razorpay Secure Checkout...</span>
-                    </span>
+                    <>
+                      <span className="h-4 w-4 animate-spin rounded-full border-2 border-slate-950 border-t-transparent"></span>
+                      Processing…
+                    </>
                   ) : (
                     <>
-                      <span>Pay ₹{getRiderShare(activePaymentModalRider)} {paymentMethod === 'razorpay' ? 'via Razorpay' : ''}</span>
+                      Pay {formatINR(activePaymentRider.share)}
                       <ArrowRight size={16} />
                     </>
                   )}
                 </button>
               </>
             ) : (
-              /* Digital Invoice Slip with YatraGo Official Branding */
-              <div className="space-y-4 text-center py-1 animate-fadeIn">
+              <div className="space-y-4 py-1 text-center">
                 <div className="flex items-center justify-center gap-3">
-                  <div className="w-12 h-12 rounded-2xl bg-white border border-cyan-500/30 p-1.5 shadow-lg flex items-center justify-center">
-                    <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-500/30 bg-white p-1.5 shadow-lg">
+                    <img src={yatraGoLogo} alt="YatraGo" className="h-full w-full object-contain" />
                   </div>
-                  <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center ring-4 ring-emerald-500/30">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-4 ring-emerald-500/30">
                     <Check size={22} />
                   </div>
                 </div>
-                
+
                 <div>
-                  <h4 className="text-lg font-black text-white">Payment Authorized & Settled</h4>
-                  <p className="text-xs text-emerald-400 font-semibold mt-0.5">Official YatraGo Settle Receipt</p>
+                  <h4 className="text-lg font-black text-white">Payment settled</h4>
+                  <p className="mt-0.5 text-xs font-semibold text-emerald-400">Receipt {reference}</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-left space-y-2 font-mono divide-y divide-slate-800">
-                  <div className="flex justify-between pb-1.5">
-                    <span className="text-slate-400">Transaction ID:</span>
-                    <span className="text-cyan-400 font-bold">{paymentReceipt.txnId}</span>
-                  </div>
-                  <div className="flex justify-between pt-1.5 pb-1.5">
-                    <span className="text-slate-400">Passenger:</span>
-                    <span className="text-white font-bold">{paymentReceipt.riderName}</span>
-                  </div>
-                  <div className="flex justify-between pt-1.5 pb-1.5">
-                    <span className="text-slate-400">Method:</span>
-                    <span className="text-slate-200">{paymentReceipt.method}</span>
-                  </div>
-                  <div className="flex justify-between pt-1.5 pb-1.5">
-                    <span className="text-slate-400">Net Amount Paid:</span>
-                    <span className="text-emerald-400 font-extrabold text-sm">₹{paymentReceipt.amount}</span>
-                  </div>
-                  <div className="flex justify-between pt-1.5">
-                    <span className="text-slate-400">Timestamp:</span>
-                    <span className="text-slate-400">{paymentReceipt.date} • {paymentReceipt.timestamp}</span>
+                <div className="space-y-2 rounded-2xl border border-slate-800 bg-slate-900 p-4 text-left font-mono text-xs">
+                  {[
+                    ['Transaction', paidReceipt.txnId],
+                    ['Passenger', paidReceipt.riderName],
+                    ['Method', paidReceipt.method],
+                    ['Timestamp', `${paidReceipt.date} • ${paidReceipt.timestamp}`]
+                  ].map(([label, value]) => (
+                    <div key={label} className="flex justify-between gap-3">
+                      <span className="text-slate-400">{label}</span>
+                      <span className="truncate text-right text-slate-200">{value}</span>
+                    </div>
+                  ))}
+                  <div className="flex justify-between border-t border-slate-800 pt-2">
+                    <span className="text-slate-400">Amount paid</span>
+                    <span className="text-sm font-extrabold text-emerald-400">{formatINR(paidReceipt.amount)}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <button
-                    onClick={() => {
-                      setShareToast('Receipt copied to clipboard!');
-                      setTimeout(() => setShareToast(null), 2500);
-                    }}
-                    className="flex-1 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold border border-slate-700 flex items-center justify-center gap-1.5"
+                    onClick={() => handleDownloadReceipt(paidReceipt.riderName)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-[10px] font-bold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-white"
                   >
-                    <Share2 size={14} />
-                    <span>Share Receipt</span>
+                    <Download size={15} className="text-cyan-400" />
+                    Download
                   </button>
                   <button
-                    onClick={() => setActivePaymentModalRider(null)}
-                    className="flex-1 py-2.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black"
+                    onClick={() => handleShareReceipt(paidReceipt.riderName)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-[10px] font-bold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-white"
                   >
-                    Done
+                    <Share2 size={15} className="text-emerald-400" />
+                    Share
+                  </button>
+                  <button
+                    onClick={() => handlePrintReceipt(paidReceipt.riderName)}
+                    className="flex flex-col items-center gap-1 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-[10px] font-bold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-white"
+                  >
+                    <Printer size={15} className="text-violet-400" />
+                    Print
                   </button>
                 </div>
+
+                <button
+                  onClick={() => setActivePaymentIdx(null)}
+                  className="w-full rounded-xl bg-cyan-500 py-2.5 text-xs font-black text-slate-950 transition-colors hover:bg-cyan-400"
+                >
+                  Done
+                </button>
               </div>
             )}
-
           </div>
         </div>
       )}
 
+      {/* Whole-trip receipt modal */}
+      {showTripReceipt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md animate-fadeIn">
+          <div className="glass-panel relative max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl border border-slate-800 p-6 shadow-2xl">
+            <button
+              onClick={() => setShowTripReceipt(false)}
+              className="absolute right-4 top-4 rounded-xl bg-slate-900 p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+              title="Close"
+            >
+              <X size={18} />
+            </button>
+
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-500/30 bg-white p-1.5">
+                <img src={yatraGoLogo} alt="YatraGo" className="h-full w-full object-contain" />
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white">Settlement receipt</h3>
+                <p className="font-mono text-[10px] text-slate-400">{reference} • {new Date().toLocaleDateString('en-IN')}</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 text-[11px]">
+              <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-2.5">
+                <span className="block font-mono text-[9px] uppercase text-slate-500">Pickup</span>
+                <span className="truncate text-slate-200">{ride?.pickup?.name || 'Not set'}</span>
+              </div>
+              <div className="rounded-xl border border-slate-800 bg-slate-900/80 p-2.5">
+                <span className="block font-mono text-[9px] uppercase text-slate-500">Drop-off</span>
+                <span className="truncate text-slate-200">{ride?.destination?.name || 'Not set'}</span>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-slate-800">
+              {enrichedRiders.map((rider, index) => (
+                <div
+                  key={rider.userId || index}
+                  className="flex items-center justify-between gap-2 border-b border-slate-800/70 px-3 py-2 text-xs last:border-b-0"
+                >
+                  <span className="truncate text-slate-200">{rider.name}</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono font-bold text-white tabular-nums">{formatINR(rider.share)}</span>
+                    <span
+                      className={`rounded-full px-2 py-0.5 text-[9px] font-bold uppercase ${
+                        rider.paymentStatus === 'Paid'
+                          ? 'bg-emerald-500/15 text-emerald-300'
+                          : 'bg-amber-500/15 text-amber-300'
+                      }`}
+                    >
+                      {rider.paymentStatus === 'Paid' ? 'Paid' : 'Due'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-1 rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 text-xs">
+              <div className="flex justify-between text-slate-300">
+                <span>Ride fare</span>
+                <span className="font-mono">{formatINR(baseFare)}</span>
+              </div>
+              {promoDiscount > 0 && (
+                <div className="flex justify-between text-emerald-400">
+                  <span>Promo</span>
+                  <span className="font-mono">−{formatINR(promoDiscount)}</span>
+                </div>
+              )}
+              {tip > 0 && (
+                <div className="flex justify-between text-slate-300">
+                  <span>Driver tip</span>
+                  <span className="font-mono">+{formatINR(tip)}</span>
+                </div>
+              )}
+              <div className="flex justify-between border-t border-slate-800 pt-2 text-base font-black text-white">
+                <span>Net payable</span>
+                <span className="font-mono text-cyan-400">{formatINR(netTotal)}</span>
+              </div>
+              <div className="flex justify-between pt-1 text-[11px]">
+                <span className="text-slate-400">Collected</span>
+                <span className="font-mono text-emerald-400">{formatINR(totalCollected)}</span>
+              </div>
+              <div className="flex justify-between text-[11px]">
+                <span className="text-slate-400">Outstanding</span>
+                <span className="font-mono text-amber-400">{formatINR(outstanding)}</span>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => handleDownloadReceipt(null)}
+                className="flex flex-col items-center gap-1 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-[10px] font-bold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-white"
+              >
+                <Download size={15} className="text-cyan-400" />
+                Download
+              </button>
+              <button
+                onClick={() => handleShareReceipt(null)}
+                className="flex flex-col items-center gap-1 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-[10px] font-bold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-white"
+              >
+                <Share2 size={15} className="text-emerald-400" />
+                Share
+              </button>
+              <button
+                onClick={() => handlePrintReceipt(null)}
+                className="flex flex-col items-center gap-1 rounded-xl border border-slate-700 bg-slate-900 py-2.5 text-[10px] font-bold text-slate-200 transition-colors hover:border-cyan-500/50 hover:text-white"
+              >
+                <Printer size={15} className="text-violet-400" />
+                Print
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

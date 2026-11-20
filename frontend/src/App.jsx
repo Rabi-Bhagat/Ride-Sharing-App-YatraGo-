@@ -11,11 +11,12 @@ import GroupChatPage from './pages/GroupChatPage';
 import AdminDashboardPage from './pages/AdminDashboardPage';
 import DriverPortalPage from './pages/DriverPortalPage';
 import GuidePortalPage from './pages/GuidePortalPage';
+import BusinessHubPage from './pages/BusinessHubPage';
 import AuthPage from './pages/AuthPage';
 import UserProfile from './components/UserProfile';
 import AuthModal from './components/AuthModal';
 import ErrorBoundary from './components/ErrorBoundary';
-import FloatingRideTracker from './components/FloatingRideTracker';
+import YatraGoAiAssistant from './components/YatraGoAiAssistant';
 import YatraGoFooter from './components/YatraGoFooter';
 
 import { DESTINATIONS_3D } from './data/mockData';
@@ -36,7 +37,7 @@ function MainApp() {
     if (!user) {
       return 'login';
     }
-    if (hash && ['home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat', 'admin', 'driver', 'guide-portal'].includes(hash)) {
+    if (hash && ['home', 'book', 'stranger', 'cost-split', 'preview-3d', 'guiders', 'sos', 'chat', 'admin', 'driver', 'guide-portal', 'business'].includes(hash)) {
       return hash;
     }
     return 'home';
@@ -87,8 +88,11 @@ function MainApp() {
     if (params?.destination) {
       setSelectedDestination(typeof params.destination === 'string' ? { name: params.destination, address: params.destination, lat: 28.5562, lng: 77.1000 } : params.destination);
     }
-    const isBike = params?.vehicleCategory === 'bike' || 
-      params?.vehicleType?.toLowerCase().includes('bike') || 
+    if (params?.viewMode) {
+      setExplore3DView(params.viewMode);
+    }
+    const isBike = params?.vehicleCategory === 'bike' ||
+      params?.vehicleType?.toLowerCase().includes('bike') ||
       params?.vehicleType?.toLowerCase().includes('moto');
 
     if (isBike) {
@@ -127,31 +131,18 @@ function MainApp() {
     setActiveTab(targetTab);
   };
 
-  const [pickupLocation, setPickupLocation] = useState({
-    name: 'Innovation Tech Park, SF',
-    lat: 37.7749,
-    lng: -122.4194
-  });
-  const [selectedDestination, setSelectedDestination] = useState(DESTINATIONS_3D[0]);
+  const [pickupLocation, setPickupLocation] = useState(null);
+  const [selectedDestination, setSelectedDestination] = useState(null);
   const [selectedGuider, setSelectedGuider] = useState(null);
+  const [explore3DView, setExplore3DView] = useState('google3d');
   const [showProfileModal, setShowProfileModal] = useState(false);
 
   const { strangerAlertNotification } = useSocket();
 
-  // Sync user's saved pickup address if available
-  React.useEffect(() => {
-    if (user && user.address) {
-      setPickupLocation(prev => ({
-        ...prev,
-        name: user.address
-      }));
-    }
-  }, [user?.address]);
-
   const [activeRide, setActiveRide] = useState({
     _id: 'ride_101',
-    pickup: { name: 'Innovation Tech Park, SF', lat: 37.7749, lng: -122.4194 },
-    destination: DESTINATIONS_3D[0],
+    pickup: null,
+    destination: null,
     riders: [
       {
         userId: 'usr_1',
@@ -179,45 +170,16 @@ function MainApp() {
     etaMinutes: 14
   });
 
-  // Fetch initial live active ride from MongoDB Atlas
+  // Fetch the live active ride for tracking (does not pre-fill the search fields)
   React.useEffect(() => {
     fetch('/api/rides/active')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.ride) {
           setActiveRide(data.ride);
-          if (data.ride.pickup) {
-            setPickupLocation(data.ride.pickup);
-          }
-          if (data.ride.destination) {
-            const matchDest = DESTINATIONS_3D.find(d => d.id === data.ride.destination.preview3DId || d.name === data.ride.destination.name);
-            if (matchDest) setSelectedDestination(matchDest);
-          }
         }
       })
       .catch(() => {});
-
-    // Auto-detect browser GPS location on load for seamless local experience
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (pos) => {
-          const lat = pos.coords.latitude;
-          const lng = pos.coords.longitude;
-          try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, {
-              headers: { 'Accept-Language': 'en' }
-            });
-            const data = await res.json();
-            if (data && data.display_name) {
-              const addr = data.display_name.split(',').slice(0, 3).join(', ').trim();
-              setPickupLocation({ name: addr, lat, lng });
-            }
-          } catch (e) {}
-        },
-        () => {},
-        { timeout: 8000 }
-      );
-    }
   }, []);
 
   const handleBookRide = (bookingDetails) => {
@@ -232,9 +194,15 @@ function MainApp() {
         pickup: bookingDetails.pickup,
         destination: bookingDetails.destination,
         vehicleType: bookingDetails.vehicleType,
+        vehicleCategory: bookingDetails.vehicleCategory,
+        distanceKm: bookingDetails.distanceKm,
         guiderId: selectedGuider?._id || selectedGuider?.id,
         guiderFee: selectedGuider?.hourlyRate || 0,
-        totalCost: parseFloat(bookingDetails.totalPrice)
+        totalCost: parseFloat(bookingDetails.totalPrice),
+        riderId: user?._id || user?.id,
+        riderName: user?.name,
+        riderAvatar: user?.avatar,
+        riderVerified: user?.isVerified
       })
     })
       .then(res => res.json())
@@ -293,6 +261,9 @@ function MainApp() {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
       
+      {/* Keyboard skip link for accessibility */}
+      <a href="#main-content" className="skip-link">Skip to main content</a>
+
       {/* Navigation Header */}
       <Navbar
         activeTab={activeTab}
@@ -301,7 +272,12 @@ function MainApp() {
       />
 
       {/* Main Content Page Container with kinetic entrance animation */}
-      <main key={activeTab} className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter-kinetic">
+      <main
+        id="main-content"
+        tabIndex={-1}
+        key={activeTab}
+        className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter-kinetic focus:outline-none"
+      >
         
         {/* Co-Rider Match Notification Banner */}
         {strangerAlertNotification && (
@@ -343,7 +319,11 @@ function MainApp() {
           )}
 
           {activeTab === 'stranger' && (
-            <StrangerMatcherPage onCombineSuccess={handleCombineSuccess} activeRide={activeRide} />
+            <StrangerMatcherPage
+              onCombineSuccess={handleCombineSuccess}
+              activeRide={activeRide}
+              onNavigate={handleNavigateWithTransition}
+            />
           )}
 
           {activeTab === 'cost-split' && (
@@ -352,9 +332,15 @@ function MainApp() {
 
           {activeTab === 'preview-3d' && (
             <ThreeDestinationPage
+              key={explore3DView}
+              initialViewMode={explore3DView}
               initialDestinationId={selectedDestination?.id || 'downtown'}
               onSelectLocationForRide={handleSelectLocationForRide}
             />
+          )}
+
+          {activeTab === 'business' && (
+            <BusinessHubPage onNavigate={handleNavigateWithTransition} />
           )}
 
           {activeTab === 'guiders' && (
@@ -394,11 +380,15 @@ function MainApp() {
       {/* Global YatraGo Footer */}
       <YatraGoFooter onNavigate={handleNavigateWithTransition} />
 
-      {/* Persistent Floating 3D Ride Companion */}
-      <FloatingRideTracker
-        onNavigate={handleNavigateWithTransition}
-        activeRide={activeRide}
-      />
+      {/* Persistent AI Travel Assistant (replaces the floating 3D tracker on the home screen) */}
+      {user && !['login', 'signup', 'forgot', 'auth'].includes(activeTab) && (
+        <YatraGoAiAssistant
+          route={{
+            pickup: pickupLocation,
+            destination: selectedDestination
+          }}
+        />
+      )}
 
       {/* Profile Modal */}
       {showProfileModal && (

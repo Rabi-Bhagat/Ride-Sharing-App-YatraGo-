@@ -6,6 +6,7 @@ import {
   HeartHandshake, Shield, Smartphone, Globe
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { preloadGoogleAuth } from '../utils/googleAuth';
 import yatraGoLogo from '../logo/yatrago-logo.png';
 
 // Google Official SVG Icon
@@ -39,6 +40,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     loginWithGoogle,
     forgotPassword, 
     sendResetCode,
+    verifyResetCode,
     loading, 
     authModalTab, 
     setAuthModalTab 
@@ -69,6 +71,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   const [showPreviousCode, setShowPreviousCode] = useState(false);
   const [codeSending, setCodeSending] = useState(false);
   const [codeSentMessage, setCodeSentMessage] = useState('');
+  const [codeVerified, setCodeVerified] = useState(false);
+  const [verifyingCode, setVerifyingCode] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -89,6 +93,11 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
+
+  // Preload Google Identity Services so the account-chooser popup opens on click
+  useEffect(() => {
+    if (isOpen) preloadGoogleAuth();
+  }, [isOpen]);
 
   // Clear messages when switching tabs
   const handleSwitchTab = (tab) => {
@@ -204,22 +213,26 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
   // 3. Submit Google SSO
   const handleGoogleSubmit = async () => {
     setErrorMessage('');
+    setSuccessMessage('');
     const res = await loginWithGoogle(selectedRole);
-    if (res.success) {
-      setSuccessMessage('Signed in with Google successfully!');
-      if (onAuthSuccess && res.nextRoute) {
-        onAuthSuccess(res.nextRoute, res.user);
-      }
-      setTimeout(() => {
-        if (onClose) onClose();
-      }, 350);
+    if (!res.success) {
+      setErrorMessage(res.error || 'Google sign-in failed. Please try again.');
+      return;
     }
+    setSuccessMessage(res.message || 'Signed in with Google successfully!');
+    if (onAuthSuccess && res.nextRoute) {
+      onAuthSuccess(res.nextRoute, res.user);
+    }
+    setTimeout(() => {
+      if (onClose) onClose();
+    }, 350);
   };
 
   // 4. Send Verification Code to Registered Email
   const handleSendResetCode = async () => {
     setErrorMessage('');
     setCodeSentMessage('');
+    setCodeVerified(false);
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!forgotEmail.trim() || !emailRegex.test(forgotEmail.trim())) {
       setErrorMessage('Please enter your valid registered email address first.');
@@ -237,11 +250,41 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
     }
   };
 
+  // 4.6 Verify the code before revealing the new-password step
+  const handleVerifyResetCode = async () => {
+    setErrorMessage('');
+    setSuccessMessage('');
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!forgotEmail.trim() || !emailRegex.test(forgotEmail.trim())) {
+      setErrorMessage('Please enter your registered email address first.');
+      return;
+    }
+    if (!previousCode.trim()) {
+      setErrorMessage('Please enter the 6-digit code or your previous password.');
+      return;
+    }
+    setVerifyingCode(true);
+    const res = await verifyResetCode(forgotEmail.trim(), previousCode.trim());
+    setVerifyingCode(false);
+    if (!res.success) {
+      setCodeVerified(false);
+      setErrorMessage(res.error || 'Invalid or expired verification code.');
+      return;
+    }
+    setCodeVerified(true);
+    setSuccessMessage('Code verified! Create your new password below.');
+  };
+
   // 5. Submit Forgot / Reset Password
   const handleForgotSubmit = async (e) => {
     e.preventDefault();
     setErrorMessage('');
     setSuccessMessage('');
+
+    if (!codeVerified) {
+      setErrorMessage('Please verify your code before resetting your password.');
+      return;
+    }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!forgotEmail.trim() || !emailRegex.test(forgotEmail.trim())) {
@@ -451,7 +494,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     className="w-full py-2.5 px-4 rounded-xl bg-slate-950 hover:bg-slate-800 border border-slate-700 hover:border-slate-600 text-xs font-bold text-slate-200 hover:text-white transition-all flex items-center justify-center gap-2.5 shadow-sm group cursor-pointer disabled:opacity-50"
                   >
                     <GoogleIcon className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                    <span>Continue with Google</span>
+                    <span>{loading ? 'Opening Google…' : 'Continue with Google'}</span>
                   </button>
 
                   <div className="flex items-center gap-3">
@@ -477,6 +520,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
+                        autoComplete="username"
                         value={loginIdentifier}
                         onChange={(e) => setLoginIdentifier(e.target.value)}
                         placeholder="Enter your email to sign in"
@@ -503,6 +547,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type={showLoginPassword ? 'text' : 'password'}
+                        autoComplete="current-password"
                         value={loginPassword}
                         onChange={(e) => setLoginPassword(e.target.value)}
                         placeholder="••••••••••••"
@@ -556,7 +601,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
               {/* VIEW 2: SIGN UP FORM WITH INTERACTIVE ROLE CARDS     */}
               {/* ==================================================== */}
               {activeTab === 'signup' && (
-                <form onSubmit={handleSignupSubmit} className="mt-4 space-y-3.5">
+                <form onSubmit={handleSignupSubmit} autoComplete="off" className="mt-4 space-y-3.5">
                   
                   {/* Interactive Role Selection Cards */}
                   <div>
@@ -637,6 +682,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       <User size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type="text"
+                        autoComplete="name"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
                         placeholder="Enter your full name"
@@ -656,6 +702,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                         <Mail size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                           type="email"
+                          autoComplete="email"
                           value={signupEmail}
                           onChange={(e) => setSignupEmail(e.target.value)}
                           placeholder="Enter your email to sign up"
@@ -673,6 +720,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                         <Phone size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
                           type="tel"
+                          autoComplete="tel"
                           value={phone}
                           onChange={(e) => setPhone(e.target.value)}
                           placeholder="Enter your phone number to sign up"
@@ -692,6 +740,8 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type={showSignupPassword ? 'text' : 'password'}
+                        name="new-password"
+                        autoComplete="new-password"
                         value={signupPassword}
                         onChange={(e) => setSignupPassword(e.target.value)}
                         placeholder="At least 6 characters with letters & numbers"
@@ -779,7 +829,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       <input
                         type="email"
                         value={forgotEmail}
-                        onChange={(e) => setForgotEmail(e.target.value)}
+                        onChange={(e) => { setForgotEmail(e.target.value); setCodeVerified(false); }}
                         placeholder="rider@example.com"
                         className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
                         required
@@ -806,8 +856,9 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                       <KeyRound size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
                       <input
                         type={showPreviousCode ? 'text' : 'password'}
+                        autoComplete="one-time-code"
                         value={previousCode}
-                        onChange={(e) => setPreviousCode(e.target.value)}
+                        onChange={(e) => { setPreviousCode(e.target.value); setCodeVerified(false); }}
                         placeholder="Enter previous password or 6-digit code"
                         className="w-full h-10 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all font-mono"
                         required
@@ -827,51 +878,85 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                         <span>{codeSentMessage}</span>
                       </p>
                     )}
-                  </div>
 
-                  {/* New Password */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                      New Password
-                    </label>
-                    <div className="relative">
-                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type={showNewPassword ? 'text' : 'password'}
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Enter minimum 6 characters"
-                        className="w-full h-10 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowNewPassword(!showNewPassword)}
-                        className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
-                        tabIndex={-1}
-                      >
-                        {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
-                      </button>
+                    {/* Verify code gate */}
+                    <div className="mt-2">
+                      {codeVerified ? (
+                        <span className="inline-flex items-center gap-1.5 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 rounded-lg px-2 py-1">
+                          <CheckCircle2 size={12} /> Code verified
+                        </span>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={handleVerifyResetCode}
+                          disabled={verifyingCode || !previousCode.trim()}
+                          className="px-3 py-1.5 rounded-lg bg-cyan-500/15 hover:bg-cyan-500/25 text-cyan-300 border border-cyan-500/40 text-[10px] font-bold transition-all disabled:opacity-50 flex items-center gap-1.5"
+                        >
+                          {verifyingCode ? <Loader2 size={12} className="animate-spin" /> : <ShieldCheck size={12} />}
+                          {verifyingCode ? 'Verifying…' : 'Verify Code'}
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* Confirm New Password */}
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-300 mb-1">
-                      Confirm New Password
-                    </label>
-                    <div className="relative">
-                      <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                      <input
-                        type="password"
-                        value={confirmNewPassword}
-                        onChange={(e) => setConfirmNewPassword(e.target.value)}
-                        placeholder="Confirm password"
-                        className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
-                        required
-                      />
+                  {codeVerified ? (
+                    <div className="space-y-3.5 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 p-3.5 animate-fadeIn">
+                      <div className="flex items-center gap-2 text-[11px] font-bold text-emerald-300">
+                        <ShieldCheck size={13} /> Create your new password
+                      </div>
+
+                      {/* New Password */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                          New Password
+                        </label>
+                        <div className="relative">
+                          <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type={showNewPassword ? 'text' : 'password'}
+                            autoComplete="new-password"
+                            value={newPassword}
+                            onChange={(e) => setNewPassword(e.target.value)}
+                            placeholder="Enter minimum 6 characters"
+                            className="w-full h-10 pl-10 pr-10 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                            required
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowNewPassword(!showNewPassword)}
+                            className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200 cursor-pointer"
+                            tabIndex={-1}
+                          >
+                            {showNewPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Confirm New Password */}
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                          Confirm New Password
+                        </label>
+                        <div className="relative">
+                          <Lock size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+                          <input
+                            type="password"
+                            autoComplete="new-password"
+                            value={confirmNewPassword}
+                            onChange={(e) => setConfirmNewPassword(e.target.value)}
+                            placeholder="Confirm password"
+                            className="w-full h-10 pl-10 pr-3.5 rounded-xl bg-slate-950 border border-slate-800 focus:border-cyan-400 text-xs text-white placeholder-slate-400 focus:outline-none transition-all"
+                            required
+                          />
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-[10px] text-slate-400 flex items-center gap-2">
+                      <KeyRound size={12} className="text-cyan-400 shrink-0" />
+                      <span>Verify your code above to unlock the new password fields.</span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between pt-1">
                     <button
@@ -885,7 +970,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
 
                   <button
                     type="submit"
-                    disabled={loading}
+                    disabled={loading || !codeVerified}
                     className="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-lg shadow-cyan-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
                   >
                     {loading ? (

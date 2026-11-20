@@ -1,0 +1,18 @@
+{
+  "permissions": {
+    "allow": [
+      "Shell(npm:*)",
+      "Shell(agent-browser:*)",
+      "powershell",
+      "Shell(node --check backend/server.js)",
+      "Shell(node --check backend/seed.js)",
+      "Shell(node --check backend/routes/rideRoutes.js)",
+      "Shell(node --check backend/routes/guiderRoutes.js)",
+      "Shell(node --check backend/routes/paymentRoutes.js)",
+      "Shell(node --check backend/routes/sosRoutes.js)",
+      "Shell(node backend/server.js)"
+    ],
+    "deny": [],
+    "defaultMode": "default"
+  }
+}

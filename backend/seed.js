@@ -2,8 +2,8 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 // Load environment variables from backend or root
-dotenv.config({ path: path.join(__dirname, '.env') });
-dotenv.config({ path: path.join(__dirname, '..', '.env') });
+dotenv.config({ path: path.join(__dirname, '.env'), override: true });
+dotenv.config({ path: path.join(__dirname, '..', '.env'), override: true });
 
 const mongoose = require('mongoose');
 const User = require('./models/User');
@@ -92,6 +92,7 @@ const seedData = async () => {
       {
         name: 'David Kim',
         email: 'david.kim@quantumcapital.io',
+        password: hashPassword('password123'),
         phone: '+1 (555) 765-4321',
         role: 'rider',
         avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=300&q=80',
@@ -336,11 +337,19 @@ const seedData = async () => {
     console.log('Seeded safety alert log into SosAlert collection.');
 
     console.log('✨ All collections successfully populated in MongoDB Atlas!');
-    process.exit(0);
+    return true;
   } catch (err) {
     console.error('❌ Error during database seeding:', err);
-    process.exit(1);
+    throw err;
   }
 };
 
-seedData();
+module.exports = seedData;
+
+// Only run automatically when executed directly (npm run seed),
+// never on require() — prevents an imported seed from exiting the server.
+if (require.main === module) {
+  seedData()
+    .then(() => process.exit(0))
+    .catch(() => process.exit(1));
+}

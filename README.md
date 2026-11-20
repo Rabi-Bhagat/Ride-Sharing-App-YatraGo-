@@ -78,6 +78,19 @@ cp frontend/.env.example frontend/.env
 
 *(See [CREDENTIALS.md](file:///c:/Users/Rabi%20Bhagat/Desktop/Ride%20Sharing%20app/CREDENTIALS.md) for full explanations of every variable).*
 
+#### Enabling "Continue with Google"
+
+Google sign-in uses Google Identity Services and only works once you supply your own OAuth client ID:
+
+1. In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) create an **OAuth 2.0 Client ID → Web application**.
+2. Add `http://localhost:3000` (and your production origin) under **Authorized JavaScript origins**.
+3. Put the client ID in `.env` (repo root and/or `backend/.env`):
+   ```powershell
+   GOOGLE_CLIENT_ID=xxxxxxxx.apps.googleusercontent.com
+   ```
+4. Restart the backend. The button now opens Google's account chooser, and the picked account is verified server-side at `POST /api/auth/google`. Without a client ID the button shows a configuration message instead of signing anyone in.
+
+
 ### 3. Launch Development Servers
 
 ```powershell

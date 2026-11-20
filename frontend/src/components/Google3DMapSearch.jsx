@@ -113,6 +113,78 @@ export const GLOBAL_3D_PLACES = [
     previewImage: 'https://images.unsplash.com/photo-1564507592333-c60657eea523?auto=format&fit=crop&w=400&q=80'
   },
   {
+    id: 'kathmandu_durbar',
+    name: 'Kathmandu Durbar Square & Basantapur',
+    city: 'Kathmandu',
+    country: 'Nepal',
+    lat: 27.7043,
+    lng: 85.3074,
+    zoom: 17,
+    pitch: 60,
+    category: 'UNESCO Heritage Square',
+    description: 'Ancient royal palace square with pagoda temples, carved wooden windows, and the living goddess Kumari Ghar.'
+  },
+  {
+    id: 'swayambhunath',
+    name: 'Swayambhunath Monkey Temple',
+    city: 'Kathmandu',
+    country: 'Nepal',
+    lat: 27.7149,
+    lng: 85.2908,
+    zoom: 17,
+    pitch: 60,
+    category: 'Hilltop Stupa',
+    description: 'Iconic white dome stupa with gilded spire, prayer flags, and panoramic views over the Kathmandu Valley.'
+  },
+  {
+    id: 'pokhara_lakeside',
+    name: 'Phewa Lake & Lakeside Promenade',
+    city: 'Pokhara',
+    country: 'Nepal',
+    lat: 28.2096,
+    lng: 83.9556,
+    zoom: 16,
+    pitch: 60,
+    category: 'Lakeside Leisure',
+    description: 'Serene boating lake with Tal Barahi temple, lakeside cafes, and reflections of the Annapurna range.'
+  },
+  {
+    id: 'everest_kalapatthar',
+    name: 'Mt. Everest Viewpoint (Kala Patthar)',
+    city: 'Sagarmatha',
+    country: 'Nepal',
+    lat: 28.0026,
+    lng: 86.8280,
+    zoom: 14,
+    pitch: 65,
+    category: 'Himalayan Trek Summit',
+    description: 'Legendary trekking viewpoint facing the summit of Mount Everest and the Khumbu glacier.'
+  },
+  {
+    id: 'lumbini_maya_devi',
+    name: 'Lumbini Maya Devi Temple',
+    city: 'Lumbini',
+    country: 'Nepal',
+    lat: 27.4698,
+    lng: 83.2757,
+    zoom: 17,
+    pitch: 60,
+    category: 'World Heritage Pilgrimage',
+    description: 'Birthplace of Lord Buddha with the sacred Bodhi tree, Ashoka pillar, and monastic zone.'
+  },
+  {
+    id: 'bhaktapur_durbar',
+    name: 'Bhaktapur Durbar Square & Nyatapola',
+    city: 'Bhaktapur',
+    country: 'Nepal',
+    lat: 27.6727,
+    lng: 85.4280,
+    zoom: 17,
+    pitch: 60,
+    category: 'Medieval Newar City',
+    description: 'Preserved brick-and-timber medieval city with the five-storey Nyatapola temple and pottery squares.'
+  },
+  {
     id: 'sfo_airport',
     name: 'SFO International Airport & SkyTrain Gateway',
     city: 'San Francisco, CA',
@@ -126,6 +198,9 @@ export const GLOBAL_3D_PLACES = [
     previewImage: 'https://images.unsplash.com/photo-1530521954074-e64f6810b32d?auto=format&fit=crop&w=400&q=80'
   }
 ];
+
+// The quick preset chips focus on Nepal; the search index keeps every place.
+export const NEPAL_3D_PLACES = GLOBAL_3D_PLACES.filter((place) => place.country === 'Nepal');
 
 // Loop-safe MapCameraFlyTo helper for Leaflet
 function MapCameraFlyTo({ lat, lng, zoom }) {
@@ -188,7 +263,7 @@ const create3DPinIcon = (title) => {
 
 export default function Google3DMapSearch({ onSelectLocationForRide }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [activePlace, setActivePlace] = useState(GLOBAL_3D_PLACES[0]);
+  const [activePlace, setActivePlace] = useState(NEPAL_3D_PLACES[0] || GLOBAL_3D_PLACES[0]);
   const [mapLayerType, setMapLayerType] = useState('satellite'); // 'satellite', 'hybrid', 'street3d'
   const [is3DTilt, setIs3DTilt] = useState(true);
   const [isLocatingUser, setIsLocatingUser] = useState(false);
@@ -546,7 +621,7 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
 
       {/* Preset Landmark Chips & Live User Location Chip */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-        <span className="text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider">Quick Presets:</span>
+        <span className="text-xs font-bold text-slate-400 shrink-0 uppercase tracking-wider">Nepal Presets:</span>
         
         {/* Live GPS Chip */}
         <button
@@ -561,7 +636,7 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
           <span>📍 My Live GPS Location (3D)</span>
         </button>
 
-        {GLOBAL_3D_PLACES.map((p) => (
+        {NEPAL_3D_PLACES.map((p) => (
           <button
             key={p.id}
             onClick={() => selectPlace(p)}

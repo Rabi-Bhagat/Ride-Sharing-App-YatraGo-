@@ -6,6 +6,19 @@ export default {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['"Plus Jakarta Sans"', 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'sans-serif'],
+        mono: ['ui-monospace', 'SFMono-Regular', 'Menlo', 'Monaco', 'Consolas', 'Liberation Mono', 'monospace'],
+      },
+      // Ensure the non-standard opacity modifiers used across HUDs/cards
+      // (e.g. bg-slate-950/85, /92, /98) actually generate.
+      opacity: {
+        85: '0.85',
+        88: '0.88',
+        92: '0.92',
+        96: '0.96',
+        98: '0.98',
+      },
       colors: {
         brand: {
           50: '#f0f4ff',

@@ -3,12 +3,56 @@
 @tailwind utilities;
 
 @layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
     background-color: #030712;
     color: #f8fafc;
     margin: 0;
     padding: 0;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Consistent keyboard focus ring for every interactive element */
+  *:focus-visible {
+    outline: 2px solid #22d3ee;
+    outline-offset: 2px;
+  }
+
+  /* Only suppress the outline for pointer users who also have a focus style */
+  *:focus:not(:focus-visible) {
+    outline: none;
+  }
+
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']) {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'],
+  input:disabled,
+  select:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
+  }
+
+  /* Native form controls inherit the theme */
+  input,
+  select,
+  textarea {
+    color-scheme: dark;
+  }
+
+  input::placeholder,
+  textarea::placeholder {
+    color: #64748b;
   }
 }
 
@@ -120,6 +164,72 @@
   animation: pageKinetic 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* YatraGo AI Assistant Motion */
+@keyframes aiPanelIn {
+  0% { opacity: 0; transform: translateY(22px) scale(0.94); filter: blur(6px); }
+  100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.animate-aiPanelIn {
+  animation: aiPanelIn 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+}
+
+@keyframes aiMessageIn {
+  0% { opacity: 0; transform: translateY(10px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-aiMessageIn {
+  animation: aiMessageIn 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes aiTypingDot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.45; }
+  30% { transform: translateY(-4px); opacity: 1; }
+}
+
+.animate-aiTypingDot {
+  animation: aiTypingDot 1s ease-in-out infinite;
+}
+
+@keyframes aiOrbit {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-aiOrbit {
+  animation: aiOrbit 7s linear infinite;
+}
+
+@keyframes aiGlowPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 211, 238, 0.45), 0 12px 32px -8px rgba(6, 182, 212, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(34, 211, 238, 0), 0 18px 40px -8px rgba(16, 185, 129, 0.55); }
+}
+
+.animate-aiGlowPulse {
+  animation: aiGlowPulse 2.8s ease-in-out infinite;
+}
+
+@keyframes aiShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.animate-aiShimmer {
+  background-size: 200% 100%;
+  animation: aiShimmer 3.5s linear infinite;
+}
+
+@keyframes aiCaret {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.animate-aiCaret {
+  animation: aiCaret 0.9s step-end infinite;
+}
+
 /* Road Glow & Dash Stripes */
 @keyframes roadDash {
   0% { transform: translateX(0); }
@@ -137,6 +247,53 @@
 .no-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
+}
+
+/* Accessible skip link (keyboard users can jump past the nav) */
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 0.65rem 1.25rem;
+  border-radius: 0.75rem;
+  background: #06b6d4;
+  color: #020617;
+  font-weight: 800;
+  font-size: 0.75rem;
+  box-shadow: 0 10px 30px rgba(6, 182, 212, 0.35);
+  transition: top 0.2s ease;
+}
+.skip-link:focus {
+  top: 1rem;
+}
+
+/* Respect users who prefer reduced motion: neutralize decorative animation */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .page-enter-kinetic,
+  .animate-fadeIn,
+  .animate-slideDown,
+  .animate-aiPanelIn,
+  .animate-aiMessageIn,
+  .animate-aiTypingDot,
+  .animate-aiOrbit,
+  .animate-aiGlowPulse,
+  .animate-aiShimmer,
+  .animate-aiCaret {
+    animation: none !important;
+  }
 }
 
 

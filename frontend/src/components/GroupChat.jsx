@@ -369,7 +369,7 @@ export default function GroupChat({
       <div className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
         
         {activeMessages.map((msg, idx) => {
-          const isMe = msg.senderId === (user?.id || 'usr_1');
+          const isMe = msg.senderId === (user?._id || user?.id || 'usr_1');
           const isSystem = msg.type === 'system' || msg.senderRole === 'system';
           const isLocation = msg.type === 'location';
 

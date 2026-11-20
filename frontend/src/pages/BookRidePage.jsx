@@ -1,7 +1,10 @@
 import React from 'react';
 import RideBooking from '../components/RideBooking';
-import MapView from '../components/MapView';
-import { Car, Navigation, MapPin, Bike, Sparkles } from 'lucide-react';
+import LiveTransitTrack from '../components/LiveTransitTrack';
+import { Car, Bike } from 'lucide-react';
+
+// Lazy-load the map engine (Leaflet) so it never blocks the booking form.
+const MapView = React.lazy(() => import('../components/MapView'));
 
 export default function BookRidePage({ 
   onBookRide, 
@@ -42,40 +45,8 @@ export default function BookRidePage({
         </div>
       </div>
 
-      {/* Live Animated Ride Progress Track Banner */}
-      <div className="p-4 rounded-2xl glass-panel border border-cyan-500/30 space-y-2.5">
-        <div className="flex items-center justify-between text-xs">
-          <div className="flex items-center gap-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-cyan-400 animate-ping"></span>
-            <span className="text-slate-300 font-bold">Transit Route:</span>
-            <span className="text-cyan-300 font-mono truncate max-w-[140px] sm:max-w-[240px]">
-              {pickup?.name || 'Innovation Tech Park, SF'}
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 text-emerald-400 font-mono font-bold">
-            <span className="truncate max-w-[140px] sm:max-w-[240px]">
-              {selectedDestination?.name || 'Downtown Cyber Hub'}
-            </span>
-            <MapPin size={14} className="shrink-0" />
-          </div>
-        </div>
-
-        {/* Animated Moving Ride on Road */}
-        <div className="relative h-10 w-full rounded-xl bg-slate-950 border border-slate-800/80 overflow-hidden flex items-center px-3 shadow-inner">
-          <div className="absolute inset-x-0 h-0.5 top-1/2 -translate-y-1/2 flex justify-between gap-2 overflow-hidden opacity-40">
-            {[...Array(24)].map((_, i) => (
-              <span key={i} className="w-6 h-0.5 bg-yellow-400 rounded-full shrink-0"></span>
-            ))}
-          </div>
-
-          {/* Animated Moving Bike / Car with light trail */}
-          <div className="flex items-center gap-2 z-10 px-2.5 py-1 rounded-xl bg-gradient-to-r from-cyan-500 to-emerald-400 text-slate-950 font-extrabold text-[11px] shadow-lg shadow-cyan-500/20">
-            {isBike ? <Bike size={15} /> : <Car size={15} />}
-            <span>Active Ride Simulation • {activeRide?.driver?.name || 'Marcus V.'} on {isBike ? 'HyperBike (72 km/h)' : 'Tesla EV (64 km/h)'}</span>
-          </div>
-        </div>
-      </div>
+      {/* Live Real-Time Transit Track */}
+      <LiveTransitTrack pickup={pickup} destination={selectedDestination} ride={activeRide} />
 
       {/* Main Grid: Booking Panel + Interactive Google Map */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
@@ -96,15 +67,22 @@ export default function BookRidePage({
 
         {/* Right Column (7 cols): Interactive Google Map */}
         <div className="lg:col-span-7 h-[580px] lg:h-auto min-h-[500px]">
-          <MapView
-            pickup={pickup}
-            destination={selectedDestination}
-            onSelectPickup={setPickup}
-            onSelectDestination={setSelectedDestination}
-            ride={activeRide}
-            isStrangerCombined={activeRide?.isStrangerCombined}
-            interactive={true}
-          />
+          <React.Suspense fallback={
+            <div className="w-full h-full min-h-[400px] rounded-3xl border border-slate-800 bg-slate-900/60 flex flex-col items-center justify-center gap-3">
+              <div className="w-10 h-10 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />
+              <span className="text-xs font-mono text-slate-400">Loading map…</span>
+            </div>
+          }>
+            <MapView
+              pickup={pickup}
+              destination={selectedDestination}
+              onSelectPickup={setPickup}
+              onSelectDestination={setSelectedDestination}
+              ride={activeRide}
+              isStrangerCombined={activeRide?.isStrangerCombined}
+              interactive={true}
+            />
+          </React.Suspense>
         </div>
 
       </div>

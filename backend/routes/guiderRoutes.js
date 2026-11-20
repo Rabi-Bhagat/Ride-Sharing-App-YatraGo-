@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Guider = require('../models/Guider');
+
+const dbReady = () => mongoose.connection && mongoose.connection.readyState === 1;
 
 // Seed mock local guider directory
 const mockGuiders = [
@@ -57,20 +60,35 @@ const mockGuiders = [
 
 // Get all guider profiles
 router.get('/', async (req, res) => {
-  try {
-    const guiders = await Guider.find();
-    if (guiders && guiders.length > 0) {
-      return res.json({ success: true, guiders });
+  if (dbReady()) {
+    try {
+      const guiders = await Guider.find();
+      if (guiders && guiders.length > 0) {
+        return res.json({ success: true, guiders });
+      }
+    } catch (err) {
+      // fall through to mock directory
     }
-    return res.json({ success: true, guiders: mockGuiders });
-  } catch (err) {
-    return res.json({ success: true, guiders: mockGuiders });
   }
+  return res.json({ success: true, guiders: mockGuiders });
 });
 
 // Get single guider detail
 router.get('/:id', async (req, res) => {
-  const guider = mockGuiders.find(g => g.id === req.params.id || g._id === req.params.id);
+  const { id } = req.params;
+
+  if (dbReady() && mongoose.Types.ObjectId.isValid(id)) {
+    try {
+      const dbGuider = await Guider.findById(id);
+      if (dbGuider) {
+        return res.json({ success: true, guider: dbGuider });
+      }
+    } catch (err) {
+      // fall through to mock directory
+    }
+  }
+
+  const guider = mockGuiders.find(g => g.id === id || g._id === id);
   if (guider) {
     return res.json({ success: true, guider });
   }

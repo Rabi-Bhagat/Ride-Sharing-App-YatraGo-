@@ -1,7 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const Ride = require('../models/Ride');
 const Message = require('../models/Message');
+
+const dbReady = () => mongoose.connection && mongoose.connection.readyState === 1;
 
 // Mock fallback Active Ride state (in INR ₹)
 let activeRide = {
@@ -85,30 +88,42 @@ const strangerMatchesPool = [
 
 // Get current active ride (from MongoDB or fallback)
 router.get('/active', async (req, res) => {
-  try {
-    const mongoRide = await Ride.findOne({ status: 'In Progress' }).sort({ createdAt: -1 });
-    if (mongoRide) {
-      return res.json({ success: true, ride: mongoRide });
+  if (dbReady()) {
+    try {
+      const mongoRide = await Ride.findOne({ status: 'In Progress' }).sort({ createdAt: -1 });
+      if (mongoRide) {
+        return res.json({ success: true, ride: mongoRide });
+      }
+    } catch (err) {
+      // fallback
     }
-  } catch (err) {
-    // fallback
   }
   return res.json({ success: true, ride: activeRide });
 });
 
 // Get all rides / history from MongoDB
 router.get('/', async (req, res) => {
-  try {
-    const rides = await Ride.find().sort({ createdAt: -1 });
-    return res.json({ success: true, rides });
-  } catch (err) {
-    return res.json({ success: true, rides: [activeRide] });
+  if (dbReady()) {
+    try {
+      const rides = await Ride.find().sort({ createdAt: -1 });
+      return res.json({ success: true, rides });
+    } catch (err) {
+      // fallback
+    }
   }
+  return res.json({ success: true, rides: [activeRide] });
 });
 
 // Book a new ride and persist to MongoDB
 router.post('/book', async (req, res) => {
-  const { pickup, destination, vehicleType, vehicleCategory, guiderId, guiderFee, totalCost: passedCost, distanceKm: passedDist } = req.body;
+  const {
+    pickup, destination, vehicleType, vehicleCategory, guiderId, guiderFee,
+    totalCost: passedCost, distanceKm: passedDist,
+    riderId, riderName, riderAvatar, riderVerified
+  } = req.body;
+
+  const primaryName = (riderName && String(riderName).trim()) || 'Alex Rivera';
+  const primaryId = riderId || 'usr_1';
   
   const isBike = vehicleCategory === 'bike' || 
     (vehicleType && (vehicleType.toLowerCase().includes('bike') || vehicleType.toLowerCase().includes('moto') || vehicleType.toLowerCase().includes('scooter')));
@@ -133,10 +148,10 @@ router.post('/book', async (req, res) => {
     destination: destination || activeRide.destination,
     riders: [
       {
-        userId: 'usr_1',
-        name: 'Alex Rivera',
-        avatar: '',
-        isVerified: true,
+        userId: primaryId,
+        name: primaryName,
+        avatar: riderAvatar || '',
+        isVerified: riderVerified !== false,
         isPrimary: true,
         costShare: totalCost,
         paymentStatus: 'Pending'
@@ -161,18 +176,22 @@ router.post('/book', async (req, res) => {
     distanceKm: baseDistance,
     etaMinutes: Math.max(3, Math.round(baseDistance * 1.5)),
     costSplits: [
-      { riderName: 'Alex Rivera', amount: totalCost, percentage: 100, status: 'Pending' }
+      { riderName: primaryName, amount: totalCost, percentage: 100, status: 'Pending' }
     ]
   };
 
-  try {
-    const savedRide = await Ride.create(rideData);
-    activeRide = savedRide;
-    return res.json({ success: true, ride: savedRide });
-  } catch (err) {
-    activeRide = { _id: 'ride_' + Date.now(), ...rideData };
-    return res.json({ success: true, ride: activeRide });
+  if (dbReady()) {
+    try {
+      const savedRide = await Ride.create(rideData);
+      activeRide = savedRide;
+      return res.json({ success: true, ride: savedRide });
+    } catch (err) {
+      // fall through to in-memory fallback
+    }
   }
+
+  activeRide = { _id: 'ride_' + Date.now(), ...rideData };
+  return res.json({ success: true, ride: activeRide });
 });
 
 // Stranger Ride Combining matching algorithm endpoint
@@ -204,12 +223,14 @@ router.post('/combine-stranger', async (req, res) => {
   };
 
   let targetRide = activeRide;
-  try {
-    const mongoRide = await Ride.findOne({ status: 'In Progress' }).sort({ createdAt: -1 });
-    if (mongoRide) {
-      targetRide = mongoRide;
-    }
-  } catch (err) {}
+  if (dbReady()) {
+    try {
+      const mongoRide = await Ride.findOne({ status: 'In Progress' }).sort({ createdAt: -1 });
+      if (mongoRide) {
+        targetRide = mongoRide;
+      }
+    } catch (err) {}
+  }
 
   targetRide.riders.push(newRider);
   targetRide.isStrangerCombined = true;
@@ -244,10 +265,12 @@ router.post('/split-cost', async (req, res) => {
   const { customSplits, tipAmount } = req.body;
   
   let targetRide = activeRide;
-  try {
-    const mongoRide = await Ride.findOne({ status: 'In Progress' }).sort({ createdAt: -1 });
-    if (mongoRide) targetRide = mongoRide;
-  } catch (err) {}
+  if (dbReady()) {
+    try {
+      const mongoRide = await Ride.findOne({ status: 'In Progress' }).sort({ createdAt: -1 });
+      if (mongoRide) targetRide = mongoRide;
+    } catch (err) {}
+  }
 
   let currentTotal = targetRide.totalCost + (tipAmount || 0);
   
@@ -276,12 +299,15 @@ router.post('/split-cost', async (req, res) => {
 
 // Get group chat messages for a ride
 router.get('/:rideId/messages', async (req, res) => {
-  try {
-    const messages = await Message.find({ rideId: req.params.rideId }).sort({ timestamp: 1 });
-    return res.json({ success: true, messages });
-  } catch (err) {
-    return res.json({ success: true, messages: [] });
+  if (dbReady()) {
+    try {
+      const messages = await Message.find({ rideId: req.params.rideId }).sort({ timestamp: 1 });
+      return res.json({ success: true, messages });
+    } catch (err) {
+      // fall through to empty list
+    }
   }
+  return res.json({ success: true, messages: [] });
 });
 
 module.exports = router;

@@ -55,7 +55,11 @@ export async function openRazorpayCheckout({
     }
 
     // Convert amount in Rupees to Paise (minimum 100 paise = ₹1.00)
-    const amountInPaise = Math.max(100, Math.round(Number(amountInRupees || 1) * 100));
+    const amountInRupeesNumber = Number(amountInRupees);
+    if (!Number.isFinite(amountInRupeesNumber) || amountInRupeesNumber <= 0) {
+      throw new Error('Invalid payment amount. Please check the fare and try again.');
+    }
+    const amountInPaise = Math.max(100, Math.round(amountInRupeesNumber * 100));
 
     // 2. Call Backend API to create an order
     const orderResponse = await fetch('/api/create-order', {
@@ -80,7 +84,10 @@ export async function openRazorpayCheckout({
     }
 
     // 3. Configure Razorpay Standard Modal
-    const keyId = orderData.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || 'rzp_test_U20lIYd7onOUg4';
+    const keyId = orderData.key_id || import.meta.env.VITE_RAZORPAY_KEY_ID || '';
+    if (!keyId) {
+      throw new Error('Razorpay public key is not configured. Please contact support.');
+    }
 
     // Ensure clean 10-digit Indian mobile number for Razorpay domestic methods (UPI, RuPay, Netbanking)
     let cleanContact = String(riderPhone || '').replace(/\D/g, '');

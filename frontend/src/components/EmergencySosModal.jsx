@@ -35,9 +35,9 @@ export default function EmergencySosModal({ onClose }) {
   const executeSosTrigger = () => {
     setTriggered(true);
     triggerSos({
-      userId: user.id,
-      userName: user.name,
-      userPhone: user.phone,
+      userId: user?.id || user?._id || 'usr_guest',
+      userName: user?.name || 'YatraGo Rider',
+      userPhone: user?.phone || '112',
       lat: 37.7749,
       lng: -122.4194,
       addressName: 'Innovation Tech Park (37.7749 N, 122.4194 W)'
@@ -45,7 +45,12 @@ export default function EmergencySosModal({ onClose }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-red-950/80 backdrop-blur-lg animate-fadeIn">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Emergency SOS"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-red-950/80 backdrop-blur-lg animate-fadeIn"
+    >
       <div className="glass-panel w-full max-w-md rounded-2xl border border-red-500/50 shadow-2xl p-6 relative text-center space-y-6 overflow-hidden">
         
         {/* Background SOS Glow */}
@@ -75,7 +80,7 @@ export default function EmergencySosModal({ onClose }) {
           isCounting ? (
             <div className="p-6 rounded-2xl bg-red-900/60 border border-red-500 space-y-4">
               <span className="text-xs font-bold text-red-300 block uppercase">Broadcasting in...</span>
-              <span className="text-6xl font-black text-white font-mono animate-ping">{countdown}</span>
+              <span className="text-6xl font-black text-white font-mono animate-pulse">{countdown}</span>
               <button
                 onClick={cancelCountdown}
                 className="w-full py-3 rounded-xl bg-slate-900 text-white font-bold text-xs uppercase tracking-wider border border-slate-700"
@@ -130,9 +135,9 @@ export default function EmergencySosModal({ onClose }) {
 
         {/* Emergency Contacts Quick Call */}
         <div className="pt-3 border-t border-red-900/60 flex items-center justify-between text-xs text-slate-300">
-          <span>Primary Contact: {user.emergencyContacts[0]?.name}</span>
+          <span>Primary Contact: {user?.emergencyContacts?.[0]?.name || 'Emergency Contact'}</span>
           <a
-            href={`tel:${user.emergencyContacts[0]?.phone}`}
+            href={`tel:${user?.emergencyContacts?.[0]?.phone || '112'}`}
             className="flex items-center gap-1 text-cyan-400 font-bold hover:underline"
           >
             <Phone size={13} />

@@ -2,10 +2,10 @@ import React, { useState, useEffect, useRef } from 'react';
 import { 
   Car, Users, Compass, MessageSquare, AlertTriangle, 
   ShieldCheck, User, Menu, X, IndianRupee, Home, Globe, 
-  LogIn, UserPlus, LogOut, Sparkles, ChevronDown, Search, 
+  LogIn, UserPlus, LogOut, ChevronDown, Search, 
   Wallet, Plus, CreditCard, ArrowRight, Plane, MapPin, 
   Bike, Package, Bus, Zap, Shield, KeyRound, ExternalLink,
-  Navigation, CheckCircle2, Clock
+  Navigation, CheckCircle2, Clock, Store
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
@@ -19,7 +19,11 @@ const POPULAR_SEARCH_PRESETS = [
   { name: 'Bengaluru Kempegowda Airport (BLR)', type: 'Airport', tag: 'Direct Corridor', tab: 'book' },
   { name: 'Downtown Cyber Hub & Plaza', type: 'Tech Hub', tag: '44% Pool Save', tab: 'book' },
   { name: 'Mumbai to Pune Expressway', type: 'Intercity', tag: 'From ₹2,200', tab: 'book' },
-  { name: 'Oceanfront Bay Resort & Pier', type: 'Scenic', tag: '3D Preview', tab: 'preview-3d' }
+  { name: 'Oceanfront Bay Resort & Pier', type: 'Scenic', tag: '3D Preview', tab: 'preview-3d' },
+  { name: 'Kathmandu Durbar Square (Nepal)', type: 'Heritage', tag: '3D Map', tab: 'preview-3d', viewMode: 'google3d' },
+  { name: 'Pokhara Phewa Lake (Nepal)', type: 'Scenic', tag: '3D Map', tab: 'preview-3d', viewMode: 'google3d' },
+  { name: 'Everest Base Camp Trail (Nepal)', type: 'Adventure', tag: 'Trek Route', tab: 'book' },
+  { name: 'Lumbini Maya Devi Temple (Nepal)', type: 'Pilgrimage', tag: 'Heritage', tab: 'book' }
 ];
 
 export default function Navbar({ 
@@ -30,7 +34,7 @@ export default function Navbar({
   onOpenProfile 
 }) {
   const { user, isAuthenticated, openAuthModal, logout, updateUserProfile } = useAuth();
-  const { messages } = useSocket();
+  const { messages, unreadCount, markMessagesRead } = useSocket();
 
   // Dropdown states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -41,6 +45,7 @@ export default function Navbar({
   const [walletDropdownOpen, setWalletDropdownOpen] = useState(false);
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrolled, setScrolled] = useState(false);
 
   // Refs for click outside handling
   const servicesRef = useRef(null);
@@ -101,6 +106,26 @@ export default function Navbar({
     }
   }, [searchModalOpen]);
 
+  // While the chat page is open, any arriving message is already being read
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      markMessagesRead();
+    }
+  }, [activeTab, messages.length, markMessagesRead]);
+
+  // Drop any unread count when the user signs out
+  useEffect(() => {
+    if (!user) markMessagesRead();
+  }, [user, markMessagesRead]);
+
+  // Elevate the header as the page scrolls for a smooth, premium feel
+  useEffect(() => {
+    const handleScroll = () => setScrolled(window.scrollY > 12);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   // Wallet Quick Top-up handler
   const handleQuickTopUp = async (amount) => {
     const currentBal = user?.walletBalance || 1500;
@@ -112,7 +137,7 @@ export default function Navbar({
   };
 
   const handleSelectSearchResult = (result) => {
-    setActiveTab(result.tab || 'book');
+    setActiveTab(result.tab || 'book', result.viewMode ? { viewMode: result.viewMode } : undefined);
     setSearchModalOpen(false);
     setSearchQuery('');
   };
@@ -124,7 +149,14 @@ export default function Navbar({
 
   return (
     <>
-      <header className="sticky top-0 z-40 w-full bg-slate-950/85 backdrop-blur-2xl border-b border-slate-800/80 shadow-2xl transition-all">
+      <header className={`sticky top-0 z-40 w-full border-b transition-all duration-300 animate-slideDown ${
+        scrolled
+          ? 'bg-slate-950/95 backdrop-blur-2xl border-slate-800/90 shadow-2xl shadow-cyan-950/40'
+          : 'bg-slate-950/70 backdrop-blur-xl border-slate-800/60 shadow-none'
+      }`}>
+        {/* Animated gradient accent lines */}
+        <div className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-cyan-500/70 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 -bottom-2 h-2 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent blur-sm" />
         <div className="max-w-7xl 2xl:max-w-[1480px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4">
             
@@ -356,6 +388,20 @@ export default function Navbar({
                 <span>Split Fare</span>
               </button>
 
+              {/* Business & Promo Hub */}
+              <button
+                onClick={() => setActiveTab('business')}
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  activeTab === 'business'
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
+                    : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
+                }`}
+                title="Partner hotels, shops & restaurants with traveller promo codes"
+              >
+                <Store size={15} className={activeTab === 'business' ? 'text-emerald-400' : 'text-slate-400'} />
+                <span>Business & Promos</span>
+              </button>
+
               {/* Explore 3D & Guiders Dropdown */}
               <div ref={exploreRef} className="relative">
                 <button
@@ -379,7 +425,7 @@ export default function Navbar({
                   <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2.5 z-50 animate-fadeIn space-y-1">
                     <div
                       onClick={() => {
-                        setActiveTab('preview-3d');
+                        setActiveTab('preview-3d', { viewMode: 'google3d' });
                         setExploreDropdownOpen(false);
                       }}
                       className="p-2.5 rounded-xl hover:bg-slate-800/90 cursor-pointer transition-all flex items-start gap-3 group"
@@ -388,8 +434,24 @@ export default function Navbar({
                         <Globe size={16} />
                       </div>
                       <div>
-                        <strong className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors block">Interactive 3D Simulation</strong>
-                        <p className="text-[11px] text-slate-400 mt-0.5">Cruising bike & vehicle simulation across 3D destinations</p>
+                        <strong className="text-xs font-bold text-white group-hover:text-cyan-300 transition-colors block">3D Map Explorer</strong>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Search any place worldwide on a live 3D satellite map</p>
+                      </div>
+                    </div>
+
+                    <div
+                      onClick={() => {
+                        setActiveTab('preview-3d', { viewMode: 'simulator' });
+                        setExploreDropdownOpen(false);
+                      }}
+                      className="p-2.5 rounded-xl hover:bg-slate-800/90 cursor-pointer transition-all flex items-start gap-3 group"
+                    >
+                      <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 group-hover:scale-105 transition-transform shrink-0">
+                        <Bike size={16} />
+                      </div>
+                      <div>
+                        <strong className="text-xs font-bold text-white group-hover:text-emerald-300 transition-colors block">3D Highway Simulator</strong>
+                        <p className="text-[11px] text-slate-400 mt-0.5">Cruise a bike & vehicle simulation across 3D routes</p>
                       </div>
                     </div>
 
@@ -530,10 +592,10 @@ export default function Navbar({
             {/* ========================================================= */}
             {/* 3. QUICK SEARCH CAPSULE (SHORTCUT: ⌘K / CTRL+K) */}
             {/* ========================================================= */}
-            <div className="hidden md:flex items-center shrink-0">
+            <div className="hidden xl:flex items-center shrink-0">
               <button
                 onClick={() => setSearchModalOpen(true)}
-                className="flex items-center justify-between gap-2.5 w-36 lg:w-48 xl:w-60 h-9 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-805 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 transition-all shadow-inner whitespace-nowrap overflow-hidden group cursor-pointer shrink-0"
+                className="flex items-center justify-between gap-2.5 w-36 lg:w-48 xl:w-60 h-9 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 transition-all shadow-inner whitespace-nowrap overflow-hidden group cursor-pointer shrink-0"
                 title="Search routes or airports (Ctrl+K)"
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -633,30 +695,29 @@ export default function Navbar({
                 <span className="font-extrabold text-[11px] sm:text-xs">SOS</span>
               </button>
 
-              {/* Live Group Chat Icon Button */}
-              <button
-                onClick={() => {
-                  if (!user) {
-                    if (openAuthModal) openAuthModal('login', 'chat');
-                    if (setActiveTab) setActiveTab('login');
-                  } else {
+              {/* Live Group Chat Icon Button (signed-in users only) */}
+              {user && (
+                <button
+                  onClick={() => {
+                    markMessagesRead();
                     if (setActiveTab) setActiveTab('chat');
-                  }
-                }}
-                className={`relative p-2 sm:p-2.5 rounded-xl border transition-all hover:scale-105 active:scale-95 cursor-pointer ${
-                  activeTab === 'chat'
-                    ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-sm'
-                    : 'bg-slate-900/90 hover:bg-slate-800 text-slate-200 border-slate-800'
-                }`}
-                title={user ? 'Live Group Ride Chat' : 'Sign in to access Live Ride Chat'}
-              >
-                <MessageSquare size={16} className="text-cyan-400" />
-                {user && messages && messages.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-cyan-500 text-slate-950 font-black text-[9px] flex items-center justify-center shadow-md animate-bounce">
-                    {messages.length}
-                  </span>
-                )}
-              </button>
+                  }}
+                  className={`relative h-9 w-9 rounded-xl border transition-all hover:scale-105 active:scale-95 cursor-pointer flex items-center justify-center ${
+                    activeTab === 'chat'
+                      ? 'bg-cyan-500/20 text-cyan-300 border-cyan-400 shadow-sm'
+                      : 'bg-slate-900/90 hover:bg-slate-800 text-slate-200 border-slate-800'
+                  }`}
+                  title={unreadCount > 0 ? `${unreadCount} new chat message${unreadCount > 1 ? 's' : ''}` : 'Live Group Ride Chat'}
+                  aria-label={unreadCount > 0 ? `${unreadCount} new chat messages` : 'Live Group Ride Chat'}
+                >
+                  <MessageSquare size={16} className="text-cyan-400" />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-4 h-4 px-2 rounded-full bg-cyan-500 text-slate-950 font-black text-[9px] flex items-center justify-center shadow-md animate-bounce">
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </button>
+              )}
 
               {/* User Profile Button with Interactive Popover */}
               {user ? (
@@ -787,15 +848,15 @@ export default function Navbar({
                   )}
                 </div>
               ) : (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <button
                     onClick={() => {
                       if (setActiveTab) setActiveTab('login');
                       else if (openAuthModal) openAuthModal('login');
                     }}
-                    className="px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-800 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+                    className="group h-9 px-4 rounded-xl bg-slate-900/80 hover:bg-slate-800 text-slate-200 hover:text-white border border-slate-700/80 hover:border-slate-600 text-xs font-bold transition-all duration-300 flex items-center justify-center gap-1.5 cursor-pointer whitespace-nowrap shadow-sm hover:shadow-md hover:-translate-y-0.5"
                   >
-                    <LogIn size={13} className="text-cyan-400" />
+                    <LogIn size={14} className="text-cyan-400 transition-transform duration-300 group-hover:-translate-x-0.5" />
                     <span>Log In</span>
                   </button>
                   <button
@@ -803,10 +864,10 @@ export default function Navbar({
                       if (setActiveTab) setActiveTab('signup');
                       else if (openAuthModal) openAuthModal('signup');
                     }}
-                    className="hidden sm:flex px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs shadow-md shadow-cyan-500/20 hover:scale-105 active:scale-95 transition-all items-center gap-1.5 cursor-pointer"
+                    className="group relative hidden sm:flex h-9 px-4 rounded-xl overflow-hidden bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 text-slate-950 font-extrabold text-xs shadow-lg shadow-cyan-500/30 hover:shadow-cyan-400/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 transition-all duration-300 items-center justify-center whitespace-nowrap border border-cyan-300/40"
                   >
-                    <Sparkles size={13} />
-                    <span>Sign Up</span>
+                    <span className="pointer-events-none absolute inset-0 -translate-x-[130%] group-hover:translate-x-[130%] transition-transform duration-700 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                    <span className="relative z-10">Sign Up</span>
                   </button>
                 </div>
               )}
@@ -816,6 +877,8 @@ export default function Navbar({
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 className="lg:hidden p-2 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 hover:border-slate-700"
                 aria-label="Toggle navigation menu"
+                aria-expanded={mobileMenuOpen}
+                aria-controls="mobile-nav-drawer"
               >
                 {mobileMenuOpen ? <X size={20} className="text-cyan-400" /> : <Menu size={20} />}
               </button>
@@ -829,7 +892,7 @@ export default function Navbar({
         {/* 5. RESPONSIVE MOBILE DRAWER */}
         {/* ========================================================= */}
         {mobileMenuOpen && (
-          <div className="lg:hidden bg-slate-950/95 border-b border-slate-800 px-4 pt-3 pb-5 space-y-3 backdrop-blur-2xl animate-slideDown max-h-[85vh] overflow-y-auto">
+          <div id="mobile-nav-drawer" className="lg:hidden bg-slate-950/95 border-b border-slate-800 px-4 pt-3 pb-5 space-y-3 backdrop-blur-2xl animate-slideDown max-h-[85vh] overflow-y-auto">
             
             {/* Quick Search on Mobile */}
             <div className="relative">
@@ -892,10 +955,10 @@ export default function Navbar({
                     if (setActiveTab) setActiveTab('signup');
                     else if (openAuthModal) openAuthModal('signup');
                   }}
-                  className="py-2.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+                  className="group relative overflow-hidden py-2.5 rounded-xl bg-gradient-to-r from-cyan-400 via-sky-500 to-blue-600 text-slate-950 font-extrabold text-xs flex items-center justify-center gap-1.5 cursor-pointer border border-cyan-300/40 shadow-md shadow-cyan-500/20"
                 >
-                  <Sparkles size={14} />
-                  <span>Sign Up</span>
+                  <span className="pointer-events-none absolute inset-0 -translate-x-[130%] group-hover:translate-x-[130%] transition-transform duration-700 bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+                  <span className="relative z-10">Sign Up</span>
                 </button>
               </div>
             )}
@@ -907,7 +970,8 @@ export default function Navbar({
                 { id: 'book', label: 'Request a Ride', icon: Car, badge: 'From ₹25' },
                 { id: 'stranger', label: 'Pool & Save', icon: Users, badge: '-44% OFF', badgeColor: 'bg-emerald-500/20 text-emerald-300' },
                 { id: 'cost-split', label: 'Smart Fare Splitter', icon: IndianRupee },
-                { id: 'preview-3d', label: '3D Simulation & Map', icon: Globe },
+                { id: 'business', label: 'Business & Promo Hub', icon: Store, badge: 'Partners', badgeColor: 'bg-emerald-500/20 text-emerald-300' },
+                { id: 'preview-3d', label: '3D Map Explorer', icon: Globe, viewMode: 'google3d' },
                 { id: 'guiders', label: 'Local Guider Network', icon: Compass },
                 { id: 'driver', label: 'Driver Partner Console', icon: Car, badge: 'Online', badgeColor: 'bg-emerald-500/20 text-emerald-300' },
                 { id: 'admin', label: 'Operations & Admin', icon: ShieldCheck, badge: 'Staff', badgeColor: 'bg-cyan-500/20 text-cyan-300' },
@@ -922,7 +986,7 @@ export default function Navbar({
                   <button
                     key={item.id}
                     onClick={() => {
-                      setActiveTab(item.id);
+                      setActiveTab(item.id, item.viewMode ? { viewMode: item.viewMode } : undefined);
                       setMobileMenuOpen(false);
                     }}
                     className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all ${
@@ -961,6 +1025,9 @@ export default function Navbar({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Search destinations"
             className="w-full max-w-lg bg-slate-900 border border-cyan-500/40 rounded-3xl shadow-2xl overflow-hidden space-y-3 p-4 animate-slideDown"
           >
             {/* Search Input Box */}
@@ -985,7 +1052,7 @@ export default function Navbar({
             {/* Quick Presets List */}
             <div className="space-y-1 max-h-72 overflow-y-auto pt-1">
               <div className="px-2 py-1 text-[10px] font-mono uppercase font-bold text-slate-400">
-                Popular Indian Routes & Hubs
+                Popular Routes & Hubs
               </div>
 
               {filteredPresets.map((preset, i) => (

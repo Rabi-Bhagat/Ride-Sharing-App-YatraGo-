@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const mongoose = require('mongoose');
 const User = require('../models/User');
@@ -363,6 +364,156 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// 2.5 GOOGLE SIGN-IN (Google Identity Services)
+// The browser obtains a Google access token for the account the user actually picked.
+// We verify it against Google's userinfo endpoint before creating/reusing a YatraGo account.
+const GOOGLE_USERINFO_URL = 'https://www.googleapis.com/oauth2/v3/userinfo';
+const GOOGLE_ROLES = ['traveler', 'rider', 'driver', 'guide', 'guider'];
+
+router.get('/google/config', (req, res) => {
+  const clientId = (process.env.GOOGLE_CLIENT_ID || process.env.VITE_GOOGLE_CLIENT_ID || '').trim();
+  return res.json({ success: true, configured: Boolean(clientId), clientId });
+});
+
+router.post('/google', async (req, res) => {
+  try {
+    const { accessToken, role } = req.body || {};
+
+    if (!accessToken || typeof accessToken !== 'string') {
+      return res.status(400).json({
+        success: false,
+        message: 'Google sign-in token missing. Please try again.'
+      });
+    }
+
+    let profile = null;
+    try {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), 10000);
+      const googleRes = await fetch(GOOGLE_USERINFO_URL, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      if (googleRes.ok) {
+        profile = await googleRes.json();
+      }
+    } catch (err) {
+      return res.status(502).json({
+        success: false,
+        message: 'Could not reach Google to verify your account. Please try again.'
+      });
+    }
+
+    if (!profile) {
+      return res.status(401).json({
+        success: false,
+        message: 'Google session expired or was rejected. Please sign in with Google again.'
+      });
+    }
+
+    const cleanEmail = String(profile.email || '').trim().toLowerCase();
+    if (!validateEmail(cleanEmail) || profile.email_verified === false || profile.email_verified === 'false') {
+      return res.status(401).json({
+        success: false,
+        message: 'Your Google account does not have a verified email address.'
+      });
+    }
+
+    const chosenRole = GOOGLE_ROLES.includes(role) ? role : 'traveler';
+    let user = await findUserByEmail(cleanEmail);
+    let isNewUser = false;
+
+    if (user) {
+      // Link the Google identity and fill in a missing avatar, but keep the account's chosen role.
+      let changed = false;
+      if (!user.googleId && profile.sub) {
+        user.googleId = profile.sub;
+        changed = true;
+      }
+      if (!user.avatar && profile.picture) {
+        user.avatar = profile.picture;
+        changed = true;
+      }
+      if (changed) {
+        if (mongoose.connection && mongoose.connection.readyState === 1 && typeof user.save === 'function') {
+          await user.save().catch(() => {});
+        }
+        memoryUsers.set(cleanEmail, user);
+      }
+    } else {
+      isNewUser = true;
+      const newUserData = {
+        name: profile.name || cleanEmail.split('@')[0],
+        email: cleanEmail,
+        // Google accounts never authenticate with a password; store an unusable random hash.
+        password: hashPassword(crypto.randomBytes(32).toString('hex')),
+        phone: profile.phone_number || '',
+        address: 'Google Verified Account',
+        homeAddress: '',
+        workAddress: '',
+        avatar: profile.picture || '',
+        role: chosenRole,
+        googleId: profile.sub || '',
+        authProvider: 'google',
+        isVerified: true,
+        verificationBadgeType: 'Government ID',
+        rating: 5.0,
+        tripsCompleted: 0,
+        bio: `Google-authenticated ${chosenRole} on YatraGo.`,
+        walletBalance: 0,
+        upiId: '',
+        emergencyContacts: []
+      };
+
+      if (mongoose.connection && mongoose.connection.readyState === 1) {
+        try {
+          user = await User.create(newUserData);
+        } catch (dbErr) {
+          // Another request may have created the account a moment ago.
+          user = await findUserByEmail(cleanEmail);
+        }
+      }
+
+      if (!user) {
+        user = {
+          _id: 'usr_google_' + Date.now(),
+          ...newUserData,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        };
+      }
+
+      memoryUsers.set(cleanEmail, user);
+    }
+
+    currentActiveEmail = cleanEmail;
+
+    const token = generateJwtToken({
+      userId: user._id,
+      email: user.email,
+      role: user.role || 'traveler',
+      name: user.name
+    });
+
+    return res.json({
+      success: true,
+      isNewUser,
+      message: isNewUser
+        ? `Google account created! Welcome to YatraGo, ${user.name}.`
+        : `Welcome back, ${user.name}!`,
+      user: sanitizeUser(user),
+      token
+    });
+  } catch (error) {
+    console.error('Google Auth Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Server error during Google sign-in. Please try again.'
+    });
+  }
+});
+
 // 3. CHANGE PASSWORD
 router.post('/change-password', async (req, res) => {
   try {
@@ -481,7 +632,7 @@ router.post(['/forgot-password', '/reset-password'], async (req, res) => {
     }
 
     // Check 3: Master Admin Access Passphrase bypass
-    const masterAdminKey = process.env.ADMIN_ACCESS_KEY || 'MySuperSecretAdminPassphrase#2026';
+    const masterAdminKey = process.env.ADMIN_ACCESS_KEY || 'YatraGoAdmin@2026';
     if (!isAuthorized && codeStr === masterAdminKey) {
       isAuthorized = true;
     }
@@ -559,23 +710,92 @@ router.post(['/send-reset-code', '/send-otp'], async (req, res) => {
     });
 
     if (cleanRecipient.includes('@')) {
-      sendOtpEmail({ 
+      const result = await sendOtpEmail({ 
         to: cleanRecipient, 
         otp,
         subject: `YatraGo Password Reset Verification Code: ${otp}`,
         title: 'YatraGo Security Passcode',
         description: 'Use the 6-digit verification code below to authorize your password change:'
-      }).catch(err => {
-        console.warn('OTP email dispatch note:', err.message);
+      });
+
+      if (!result || !result.success) {
+        // Never claim success if the code could not actually be delivered.
+        activeOtps.delete(cleanRecipient);
+        return res.status(502).json({
+          success: false,
+          message: `Could not send the verification email${result?.error ? `: ${result.error}` : '.'} Please check the server SMTP settings.`
+        });
+      }
+
+      if (result.simulated) {
+        return res.json({
+          success: true,
+          simulated: true,
+          message: 'Email service is not configured, so the code was generated but not delivered. Add SMTP credentials in .env to send real emails.'
+        });
+      }
+    }
+
+    return res.json({
+      success: true,
+      message: `Verification code sent to ${recipient}. Please check your inbox (and spam folder).`
+    });
+  } catch (error) {
+    console.error('Send OTP Error:', error);
+    return res.status(500).json({ success: false, message: 'Failed to send verification code.' });
+  }
+});
+
+// 4.6 VERIFY RESET CODE (does not consume the code; final reset re-validates)
+router.post('/verify-reset-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    if (!email || !code) {
+      return res.status(400).json({ success: false, message: 'Email and verification code are required.' });
+    }
+
+    const cleanEmail = String(email).trim().toLowerCase();
+    const user = await findUserByEmail(cleanEmail);
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'No account found with this email address.' });
+    }
+
+    const codeStr = String(code).trim();
+    let valid = false;
+
+    // 1. One-time code sent to email
+    const stored = activeOtps.get(cleanEmail);
+    if (stored && stored.expiresAt > Date.now() && stored.otp === codeStr) {
+      valid = true;
+    }
+
+    // 2. Or the current/previous account password
+    if (!valid && user.password && verifyPassword(codeStr, user.password)) {
+      valid = true;
+    }
+
+    // 3. Or the master admin key
+    const masterKey = process.env.ADMIN_ACCESS_KEY || 'YatraGoAdmin@2026';
+    if (!valid && codeStr === masterKey) {
+      valid = true;
+    }
+
+    if (!valid) {
+      return res.status(400).json({
+        success: false,
+        valid: false,
+        message: 'Incorrect or expired verification code. Please request a new code.'
       });
     }
 
     return res.json({
       success: true,
-      message: `Verification code sent to ${recipient}. Please check your inbox.`
+      valid: true,
+      message: 'Code verified. You can now create a new password.'
     });
-  } catch (error) {
-    return res.status(500).json({ success: false, message: 'Failed to send verification code.' });
+  } catch (err) {
+    console.error('Verify Reset Code Error:', err);
+    return res.status(500).json({ success: false, message: 'Failed to verify code.' });
   }
 });
 
@@ -627,6 +847,10 @@ router.put('/me', async (req, res) => {
       email 
     } = req.body;
 
+    // Admin-only fields: only a valid admin token may verify a user or grant the admin role.
+    const tokenCheck = verifyJwtToken(req.headers.authorization);
+    const isAdminRequest = tokenCheck.valid && tokenCheck.payload && tokenCheck.payload.role === 'admin';
+
     const targetEmail = (email || currentActiveEmail).trim().toLowerCase();
     let user = await findUserByEmail(targetEmail);
 
@@ -649,8 +873,8 @@ router.put('/me', async (req, res) => {
     if (workAddress !== undefined) updateFields.workAddress = workAddress.trim();
     if (avatar !== undefined) updateFields.avatar = avatar;
     if (bio !== undefined) updateFields.bio = bio.trim();
-    if (typeof isVerified === 'boolean') updateFields.isVerified = isVerified;
-    if (role !== undefined) updateFields.role = role;
+    if (typeof isVerified === 'boolean' && isAdminRequest) updateFields.isVerified = isVerified;
+    if (role !== undefined && (role !== 'admin' || isAdminRequest)) updateFields.role = role;
     if (emergencyContacts !== undefined) updateFields.emergencyContacts = emergencyContacts;
     if (walletBalance !== undefined) updateFields.walletBalance = walletBalance;
     if (upiId !== undefined) updateFields.upiId = upiId;
@@ -735,7 +959,7 @@ router.post('/upload-avatar', async (req, res) => {
 // 8. VERIFY OPERATIONS & ADMIN PASSPHRASE
 router.post('/verify-admin', (req, res) => {
   const inputKey = req.body.adminKey || req.headers['x-admin-key'];
-  const masterKey = process.env.ADMIN_ACCESS_KEY || 'MySuperSecretAdminPassphrase#2026';
+  const masterKey = process.env.ADMIN_ACCESS_KEY || 'YatraGoAdmin@2026';
 
   if (!inputKey) {
     return res.status(400).json({

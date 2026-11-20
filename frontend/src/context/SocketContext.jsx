@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
 
 const SocketContext = createContext();
@@ -30,6 +30,26 @@ export const SocketProvider = ({ children }) => {
 
   const [activeSosBroadcast, setActiveSosBroadcast] = useState(null);
   const [strangerAlertNotification, setStrangerAlertNotification] = useState(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  // Mark all chat messages as read (called when the chat page is opened)
+  const markMessagesRead = useCallback(() => {
+    setUnreadCount(0);
+  }, []);
+
+  // Read the signed-in user's identifiers straight from storage so the socket
+  // handler always compares against the latest account.
+  const getCurrentUserIds = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('yatrago_user') || 'null');
+      if (!stored) return [];
+      return [stored._id, stored.id, stored.email]
+        .filter(Boolean)
+        .map(value => String(value));
+    } catch (e) {
+      return [];
+    }
+  };
 
   useEffect(() => {
     // Connect to Socket server with polling fallback and graceful error handling
@@ -64,6 +84,14 @@ export const SocketProvider = ({ children }) => {
 
     newSocket.on('new_message', (message) => {
       setMessages((prev) => [...prev, message]);
+
+      // Only incoming messages from another person count as unread;
+      // history loaded on startup and your own sent messages do not.
+      const senderId = message?.senderId != null ? String(message.senderId) : '';
+      const isOwnMessage = senderId && getCurrentUserIds().includes(senderId);
+      if (!isOwnMessage) {
+        setUnreadCount((prev) => prev + 1);
+      }
     });
 
     newSocket.on('stranger_match_accepted', (data) => {
@@ -83,7 +111,7 @@ export const SocketProvider = ({ children }) => {
   const sendMessage = (rideId, text, user) => {
     const newMsg = {
       rideId,
-      senderId: user.id,
+      senderId: user._id || user.id || user.email,
       senderName: user.name,
       senderRole: user.role,
       senderAvatar: user.avatar,
@@ -122,6 +150,8 @@ export const SocketProvider = ({ children }) => {
         socket,
         messages,
         sendMessage,
+        unreadCount,
+        markMessagesRead,
         activeSosBroadcast,
         triggerSos,
         clearSosAlert,

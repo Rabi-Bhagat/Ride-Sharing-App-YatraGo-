@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
 import StrangerMatcher from '../components/StrangerMatcher';
-import MapView from '../components/MapView';
 import AiTravelMatchmaker from '../components/AiTravelMatchmaker';
 import { Users, Sparkles, ShieldCheck, DollarSign, Brain, Navigation } from 'lucide-react';
+
+// Lazy-load the map engine so the pooling UI renders instantly.
+const MapView = React.lazy(() => import('../components/MapView'));
 
 export default function StrangerMatcherPage({ onCombineSuccess, activeRide, onNavigate }) {
   const [poolingMode, setPoolingMode] = useState('route'); // 'route' or 'ai'
@@ -62,12 +64,19 @@ export default function StrangerMatcherPage({ onCombineSuccess, activeRide, onNa
             <StrangerMatcher onCombineSuccess={onCombineSuccess} />
           </div>
           <div className="lg:col-span-6 h-[550px] rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
-            <MapView
-              pickup={activeRide?.pickup}
-              destination={activeRide?.destination}
-              ride={activeRide}
-              isStrangerCombined={activeRide?.isStrangerCombined}
-            />
+            <React.Suspense fallback={
+              <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-slate-900/60">
+                <div className="w-10 h-10 rounded-full border-2 border-emerald-400/30 border-t-emerald-400 animate-spin" />
+                <span className="text-xs font-mono text-slate-400">Loading map…</span>
+              </div>
+            }>
+              <MapView
+                pickup={activeRide?.pickup}
+                destination={activeRide?.destination}
+                ride={activeRide}
+                isStrangerCombined={activeRide?.isStrangerCombined}
+              />
+            </React.Suspense>
           </div>
         </div>
       ) : (

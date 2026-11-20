@@ -3,7 +3,7 @@ import {
   ShieldCheck, Car, Users, Compass, DollarSign, IndianRupee, 
   TrendingUp, AlertTriangle, CheckCircle2, XCircle, Sliders, 
   FileText, Award, RefreshCw, Search, Filter, Clock, Eye, 
-  MapPin, Check, ChevronRight, Activity, Percent
+  MapPin, Check, ChevronRight, Activity, Percent, Trash2, Lock, KeyRound
 } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
 
@@ -45,7 +45,7 @@ export default function AdminDashboardPage() {
         setAdminAuthError(data.message || 'Incorrect Admin Passphrase.');
       }
     } catch (err) {
-      if (adminKeyInput.trim() === 'MySuperSecretAdminPassphrase#2026') {
+      if (adminKeyInput.trim() === 'YatraGoAdmin@2026') {
         setIsAdminUnlocked(true);
         localStorage.setItem('yatrago_admin_unlocked', 'true');
         setAdminKeyInput('');
@@ -168,6 +168,12 @@ export default function AdminDashboardPage() {
     ));
   };
 
+  const handleDeleteVerification = (req) => {
+    if (window.confirm(`Delete the verification record for ${req.name}? This cannot be undone.`)) {
+      setVerificationRequests(prev => prev.filter(r => r.id !== req.id));
+    }
+  };
+
   const handleSaveFares = (e) => {
     e.preventDefault();
     setFareSaveFeedback(true);
@@ -185,6 +191,58 @@ export default function AdminDashboardPage() {
     req.vehicle.toLowerCase().includes(searchQuery.toLowerCase()) ||
     req.documentType.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Admin gate: nothing below renders or is actionable until the passphrase is verified.
+  if (!isAdminUnlocked) {
+    return (
+      <div className="min-h-[70vh] flex items-center justify-center animate-fadeIn px-4">
+        <div className="w-full max-w-md glass-panel rounded-3xl border border-slate-800 p-8 text-center space-y-6">
+          <div className="w-16 h-16 mx-auto rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 flex items-center justify-center shadow-lg shadow-cyan-500/20">
+            <Lock size={30} />
+          </div>
+          <div className="space-y-1.5">
+            <h1 className="text-2xl font-black text-white">Admin Access Required</h1>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              This section is restricted to Platform Administrators. Enter the admin passphrase to manage partner verifications, fare policies, disputes, and analytics.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerifyAdminKey} className="space-y-3 text-left">
+            <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+              <KeyRound size={13} className="text-cyan-400" /> Admin Passphrase
+            </label>
+            <input
+              type="password"
+              placeholder="Enter admin passphrase..."
+              value={adminKeyInput}
+              onChange={(e) => {
+                setAdminKeyInput(e.target.value);
+                setAdminAuthError('');
+              }}
+              className="w-full px-4 py-3 rounded-2xl bg-slate-950 border border-slate-800 text-white text-sm placeholder:text-slate-500 focus:outline-none focus:border-cyan-500"
+              autoFocus
+            />
+            {adminAuthError && (
+              <p className="text-[11px] text-rose-400 font-mono flex items-center gap-1.5">
+                <AlertTriangle size={13} /> {adminAuthError}
+              </p>
+            )}
+            <button
+              type="submit"
+              disabled={isVerifyingAdmin || !adminKeyInput.trim()}
+              className="w-full py-3 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 font-black text-sm hover:scale-[1.02] active:scale-95 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
+            >
+              {isVerifyingAdmin ? 'Verifying…' : 'Unlock Admin Console'}
+            </button>
+          </form>
+
+          <p className="text-[10px] text-slate-500 font-mono">
+            Authorized personnel only. All admin actions are logged.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-8 animate-fadeIn pb-16">
@@ -440,6 +498,15 @@ export default function AdminDashboardPage() {
                         </button>
                       </>
                     )}
+
+                    <button
+                      onClick={() => handleDeleteVerification(req)}
+                      title="Delete verification record"
+                      aria-label={`Delete verification for ${req.name}`}
+                      className="p-2 rounded-xl bg-slate-900 hover:bg-rose-500/20 text-slate-500 hover:text-rose-300 border border-slate-800 hover:border-rose-500/40 transition-all"
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
 
                 </div>

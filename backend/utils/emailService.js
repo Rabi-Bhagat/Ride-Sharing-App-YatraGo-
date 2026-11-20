@@ -24,8 +24,10 @@ function getTransporter() {
         host,
         port,
         secure,
+        requireTLS: !secure,
         auth: { user, pass },
-        tls: { rejectUnauthorized: false }
+        tls: { rejectUnauthorized: false },
+        connectionTimeout: 15000
       });
     } catch (err) {
       console.warn('Nodemailer init warning:', err.message);
@@ -72,8 +74,8 @@ function sendNativeSmtp({ to, subject, html, text }) {
       });
 
       socket.on('error', (err) => {
-        console.warn(`[SMTP Offline Note] ${err.message}. Simulating email delivery.`);
-        finish({ success: true, simulated: true, error: err.message });
+        console.error(`[SMTP] connection error: ${err.message}`);
+        finish({ success: false, error: err.message });
       });
 
       socket.on('data', (data) => {
@@ -133,8 +135,8 @@ function sendNativeSmtp({ to, subject, html, text }) {
         }
       });
     } catch (err) {
-      console.warn(`[SMTP Exception] ${err.message}`);
-      resolve({ success: true, simulated: true });
+      console.error(`[SMTP] exception: ${err.message}`);
+      resolve({ success: false, error: err.message });
     }
   });
 }
@@ -187,7 +189,8 @@ async function sendWelcomeEmail({ to, name, role }) {
       console.log(`[Nodemailer] Welcome email delivered to ${to} (${info.messageId})`);
       return { success: true, messageId: info.messageId };
     } catch (e) {
-      console.warn('[Nodemailer error, falling back to native SMTP]:', e.message);
+      console.error('[Nodemailer] Welcome email failed:', e.message);
+      return { success: false, error: e.message };
     }
   }
 
@@ -233,7 +236,8 @@ async function sendPasswordResetEmail({ to, name, newPassword }) {
       console.log(`[Nodemailer] Reset email delivered to ${to} (${info.messageId})`);
       return { success: true, messageId: info.messageId };
     } catch (e) {
-      console.warn('[Nodemailer error, falling back to native SMTP]:', e.message);
+      console.error('[Nodemailer] Reset email failed:', e.message);
+      return { success: false, error: e.message };
     }
   }
 
@@ -275,7 +279,8 @@ async function sendOtpEmail({ to, otp, subject, title, description }) {
       console.log(`[Nodemailer] Code email delivered to ${to} (${info.messageId})`);
       return { success: true, messageId: info.messageId };
     } catch (e) {
-      console.warn('[Nodemailer error, falling back to native SMTP]:', e.message);
+      console.error('[Nodemailer] Code email failed:', e.message);
+      return { success: false, error: e.message };
     }
   }
 

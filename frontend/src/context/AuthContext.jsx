@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { requestGoogleAccessToken } from '../utils/googleAuth';
 
 const AuthContext = createContext();
 
@@ -264,50 +265,55 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // 3. GOOGLE SSO AUTHENTICATION (Interactive One-Tap Sign In)
+  // 3. GOOGLE SSO AUTHENTICATION
+  // Opens Google's real account chooser and verifies the picked account server-side.
+  // The account (and role) that comes back is the one the user actually chose.
   const loginWithGoogle = async (selectedRole = 'traveler') => {
     setLoading(true);
-    // Simulate instantaneous Google OAuth verification
-    await new Promise(r => setTimeout(r, 600));
 
-    const googleUser = {
-      _id: 'usr_google_' + Date.now(),
-      name: 'Rabi Bhagat',
-      email: 'rabibhagat789@gmail.com',
-      phone: '+91 98765 11234',
-      address: 'Maharishi Markandeshwar University, Mullana-Ambala',
-      homeAddress: 'Campus Block A, Mullana, Haryana',
-      workAddress: 'Downtown Cyber Plaza',
-      role: selectedRole,
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=300&q=80',
-      isVerified: true,
-      verificationBadgeType: 'Government ID',
-      rating: 5.0,
-      tripsCompleted: 12,
-      bio: 'Verified Google authenticated member on YatraGo.',
-      walletBalance: 1500.00,
-      upiId: 'rabibhagat@okhdfc',
-      emergencyContacts: [
-        { name: 'Campus Security', phone: '112', relation: 'Emergency' }
-      ]
-    };
-
-    setUser(googleUser);
-    setToken('jwt_google_' + Date.now());
-    setLoading(false);
-    closeAuthModal();
-
-    const nextRoute = resolveTargetRoute(googleUser);
-    if (authRedirectCallback) {
-      authRedirectCallback(nextRoute, googleUser);
+    let accessToken;
+    try {
+      accessToken = await requestGoogleAccessToken();
+    } catch (err) {
+      setLoading(false);
+      return { success: false, error: err.message || 'Google sign-in failed. Please try again.' };
     }
 
-    return { 
-      success: true, 
-      user: googleUser, 
-      nextRoute, 
-      message: 'Signed in with Google successfully!' 
-    };
+    try {
+      const res = await fetch('/api/auth/google', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ accessToken, role: selectedRole })
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setLoading(false);
+        return { success: false, error: data.message || 'Google sign-in failed. Please try again.' };
+      }
+
+      setUser(data.user);
+      setToken(data.token);
+      setLoading(false);
+      closeAuthModal();
+
+      const nextRoute = resolveTargetRoute(data.user);
+      if (authRedirectCallback) {
+        authRedirectCallback(nextRoute, data.user);
+      }
+
+      return {
+        success: true,
+        user: data.user,
+        token: data.token,
+        nextRoute,
+        isNewUser: Boolean(data.isNewUser),
+        message: data.message || 'Signed in with Google successfully!'
+      };
+    } catch (err) {
+      setLoading(false);
+      return { success: false, error: 'Network error connecting to YatraGo Auth server.' };
+    }
   };
 
   // 4. INSTANT OTP AUTHENTICATION
@@ -409,6 +415,24 @@ export const AuthProvider = ({ children }) => {
       return { success: true, message: data.message };
     } catch (err) {
       return { success: false, error: 'Network error dispatching reset code.' };
+    }
+  };
+
+  // 6.6 VERIFY RESET CODE (gate the new-password step behind a valid code)
+  const verifyResetCode = async (email, code) => {
+    try {
+      const res = await fetch('/api/auth/verify-reset-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, code })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        return { success: false, error: data.message || 'Invalid or expired verification code.' };
+      }
+      return { success: true, message: data.message };
+    } catch (err) {
+      return { success: false, error: 'Network error verifying code. Please try again.' };
     }
   };
 
@@ -524,6 +548,7 @@ export const AuthProvider = ({ children }) => {
       changePassword,
       forgotPassword,
       sendResetCode,
+      verifyResetCode,
       updateUserProfile,
       uploadProfilePhoto,
       toggleVerification,

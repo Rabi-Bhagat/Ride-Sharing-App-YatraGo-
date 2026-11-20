@@ -131,7 +131,8 @@ export default function MapView({
   onSelectDestination, 
   ride, 
   isStrangerCombined,
-  interactive = true 
+  interactive = true,
+  threeD = false
 }) {
   const googleMapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -139,6 +140,7 @@ export default function MapView({
   const destMarkerRef = useRef(null);
   const driverMarkerRef = useRef(null);
   const routePolylineRef = useRef(null);
+  const directionsRequestRef = useRef(0);
 
   const [useGoogleMaps, setUseGoogleMaps] = useState(true);
   const [googleMapsReady, setGoogleMapsReady] = useState(false);
@@ -146,10 +148,19 @@ export default function MapView({
   const [driverPos, setDriverPos] = useState([37.7790, -122.4130]);
   const [lastSelectedNotice, setLastSelectedNotice] = useState(null);
 
-  const pLat = pickup?.lat ?? 37.7749;
-  const pLng = pickup?.lng ?? -122.4194;
-  const dLat = destination?.lat ?? 37.7885;
-  const dLng = destination?.lng ?? -122.4014;
+  // Keep the map listeners pointing at the latest handler instead of a stale closure
+  const mapClickHandlerRef = useRef(null);
+
+  const hasPickup = Number.isFinite(pickup?.lat) && Number.isFinite(pickup?.lng);
+  const hasDestination = Number.isFinite(destination?.lat) && Number.isFinite(destination?.lng);
+
+  // Only use coordinates the user actually chose — never invent a default place
+  const pLat = hasPickup ? pickup.lat : null;
+  const pLng = hasPickup ? pickup.lng : null;
+  const dLat = hasDestination ? destination.lat : null;
+  const dLng = hasDestination ? destination.lng : null;
+
+  const DEFAULT_CENTER = { lat: 28.6139, lng: 77.2090 };
 
   // Handle map click for choosing pickup or destination
   const handleMapCoordinateChosen = useCallback(async (lat, lng) => {
@@ -183,6 +194,8 @@ export default function MapView({
     setTimeout(() => setLastSelectedNotice(null), 3500);
   }, [clickTargetMode, interactive, onSelectPickup, onSelectDestination]);
 
+  mapClickHandlerRef.current = handleMapCoordinateChosen;
+
   // Check if Google Maps script is available
   useEffect(() => {
     let checkCount = 0;
@@ -206,13 +219,22 @@ export default function MapView({
     if (!useGoogleMaps || !googleMapsReady || !googleMapRef.current) return;
 
     try {
-      const center = { lat: (pLat + dLat) / 2, lng: (pLng + dLng) / 2 };
+      const center = hasPickup && hasDestination
+        ? { lat: (pLat + dLat) / 2, lng: (pLng + dLng) / 2 }
+        : hasPickup
+          ? { lat: pLat, lng: pLng }
+          : hasDestination
+            ? { lat: dLat, lng: dLng }
+            : DEFAULT_CENTER;
 
       if (!mapInstanceRef.current) {
         const map = new window.google.maps.Map(googleMapRef.current, {
           center,
           zoom: 13,
-          styles: GOOGLE_DARK_MAP_STYLE,
+          styles: threeD ? [] : GOOGLE_DARK_MAP_STYLE,
+          mapTypeId: threeD ? 'satellite' : 'roadmap',
+          tilt: threeD ? 45 : 0,
+          heading: threeD ? 30 : 0,
           disableDefaultUI: false,
           zoomControl: true,
           streetViewControl: false,
@@ -222,7 +244,7 @@ export default function MapView({
 
         // Click to pick location
         map.addListener('click', (e) => {
-          handleMapCoordinateChosen(e.latLng.lat(), e.latLng.lng());
+          mapClickHandlerRef.current?.(e.latLng.lat(), e.latLng.lng());
         });
 
         mapInstanceRef.current = map;
@@ -230,8 +252,19 @@ export default function MapView({
 
       const map = mapInstanceRef.current;
 
+      // Keep the base map in sync with the requested 2D / 3D mode
+      map.setOptions({ styles: threeD ? [] : GOOGLE_DARK_MAP_STYLE });
+      map.setMapTypeId(threeD ? 'satellite' : 'roadmap');
+      map.setTilt(threeD ? 45 : 0);
+      map.setHeading(threeD ? 30 : 0);
+
       // Update Pickup Marker (Cyan)
-      if (!pickupMarkerRef.current) {
+      if (!hasPickup) {
+        if (pickupMarkerRef.current) {
+          pickupMarkerRef.current.setMap(null);
+          pickupMarkerRef.current = null;
+        }
+      } else if (!pickupMarkerRef.current) {
         const marker = new window.google.maps.Marker({
           position: { lat: pLat, lng: pLng },
           map,
@@ -248,7 +281,7 @@ export default function MapView({
         });
 
         marker.addListener('dragend', (e) => {
-          handleMapCoordinateChosen(e.latLng.lat(), e.latLng.lng());
+          mapClickHandlerRef.current?.(e.latLng.lat(), e.latLng.lng());
         });
 
         pickupMarkerRef.current = marker;
@@ -257,7 +290,12 @@ export default function MapView({
       }
 
       // Update Destination Marker (Violet/Purple)
-      if (!destMarkerRef.current) {
+      if (!hasDestination) {
+        if (destMarkerRef.current) {
+          destMarkerRef.current.setMap(null);
+          destMarkerRef.current = null;
+        }
+      } else if (!destMarkerRef.current) {
         const marker = new window.google.maps.Marker({
           position: { lat: dLat, lng: dLng },
           map,
@@ -274,7 +312,7 @@ export default function MapView({
         });
 
         marker.addListener('dragend', (e) => {
-          handleMapCoordinateChosen(e.latLng.lat(), e.latLng.lng());
+          mapClickHandlerRef.current?.(e.latLng.lat(), e.latLng.lng());
         });
 
         destMarkerRef.current = marker;
@@ -282,38 +320,72 @@ export default function MapView({
         destMarkerRef.current.setPosition({ lat: dLat, lng: dLng });
       }
 
-      // Draw Route Polyline
-      const pathCoordinates = [
-        { lat: pLat, lng: pLng },
-        { lat: (pLat * 2 + dLat) / 3 + 0.002, lng: (pLng * 2 + dLng) / 3 - 0.003 },
-        { lat: (pLat + dLat * 2) / 3 - 0.001, lng: (pLng + dLng * 2) / 3 + 0.002 },
-        { lat: dLat, lng: dLng }
-      ];
-
+      // Draw the route only when both endpoints are known
       if (routePolylineRef.current) {
         routePolylineRef.current.setMap(null);
+        routePolylineRef.current = null;
       }
 
-      routePolylineRef.current = new window.google.maps.Polyline({
-        path: pathCoordinates,
-        geodesic: true,
-        strokeColor: '#06b6d4',
-        strokeOpacity: 0.85,
-        strokeWeight: 5,
-        map
-      });
+      if (hasPickup && hasDestination) {
+        const pathCoordinates = [
+          { lat: pLat, lng: pLng },
+          { lat: (pLat * 2 + dLat) / 3 + 0.002, lng: (pLng * 2 + dLng) / 3 - 0.003 },
+          { lat: (pLat + dLat * 2) / 3 - 0.001, lng: (pLng + dLng * 2) / 3 + 0.002 },
+          { lat: dLat, lng: dLng }
+        ];
 
-      // Fit map bounds to show both markers
-      const bounds = new window.google.maps.LatLngBounds();
-      bounds.extend({ lat: pLat, lng: pLng });
-      bounds.extend({ lat: dLat, lng: dLng });
-      map.fitBounds(bounds, 50);
+        routePolylineRef.current = new window.google.maps.Polyline({
+          path: pathCoordinates,
+          geodesic: true,
+          strokeColor: '#06b6d4',
+          strokeOpacity: 0.85,
+          strokeWeight: 5,
+          map
+        });
+
+        // Replace the fallback line with the real driving route for these two points
+        const directionsRequestId = ++directionsRequestRef.current;
+        const activePolyline = routePolylineRef.current;
+        if (window.google.maps.DirectionsService) {
+          try {
+            const directionsService = new window.google.maps.DirectionsService();
+            directionsService.route(
+              {
+                origin: { lat: pLat, lng: pLng },
+                destination: { lat: dLat, lng: dLng },
+                travelMode: window.google.maps.TravelMode.DRIVING
+              },
+              (result, status) => {
+                if (directionsRequestId !== directionsRequestRef.current) return;
+                if (status !== 'OK') return;
+                const routePath = result?.routes?.[0]?.overview_path;
+                if (routePath?.length && activePolyline === routePolylineRef.current) {
+                  activePolyline.setPath(routePath);
+                }
+              }
+            );
+          } catch (e) {
+            // Keep the local preview line if Directions is unavailable
+          }
+        }
+      }
+
+      // Fit the map to whatever points are available
+      if (hasPickup && hasDestination) {
+        const bounds = new window.google.maps.LatLngBounds();
+        bounds.extend({ lat: pLat, lng: pLng });
+        bounds.extend({ lat: dLat, lng: dLng });
+        map.fitBounds(bounds, 50);
+      } else {
+        map.setCenter(center);
+        map.setZoom(13);
+      }
 
     } catch (err) {
       console.warn('Google Maps display fallback to Leaflet:', err);
       setUseGoogleMaps(false);
     }
-  }, [useGoogleMaps, googleMapsReady, pLat, pLng, dLat, dLng, interactive, handleMapCoordinateChosen]);
+  }, [useGoogleMaps, googleMapsReady, pLat, pLng, dLat, dLng, hasPickup, hasDestination, interactive, threeD, handleMapCoordinateChosen]);
 
   // Leaflet Icons
   const createLeafletDivIcon = (color, label) => {
@@ -345,11 +417,11 @@ export default function MapView({
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden border border-slate-800 shadow-2xl glass-card flex flex-col">
       
-      {/* Top Map Interactive Control Bar */}
-      {interactive && (
-        <div className="absolute top-3 left-3 right-3 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-          
-          {/* Pick on Map Mode Selector */}
+      {/* Top Map Control Bar */}
+      <div className="absolute top-3 left-3 right-3 z-[1000] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+        
+        {/* Pick on Map Mode Selector */}
+        {interactive ? (
           <div className="glass-panel p-1 rounded-xl border border-slate-700/80 shadow-xl flex items-center gap-1 pointer-events-auto bg-slate-950/90 backdrop-blur-md">
             <span className="text-[10px] uppercase font-bold text-slate-400 px-2 flex items-center gap-1">
               <Crosshair size={12} className="text-cyan-400" />
@@ -378,21 +450,28 @@ export default function MapView({
               <span>Destination</span>
             </button>
           </div>
+        ) : <span />}
 
-          {/* Engine Indicator (Google Maps API badge) */}
-          <div className="glass-panel px-3 py-1.5 rounded-xl border border-slate-700/60 text-[10px] font-mono text-slate-300 flex items-center gap-2 pointer-events-auto bg-slate-950/80 backdrop-blur-md">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span className="font-bold text-white">Google Maps JS API</span>
+        {/* Engine Indicator (Google Maps API badge) */}
+        <div className="glass-panel px-3 py-1.5 rounded-xl border border-slate-700/60 text-[10px] font-mono text-slate-300 flex items-center gap-2 pointer-events-auto bg-slate-950/80 backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="font-bold text-white">{threeD ? '3D Satellite Map' : 'Google Maps JS API'}</span>
+          {threeD && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 font-bold">
+              TILT 45°
+            </span>
+          )}
+          {interactive && (
             <button
               onClick={() => setUseGoogleMaps(!useGoogleMaps)}
               className="text-[9px] text-cyan-400 underline hover:text-cyan-300 ml-1"
             >
               {useGoogleMaps ? 'Switch to Leaflet' : 'Switch to Google'}
             </button>
-          </div>
-
+          )}
         </div>
-      )}
+
+      </div>
 
       {/* Floating User Action Confirmation Notice */}
       {lastSelectedNotice && (
@@ -413,7 +492,15 @@ export default function MapView({
         ) : (
           // Fallback Leaflet OpenStreetMap Canvas
           <MapContainer
-            center={[(pLat + dLat) / 2, (pLng + dLng) / 2]}
+            center={
+              hasPickup && hasDestination
+                ? [(pLat + dLat) / 2, (pLng + dLng) / 2]
+                : hasPickup
+                  ? [pLat, pLng]
+                  : hasDestination
+                    ? [dLat, dLng]
+                    : [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng]
+            }
             zoom={13}
             scrollWheelZoom={true}
             className="w-full h-full min-h-[460px]"
@@ -422,22 +509,30 @@ export default function MapView({
               attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
-            <ChangeLeafletBounds pLat={pLat} pLng={pLng} dLat={dLat} dLng={dLng} />
+            {hasPickup && hasDestination && (
+              <>
+                <ChangeLeafletBounds pLat={pLat} pLng={pLng} dLat={dLat} dLng={dLng} />
+                <LeafletPolyline
+                  positions={[[pLat, pLng], [dLat, dLng]]}
+                  pathOptions={{ color: '#06b6d4', weight: 5, opacity: 0.85 }}
+                />
+              </>
+            )}
             {interactive && <LeafletMapEvents onMapClick={handleMapCoordinateChosen} />}
-            <LeafletPolyline
-              positions={[[pLat, pLng], [dLat, dLng]]}
-              pathOptions={{ color: '#06b6d4', weight: 5, opacity: 0.85 }}
-            />
-            <LeafletMarker position={[pLat, pLng]} icon={createLeafletDivIcon('#06b6d4', 'A')}>
-              <LeafletPopup>
-                <strong>Pickup Point:</strong><br />{pickup?.name || 'Selected'}
-              </LeafletPopup>
-            </LeafletMarker>
-            <LeafletMarker position={[dLat, dLng]} icon={createLeafletDivIcon('#a855f7', 'B')}>
-              <LeafletPopup>
-                <strong>Destination:</strong><br />{destination?.name || 'Selected'}
-              </LeafletPopup>
-            </LeafletMarker>
+            {hasPickup && (
+              <LeafletMarker position={[pLat, pLng]} icon={createLeafletDivIcon('#06b6d4', 'A')}>
+                <LeafletPopup>
+                  <strong>Pickup Point:</strong><br />{pickup?.name || 'Selected'}
+                </LeafletPopup>
+              </LeafletMarker>
+            )}
+            {hasDestination && (
+              <LeafletMarker position={[dLat, dLng]} icon={createLeafletDivIcon('#a855f7', 'B')}>
+                <LeafletPopup>
+                  <strong>Destination:</strong><br />{destination?.name || 'Selected'}
+                </LeafletPopup>
+              </LeafletMarker>
+            )}
           </MapContainer>
         )}
       </div>
@@ -458,7 +553,11 @@ export default function MapView({
         </div>
 
         <div className="flex items-center gap-3 text-[11px] font-mono text-cyan-400">
-          <span>Click anywhere to choose {clickTargetMode}</span>
+          {interactive ? (
+            <span>Click anywhere to choose {clickTargetMode}</span>
+          ) : (
+            <span>{hasPickup && hasDestination ? 'Live route synced to your search' : 'Search a pickup and destination to preview the route'}</span>
+          )}
         </div>
       </div>
 

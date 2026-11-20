@@ -1,6 +1,7 @@
 import React from 'react';
+
 import GuiderProfiles from '../components/GuiderProfiles';
-import { Compass, Star, Languages, Award, ShieldCheck } from 'lucide-react';
+import { Compass } from 'lucide-react';
 
 export default function GuiderDirectoryPage({ selectedGuider, onSelectGuider }) {
   return (

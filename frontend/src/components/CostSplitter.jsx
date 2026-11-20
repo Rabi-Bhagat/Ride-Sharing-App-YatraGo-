@@ -1,12 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  DollarSign, PieChart, Users, CheckCircle2, Clock, ShieldCheck, CreditCard,
-  Smartphone, Check, ArrowRight, X, Plus, Trash2, QrCode, Receipt, Share2,
-  Percent, Navigation, Download, Printer, AlertTriangle, Wallet, Link2, Sparkles
-} from 'lucide-react';
+import { DollarSign, PieChart, Users, CheckCircle2, Clock, ShieldCheck, CreditCard, Smartphone, Check, ArrowRight, X, Plus, Trash2, QrCode, Receipt, Share2, Percent, Navigation, Download, Printer, AlertTriangle, Wallet, Link2, Sparkles } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 import { useAuth } from '../context/AuthContext';
-import yatraGoLogo from '../logo/yatrago-logo.png';
+import yatraGoLogo from '../logo/yatrago-logo.webp';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 import { downloadReceipt, shareReceipt, printReceipt } from '../utils/receipt';
 
@@ -915,7 +911,7 @@ export default function CostSplitter({ ride }) {
               <div className="space-y-4 py-1 text-center">
                 <div className="flex items-center justify-center gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-cyan-500/30 bg-white p-1.5 shadow-lg">
-                    <img src={yatraGoLogo} alt="YatraGo" className="h-full w-full object-contain" />
+                    <img src={yatraGoLogo} alt="YatraGo" className="h-full w-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                   </div>
                   <div className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-4 ring-emerald-500/30">
                     <Check size={22} />
@@ -995,7 +991,7 @@ export default function CostSplitter({ ride }) {
 
             <div className="flex items-center gap-2.5">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-500/30 bg-white p-1.5">
-                <img src={yatraGoLogo} alt="YatraGo" className="h-full w-full object-contain" />
+                <img src={yatraGoLogo} alt="YatraGo" className="h-full w-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
               </div>
               <div>
                 <h3 className="text-base font-black text-white">Settlement receipt</h3>

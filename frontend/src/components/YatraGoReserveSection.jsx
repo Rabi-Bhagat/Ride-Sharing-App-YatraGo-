@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, MapPin, CheckCircle2, ArrowRight, ShieldCheck, Sparkles, DollarSign } from 'lucide-react';
+import { Calendar, Clock, MapPin, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export default function YatraGoReserveSection({ onReserveClick }) {
   const [reserveDate, setReserveDate] = useState(() => {

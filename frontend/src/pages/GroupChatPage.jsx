@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
 import GroupChat from '../components/GroupChat';
-import { 
-  MessageSquare, ShieldCheck, User, Car, Users, Compass, 
-  PhoneCall, AlertTriangle, MapPin, Clock, IndianRupee, 
-  CheckCircle2, Sparkles, Key, Navigation, Search
-} from 'lucide-react';
+import { MessageSquare, ShieldCheck, Car, Clock, Search } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from '../components/VerificationBadge';
 
@@ -209,8 +205,7 @@ export default function GroupChatPage() {
                 <img
                   src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80"
                   alt="Driver Rajesh"
-                  className="w-12 h-12 rounded-2xl object-cover ring-2 ring-cyan-500/50"
-                />
+                  className="w-12 h-12 rounded-2xl object-cover ring-2 ring-cyan-500/50" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                 <span className="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950"></span>
               </div>
               <div className="flex-1 min-w-0">
@@ -291,8 +286,7 @@ export default function GroupChatPage() {
                         alt={ch.name}
                         className={`w-10 h-10 rounded-xl object-cover ring-2 transition-all ${
                           isSelected ? 'ring-cyan-400' : 'ring-slate-700 group-hover:ring-slate-500'
-                        }`}
-                      />
+                        }`} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                       {ch.isOnline && (
                         <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-emerald-400 border-2 border-slate-950"></span>
                       )}

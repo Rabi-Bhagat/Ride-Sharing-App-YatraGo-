@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Everest Base Camp Lodge beneath the Khumbu peaks">
+  <defs>
+    <linearGradient id="alp" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0a1730"/>
+      <stop offset="55%" stop-color="#1b3a5c"/>
+      <stop offset="100%" stop-color="#0c1c2c"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#alp)"/>
+  <g fill="#e2e8f0">
+    <path d="M0 300 L120 140 L215 250 L330 95 L470 235 L590 120 L720 245 L800 180 L800 330 L0 330 Z" opacity="0.95"/>
+  </g>
+  <g fill="#8fa3b8" opacity="0.8">
+    <path d="M0 330 L140 265 L260 315 L400 250 L540 312 L680 262 L800 315 L800 360 L0 360 Z"/>
+  </g>
+  <g>
+    <path d="M0 360 L180 345 L320 372 L480 340 L640 370 L800 348 L800 500 L0 500 Z" fill="#0a1420"/>
+  </g>
+  <g>
+    <rect x="150" y="330" width="200" height="110" rx="6" fill="#2b3a4f"/>
+    <path d="M150 330 h200 l-26 -40 h-148 z" fill="#3d536e"/>
+    <g fill="#fbbf24" opacity="0.9">
+      <rect x="180" y="352" width="30" height="26" rx="3"/>
+      <rect x="236" y="352" width="30" height="26" rx="3"/>
+      <rect x="292" y="352" width="30" height="26" rx="3"/>
+    </g>
+    <rect x="240" y="410" width="24" height="30" fill="#16222f"/>
+  </g>
+  <g stroke="#38bdf8" stroke-width="2" opacity="0.45">
+    <path d="M420 470 L520 415 L590 440 L700 392"/>
+  </g>
+  <g fill="#94a3b8" opacity="0.5">
+    <path d="M40 470 L60 430 L80 470 Z"/>
+    <path d="M700 470 L722 428 L744 470 Z"/>
+  </g>
+</svg>

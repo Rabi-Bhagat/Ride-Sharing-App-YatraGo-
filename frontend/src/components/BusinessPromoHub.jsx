@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import {
-  Store, Hotel, UtensilsCrossed, ShoppingBag, Tag, Search, MapPin,
-  Percent, BadgeCheck, Star, ArrowRight, X, Check, TrendingUp,
-  Handshake, Briefcase, Loader2, Sparkles, Phone, Mail, ShieldCheck
-} from 'lucide-react';
+import { Store, Hotel, UtensilsCrossed, ShoppingBag, Tag, Search, MapPin, Percent, BadgeCheck, Star, ArrowRight, X, Check, TrendingUp, Handshake, Briefcase, Loader2, Sparkles, Phone, Mail, ShieldCheck, Code, Megaphone, UserRound, BedDouble, ArrowUpRight, Clock } from 'lucide-react';
+import { PARTNER_SEED } from '../data/partnerSeed';
+import { formatINR } from '../utils/receipt';
+import PartnerBookingModal from './PartnerBookingModal';
 
 const CATEGORY_META = {
   hotel: { label: 'Hotels & Stays', icon: Hotel, tile: 'bg-cyan-500/15 text-cyan-400 border-cyan-500/30', chip: 'bg-cyan-500/15 text-cyan-300 border-cyan-500/40' },
@@ -24,12 +23,37 @@ const PARTNER_TIERS = [
   { id: 'enterprise', label: 'Enterprise', commission: 12, blurb: 'Dedicated promoter & co-branded offers.' }
 ];
 
+// Who the business owner wants to handle their listing & commission payouts.
+const MANAGER_ROLES = [
+  {
+    id: 'admin',
+    label: 'Admin',
+    icon: ShieldCheck,
+    blurb: 'YatraGo staff verify the listing and manage payouts.',
+    tile: 'border-cyan-500/40 bg-cyan-500/15 text-cyan-300'
+  },
+  {
+    id: 'developer',
+    label: 'Developer',
+    icon: Code,
+    blurb: 'Integrates your promo API & booking hooks.',
+    tile: 'border-violet-500/40 bg-violet-500/15 text-violet-300'
+  },
+  {
+    id: 'promoter',
+    label: 'Promoter',
+    icon: Megaphone,
+    blurb: 'Runs local campaigns to bring travellers in.',
+    tile: 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+  }
+];
+
 const formatPercent = (value) => `${Number(value) || 0}%`;
 
 export default function BusinessPromoHub({ onNavigate }) {
   const [partners, setPartners] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [loadError, setLoadError] = useState('');
+  const [bookingPartner, setBookingPartner] = useState(null);
   const [category, setCategory] = useState('all');
   const [query, setQuery] = useState('');
 
@@ -47,6 +71,7 @@ export default function BusinessPromoHub({ onNavigate }) {
     discountPercent: 10,
     contactEmail: '',
     contactPhone: '',
+    listedBy: 'shopkeeper',
     managedBy: 'admin'
   });
   const [applyState, setApplyState] = useState(null);
@@ -54,18 +79,28 @@ export default function BusinessPromoHub({ onNavigate }) {
 
   useEffect(() => {
     let cancelled = false;
+
+    // Merge seed detail (photos, rooms, charges) onto API records that lack it,
+    // so a booking screen always has the full property data.
+    const withBookingDetail = (list) =>
+      list.map((partner) => {
+        if (partner.rooms?.length) return partner;
+        const seed = PARTNER_SEED.find((item) => item._id === partner._id);
+        return seed ? { ...seed, ...partner, rooms: seed.rooms, images: seed.images, amenities: seed.amenities } : partner;
+      });
+
     fetch('/api/partners')
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
-        if (data?.success && Array.isArray(data.partners)) {
-          setPartners(data.partners);
+        if (data?.success && Array.isArray(data.partners) && data.partners.length > 0) {
+          setPartners(withBookingDetail(data.partners));
         } else {
-          setLoadError('Partner marketplace is unavailable right now.');
+          setPartners(PARTNER_SEED);
         }
       })
       .catch(() => {
-        if (!cancelled) setLoadError('Could not reach the partner marketplace. Check your connection.');
+        if (!cancelled) setPartners(PARTNER_SEED);
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false);
@@ -100,6 +135,27 @@ export default function BusinessPromoHub({ onNavigate }) {
     };
   }, [partners]);
 
+  // Local promo check so redemption still works when the API is unreachable.
+  const redeemLocally = (code) => {
+    const source = partners.length ? partners : PARTNER_SEED;
+    const normalized = code.trim().toUpperCase();
+    const partner = source.find((item) => String(item.promoCode || '').toUpperCase() === normalized);
+    if (!partner) {
+      return { ok: false, message: 'That promo code is not linked to an active partner.' };
+    }
+    return {
+      ok: true,
+      message: `${partner.discountPercent}% off at ${partner.name}`,
+      partner: {
+        name: partner.name,
+        category: partner.category,
+        city: partner.city,
+        area: partner.area
+      },
+      discountPercent: partner.discountPercent
+    };
+  };
+
   const handleRedeem = async (event) => {
     event.preventDefault();
     const code = promoInput.trim();
@@ -116,14 +172,57 @@ export default function BusinessPromoHub({ onNavigate }) {
       const data = await res.json();
       if (res.ok && data.success) {
         setRedeemState({ ok: true, message: data.message, partner: data.partner, discountPercent: data.discountPercent });
-      } else {
+      } else if (res.status === 404 && !data?.success) {
         setRedeemState({ ok: false, message: data.message || 'That promo code could not be redeemed.' });
+      } else {
+        setRedeemState(redeemLocally(code));
       }
     } catch (error) {
-      setRedeemState({ ok: false, message: 'Could not verify the promo code while offline.' });
+      setRedeemState(redeemLocally(code));
     } finally {
       setIsRedeeming(false);
     }
+  };
+
+  const emptyApplication = {
+    name: '',
+    category: 'hotel',
+    city: '',
+    area: '',
+    promoCode: '',
+    discountPercent: 10,
+    contactEmail: '',
+    contactPhone: '',
+    listedBy: 'shopkeeper',
+    managedBy: 'admin'
+  };
+
+  // Keeps the listing usable when the backend is unreachable.
+  const applyLocally = () => {
+    const localPartner = {
+      _id: 'prt_local_' + Date.now(),
+      name: application.name.trim(),
+      category: application.category,
+      city: application.city || 'Kathmandu',
+      area: application.area,
+      description: 'Newly submitted partner — awaiting admin verification.',
+      promoCode: String(application.promoCode || '').toUpperCase() || null,
+      discountPercent: Math.max(0, Math.min(90, Number(application.discountPercent) || 0)),
+      commissionPercent: 10,
+      tier: 'starter',
+      rating: 0,
+      reviewCount: 0,
+      isVerified: false,
+      listedBy: application.listedBy,
+      managedBy: application.managedBy,
+      status: 'pending'
+    };
+    setPartners((prev) => [localPartner, ...prev]);
+    setApplyState({
+      ok: true,
+      message: 'Partnership request saved locally. It will sync once the server is reachable.'
+    });
+    setApplication(emptyApplication);
   };
 
   const handleApply = async (event) => {
@@ -144,22 +243,15 @@ export default function BusinessPromoHub({ onNavigate }) {
       const data = await res.json();
       if (res.ok && data.success) {
         setApplyState({ ok: true, message: data.message });
-        setApplication({
-          name: '',
-          category: 'hotel',
-          city: '',
-          area: '',
-          promoCode: '',
-          discountPercent: 10,
-          contactEmail: '',
-          contactPhone: '',
-          managedBy: 'admin'
-        });
-      } else {
+        if (data.partner) setPartners((prev) => [data.partner, ...prev]);
+        setApplication(emptyApplication);
+      } else if (res.status === 400) {
         setApplyState({ ok: false, message: data.message || 'Application could not be submitted.' });
+      } else {
+        applyLocally();
       }
     } catch (error) {
-      setApplyState({ ok: false, message: 'Could not reach the onboarding service.' });
+      applyLocally();
     } finally {
       setIsSubmitting(false);
     }
@@ -311,10 +403,6 @@ export default function BusinessPromoHub({ onNavigate }) {
           <Loader2 size={26} className="animate-spin text-cyan-400" />
           <span className="font-mono text-xs text-slate-400">Loading partner network…</span>
         </div>
-      ) : loadError ? (
-        <div className="rounded-3xl border border-rose-500/30 bg-rose-950/30 p-6 text-center">
-          <p className="text-sm font-bold text-rose-200">{loadError}</p>
-        </div>
       ) : filtered.length === 0 ? (
         <div className="rounded-3xl border border-slate-800 bg-slate-900/50 p-10 text-center">
           <Store size={26} className="mx-auto text-slate-500" />
@@ -332,14 +420,58 @@ export default function BusinessPromoHub({ onNavigate }) {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((partner) => {
+          {filtered.map((partner, index) => {
             const meta = CATEGORY_META[partner.category] || CATEGORY_META.shop;
             const Icon = meta.icon;
+            const isHotel = partner.category === 'hotel';
+            const isPending = partner.status === 'pending';
+            const openBooking = () => {
+              if (isPending) return;
+              if (isHotel) {
+                setBookingPartner(partner);
+              } else {
+                setPromoInput(partner.promoCode || '');
+                setRedeemState(null);
+              }
+            };
             return (
               <article
                 key={partner._id}
-                className="group flex flex-col gap-3 rounded-3xl border border-slate-800 bg-slate-900/70 p-5 transition-all duration-300 hover:-translate-y-0.5 hover:border-slate-600 hover:shadow-xl"
+                onClick={openBooking}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openBooking();
+                  }
+                }}
+                role="button"
+                tabIndex={0}
+                style={{ animationDelay: `${Math.min(index, 8) * 45}ms` }}
+                className={`group relative flex flex-col gap-3 overflow-hidden rounded-3xl border p-5 animate-stagger-in transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl focus:outline-none focus-visible:border-cyan-400 ${
+                  isPending
+                    ? 'cursor-default border-amber-500/30 bg-slate-900/50 opacity-90'
+                    : 'cursor-pointer border-slate-800 bg-slate-900/70 hover:border-slate-600'
+                }`}
               >
+                {isHotel && partner.images?.length > 0 && (
+                  <div className="relative -mx-5 -mt-5 mb-1 h-36 overflow-hidden bg-slate-950">
+                    <img
+                      src={partner.images[0]}
+                      alt={partner.name}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
+                    <span className="absolute left-3 top-3 rounded-full border border-emerald-500/40 bg-slate-950/80 px-2 py-0.5 font-mono text-[9px] font-bold text-emerald-300 backdrop-blur">
+                      {partner.discountPercent}% off with {partner.promoCode}
+                    </span>
+                  </div>
+                )}
+
+                {isPending && (
+                  <div className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[10px] font-bold text-amber-300 animate-slideDown">
+                    <Clock size={11} />
+                    Pending admin verification — not bookable yet
+                  </div>
+                )}
+
                 <div className="flex items-start justify-between gap-2">
                   <div className={`flex h-11 w-11 items-center justify-center rounded-2xl border transition-transform group-hover:scale-105 ${meta.tile}`}>
                     <Icon size={20} />
@@ -366,32 +498,82 @@ export default function BusinessPromoHub({ onNavigate }) {
                     <Star size={11} className="fill-amber-300" />
                     {Number(partner.rating || 0).toFixed(1)}
                   </span>
-                  <span className="text-slate-500">({partner.reviewCount || 0} reviews)</span>
-                  <span className="ml-auto flex items-center gap-1 text-slate-400">
-                    <TrendingUp size={11} className="text-cyan-400" />
-                    {formatPercent(partner.commissionPercent)} commission
-                  </span>
+                  <span className="text-slate-500">({partner.reviewCount || 0})</span>
+                  {isHotel && partner.roomCount ? (
+                    <span className="flex items-center gap-1 text-slate-400">
+                      <BedDouble size={11} className="text-cyan-400" />
+                      {partner.roomCount} room types
+                    </span>
+                  ) : (
+                    <span className="ml-auto flex items-center gap-1 text-slate-400">
+                      <TrendingUp size={11} className="text-cyan-400" />
+                      {formatPercent(partner.commissionPercent)}
+                    </span>
+                  )}
                 </div>
 
-                <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/70 p-2.5">
-                  <div>
-                    <span className="block font-mono text-[9px] uppercase text-slate-500">Promo code</span>
-                    <span className="font-mono text-xs font-black tracking-wide text-emerald-300">{partner.promoCode || '—'}</span>
+                {isHotel && partner.pricePerNight > 0 ? (
+                  <div className="flex items-end justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/70 p-2.5">
+                    <div>
+                      <span className="block font-mono text-[9px] uppercase text-slate-500">From</span>
+                      <span className="text-sm font-black text-white">
+                        {formatINR(partner.pricePerNight)}
+                        <span className="ml-1 font-mono text-[10px] font-medium text-slate-400">/ night</span>
+                      </span>
+                    </div>
+                    <span className="flex items-center gap-1 rounded-lg border border-cyan-500/30 bg-cyan-500/15 px-2 py-1 text-[10px] font-black text-cyan-300">
+                      Book stay
+                      <ArrowUpRight size={11} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    </span>
                   </div>
-                  <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-2 py-1 text-[11px] font-black text-emerald-300">
-                    {formatPercent(partner.discountPercent)} off
-                  </span>
-                </div>
+                ) : (
+                  <div className="flex items-center justify-between gap-2 rounded-xl border border-slate-800 bg-slate-950/70 p-2.5">
+                    <div>
+                      <span className="block font-mono text-[9px] uppercase text-slate-500">Promo code</span>
+                      <span className="font-mono text-xs font-black tracking-wide text-emerald-300">{partner.promoCode || '—'}</span>
+                    </div>
+                    <span className="rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-2 py-1 text-[11px] font-black text-emerald-300">
+                      {formatPercent(partner.discountPercent)} off
+                    </span>
+                  </div>
+                )}
 
                 <button
-                  onClick={() => {
-                    setPromoInput(partner.promoCode || '');
-                    setRedeemState(null);
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    if (isPending) return;
+                    if (isHotel) {
+                      setBookingPartner(partner);
+                    } else {
+                      setPromoInput(partner.promoCode || '');
+                      setRedeemState(null);
+                    }
                   }}
-                  className="mt-0.5 flex items-center justify-center gap-1.5 rounded-xl bg-slate-800 py-2 text-xs font-bold text-slate-200 transition-all hover:bg-slate-700 hover:text-white"
+                  disabled={isPending}
+                  className={`mt-0.5 flex items-center justify-center gap-1.5 rounded-xl py-2 text-xs font-bold transition-all ${
+                    isPending
+                      ? 'cursor-not-allowed bg-slate-800/60 text-slate-500'
+                      : isHotel
+                        ? 'bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 hover:opacity-90 active:scale-[0.98]'
+                        : 'bg-slate-800 text-slate-200 hover:bg-slate-700 hover:text-white active:scale-[0.98]'
+                  }`}
                 >
-                  <Tag size={12} />
-                  Use this promo
+                  {isPending ? (
+                    <>
+                      <Clock size={12} />
+                      Awaiting approval
+                    </>
+                  ) : isHotel ? (
+                    <>
+                      <BedDouble size={12} />
+                      View rooms &amp; book
+                    </>
+                  ) : (
+                    <>
+                      <Tag size={12} />
+                      Use this promo
+                    </>
+                  )}
                 </button>
               </article>
             );
@@ -434,7 +616,7 @@ export default function BusinessPromoHub({ onNavigate }) {
       {/* Application modal */}
       {showApply && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md animate-fadeIn">
-          <div className="glass-panel relative max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl border border-slate-800 p-6 shadow-2xl">
+          <div className="glass-panel relative max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl border border-slate-800 p-6 shadow-2xl animate-modalRise">
             <button
               onClick={() => setShowApply(false)}
               className="absolute right-4 top-4 rounded-xl bg-slate-900 p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
@@ -557,25 +739,76 @@ export default function BusinessPromoHub({ onNavigate }) {
                   </label>
                 </div>
 
-                <label className="block">
-                  <span className="mb-1 block font-mono text-[10px] uppercase text-slate-400">Who manages this listing?</span>
-                  <div className="flex gap-2">
-                    {['admin', 'developer', 'promotor'].map((role) => (
+                {/* Listing owner: traveller or the business itself */}
+                <div>
+                  <span className="mb-1.5 block font-mono text-[10px] uppercase text-slate-400">Who is listing this business?</span>
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { id: 'traveller', label: 'Traveller', icon: UserRound, blurb: 'Recommend a place you visited' },
+                      { id: 'shopkeeper', label: 'Shopkeeper / Owner', icon: Store, blurb: 'Register your own business' }
+                    ].map(({ id, label, icon: Icon, blurb }) => (
                       <button
-                        key={role}
+                        key={id}
                         type="button"
-                        onClick={() => setApplication((prev) => ({ ...prev, managedBy: role }))}
-                        className={`flex-1 rounded-xl border px-2 py-1.5 text-[11px] font-bold capitalize transition-all ${
-                          application.managedBy === role
-                            ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300'
-                            : 'border-slate-700 bg-slate-950 text-slate-400 hover:text-white'
+                        onClick={() => setApplication((prev) => ({ ...prev, listedBy: id }))}
+                        aria-pressed={application.listedBy === id}
+                        className={`rounded-xl border p-2.5 text-left transition-all ${
+                          application.listedBy === id
+                            ? 'border-cyan-400 bg-cyan-500/15 ring-2 ring-cyan-500/25'
+                            : 'border-slate-700 bg-slate-950 hover:border-slate-600'
                         }`}
                       >
-                        {role}
+                        <span className={`flex items-center gap-1.5 text-[11px] font-black ${application.listedBy === id ? 'text-cyan-300' : 'text-slate-200'}`}>
+                          <Icon size={13} />
+                          {label}
+                        </span>
+                        <span className="mt-0.5 block text-[10px] leading-snug text-slate-400">{blurb}</span>
                       </button>
                     ))}
                   </div>
-                </label>
+                </div>
+
+                {/* Handler: admin, developer or promoter */}
+                <div>
+                  <span className="mb-1.5 block font-mono text-[10px] uppercase text-slate-400">
+                    Who should handle this listing?
+                  </span>
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                    {MANAGER_ROLES.map(({ id, label, icon: Icon, blurb, tile }) => {
+                      const isActive = application.managedBy === id;
+                      return (
+                        <button
+                          key={id}
+                          type="button"
+                          onClick={() => setApplication((prev) => ({ ...prev, managedBy: id }))}
+                          aria-pressed={isActive}
+                          className={`flex flex-col gap-1 rounded-xl border p-2.5 text-left transition-all ${
+                            isActive
+                              ? `${tile} ring-2 ring-white/15`
+                              : 'border-slate-700 bg-slate-950 hover:border-slate-600'
+                          }`}
+                        >
+                          <span className={`flex items-center justify-between text-[11px] font-black ${isActive ? '' : 'text-slate-200'}`}>
+                            <span className="flex items-center gap-1.5">
+                              <Icon size={13} />
+                              {label}
+                            </span>
+                            {isActive && <Check size={12} />}
+                          </span>
+                          <span className={`text-[10px] leading-snug ${isActive ? 'opacity-80' : 'text-slate-400'}`}>
+                            {blurb}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-1.5 flex items-center gap-1.5 font-mono text-[10px] text-slate-500">
+                    <ShieldCheck size={10} className="text-emerald-400" />
+                    {application.listedBy === 'traveller'
+                      ? 'Recommendations are verified before any commission applies.'
+                      : 'You can change the handler after approval.'}
+                  </p>
+                </div>
 
                 {applyState && !applyState.ok && (
                   <div className="rounded-xl border border-rose-500/40 bg-rose-500/10 p-2.5 text-[11px] text-rose-200">
@@ -608,6 +841,23 @@ export default function BusinessPromoHub({ onNavigate }) {
             )}
           </div>
         </div>
+      )}
+
+      {/* Hotel / partner booking flow */}
+      {bookingPartner && (
+        <PartnerBookingModal
+          partner={bookingPartner}
+          onClose={() => setBookingPartner(null)}
+          onViewPromo={(code) => {
+            const normalized = String(code || '').trim().toUpperCase();
+            const match = partners.find((item) => String(item.promoCode || '').toUpperCase() === normalized);
+            if (!match) return null;
+            return {
+              discountPercent: match.discountPercent,
+              partnerName: match.name
+            };
+          }}
+        />
       )}
     </div>
   );

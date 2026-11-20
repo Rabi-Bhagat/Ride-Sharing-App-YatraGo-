@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Search, MapPin, Globe, Compass, Box, Eye, RotateCw, 
-  Sparkles, CheckCircle2, Layers, Navigation, ArrowRight, Shield, LocateFixed, Loader2 
-} from 'lucide-react';
+import { Search, MapPin, Globe, Box, Navigation, ArrowRight, LocateFixed, Loader2 } from 'lucide-react';
 import L from 'leaflet';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 

@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Car, Navigation, CheckCircle2, ShieldCheck, Phone, 
-  MapPin, Clock, IndianRupee, Key, AlertTriangle, ArrowRight, 
-  TrendingUp, Award, Zap, ToggleLeft, ToggleRight, Check, X
-} from 'lucide-react';
+import { Car, Navigation, CheckCircle2, MapPin, IndianRupee, Key, TrendingUp, Award, Zap, ToggleLeft, ToggleRight, Check } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
 import UserAvatar from '../components/UserAvatar';
 import { useAuth } from '../context/AuthContext';

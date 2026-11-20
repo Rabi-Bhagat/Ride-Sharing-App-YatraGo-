@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Sparkles, Users, HeartHandshake, Compass, IndianRupee, 
-  Smile, ShieldCheck, ArrowRight, CheckCircle2, Zap, Brain, MessageSquare
-} from 'lucide-react';
+import { Sparkles, HeartHandshake, MessageSquare } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 
 export default function AiTravelMatchmaker({ onSelectMatch, onOpenChat }) {
@@ -235,8 +232,7 @@ export default function AiTravelMatchmaker({ onSelectMatch, onOpenChat }) {
                     <img
                       src={candidate.avatar}
                       alt={candidate.name}
-                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-purple-400"
-                    />
+                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-purple-400" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                     <span className="absolute -bottom-1 -right-1 px-1.5 py-0.5 rounded-full bg-purple-500 text-slate-950 font-mono text-[9px] font-black shadow">
                       {candidate.compatibilityScore}%
                     </span>

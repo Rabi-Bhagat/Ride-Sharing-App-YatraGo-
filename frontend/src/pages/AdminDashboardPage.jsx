@@ -1,10 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  ShieldCheck, Car, Users, Compass, DollarSign, IndianRupee, 
-  TrendingUp, AlertTriangle, CheckCircle2, XCircle, Sliders, 
-  FileText, Award, RefreshCw, Search, Filter, Clock, Eye, 
-  MapPin, Check, ChevronRight, Activity, Percent, Trash2, Lock, KeyRound
-} from 'lucide-react';
+import { ShieldCheck, Car, IndianRupee, TrendingUp, AlertTriangle, CheckCircle2, XCircle, Sliders, FileText, Award, Search, Check, Activity, Trash2, Lock, KeyRound } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
 
 export default function AdminDashboardPage() {
@@ -434,8 +429,7 @@ export default function AdminDashboardPage() {
                       <img
                         src={req.avatar}
                         alt={req.name}
-                        className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-700"
-                      />
+                        className="w-12 h-12 rounded-2xl object-cover ring-2 ring-slate-700" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                       {isApproved && (
                         <span className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-cyan-400 text-slate-950 flex items-center justify-center text-[10px] font-black">
                           ✓

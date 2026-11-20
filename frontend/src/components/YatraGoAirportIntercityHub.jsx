@@ -1,8 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Plane, MapPin, ArrowRight, Car, Compass, Package, 
-  Bus, Clock, ShieldCheck, ChevronRight, Sparkles, Navigation
-} from 'lucide-react';
+import { Plane, ArrowRight, Car, Compass, Package, Bus, Clock } from 'lucide-react';
 
 const AIRPORTS_DATA = [
   { code: 'DEL', name: 'Delhi Indira Gandhi Airport', city: 'New Delhi', basePrice: 650.00, duration: '35 mins', popularRoute: 'Connaught Place to DEL' },

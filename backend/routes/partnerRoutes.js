@@ -42,7 +42,7 @@ let memoryPartners = [
     isVerified: true,
     contactEmail: 'book@lakesideretreat.np',
     contactPhone: '+977 61 460 022',
-    managedBy: 'promotor',
+    managedBy: 'promoter',
     status: 'active'
   },
   {
@@ -80,7 +80,7 @@ let memoryPartners = [
     isVerified: true,
     contactEmail: 'eat@newarikitchen.np',
     contactPhone: '+977 1 661 2244',
-    managedBy: 'promotor',
+    managedBy: 'promoter',
     status: 'active'
   },
   {
@@ -120,8 +120,149 @@ let memoryPartners = [
     contactPhone: '+977 1 552 9010',
     managedBy: 'admin',
     status: 'active'
+  },
+  {
+    _id: 'prt_7',
+    name: 'Bhaktapur Heritage Inn',
+    category: 'hotel',
+    city: 'Bhaktapur',
+    area: 'Nyatapola Square',
+    description: 'Restored Newari townhouse with carved courtyards, steps away from the five-storey temple.',
+    promoCode: 'NEWARSTAY18',
+    discountPercent: 18,
+    commissionPercent: 11,
+    tier: 'growth',
+    rating: 4.7,
+    reviewCount: 186,
+    isVerified: true,
+    contactEmail: 'inn@bhaktapurheritage.np',
+    contactPhone: '+977 1 661 3355',
+    managedBy: 'admin',
+    status: 'active'
+  },
+  {
+    _id: 'prt_8',
+    name: 'Everest Base Camp Lodge',
+    category: 'hotel',
+    city: 'Namche Bazaar',
+    area: 'Khumbu Trailhead',
+    description: 'Trekker lodge with heated dorms, altitude acclimatisation advice and Sherpa-guided departures.',
+    promoCode: 'TREKSTAY25',
+    discountPercent: 25,
+    commissionPercent: 14,
+    tier: 'enterprise',
+    rating: 4.5,
+    reviewCount: 341,
+    isVerified: true,
+    contactEmail: 'stay@ebclodge.np',
+    contactPhone: '+977 38 550 220',
+    managedBy: 'promoter',
+    status: 'active'
+  },
+  {
+    _id: 'prt_9',
+    name: 'Lumbini Peace Garden Resort',
+    category: 'hotel',
+    city: 'Lumbini',
+    area: 'Sacred Garden Zone',
+    description: 'Quiet meditation-friendly resort beside the monastic zone with vegetarian kitchen and cycle hire.',
+    promoCode: 'PEACE12',
+    discountPercent: 12,
+    commissionPercent: 9,
+    tier: 'starter',
+    rating: 4.4,
+    reviewCount: 97,
+    isVerified: true,
+    contactEmail: 'book@peacegarden.np',
+    contactPhone: '+977 71 580 112',
+    managedBy: 'admin',
+    status: 'active'
+  },
+  {
+    _id: 'prt_10',
+    name: 'Annapurna Trek Supplies',
+    category: 'shop',
+    city: 'Pokhara',
+    area: 'Lakeside Marg',
+    description: 'Sleeping bags, gaiters and permits desk for Annapurna circuits — gear fitting included.',
+    promoCode: 'ANNAPURNA12',
+    discountPercent: 12,
+    commissionPercent: 8,
+    tier: 'starter',
+    rating: 4.3,
+    reviewCount: 132,
+    isVerified: true,
+    contactEmail: 'gear@annapurnasupplies.np',
+    contactPhone: '+977 61 462 889',
+    managedBy: 'developer',
+    status: 'active'
+  },
+  {
+    _id: 'prt_11',
+    name: 'Patan Metalworks Studio',
+    category: 'shop',
+    city: 'Lalitpur',
+    area: 'Patan Durbar',
+    description: 'Hand-cast brass statues and ritual items made by third-generation Newari craftsmen.',
+    promoCode: 'PATAN20',
+    discountPercent: 20,
+    commissionPercent: 11,
+    tier: 'enterprise',
+    rating: 4.9,
+    reviewCount: 74,
+    isVerified: true,
+    contactEmail: 'studio@patanmetal.np',
+    contactPhone: '+977 1 552 4477',
+    managedBy: 'developer',
+    status: 'active'
+  },
+  {
+    _id: 'prt_12',
+    name: 'Lakeside Thakali Diner',
+    category: 'restaurant',
+    city: 'Pokhara',
+    area: 'Baidam Road',
+    description: 'Authentic Thakali dal-bhat sets with mustard greens and lake-facing terrace seating.',
+    promoCode: 'THAKALI15',
+    discountPercent: 15,
+    commissionPercent: 10,
+    tier: 'growth',
+    rating: 4.6,
+    reviewCount: 223,
+    isVerified: true,
+    contactEmail: 'dine@thakalikitchen.np',
+    contactPhone: '+977 61 464 330',
+    managedBy: 'promoter',
+    status: 'active'
+  },
+  {
+    _id: 'prt_13',
+    name: 'Durbar Rooftop Cafe',
+    category: 'restaurant',
+    city: 'Kathmandu',
+    area: 'Basantapur',
+    description: 'Rooftop espresso and Newari snacks overlooking the temple spires of Durbar Square.',
+    promoCode: 'DURBARCafe10',
+    discountPercent: 10,
+    commissionPercent: 9,
+    tier: 'starter',
+    rating: 4.2,
+    reviewCount: 88,
+    isVerified: true,
+    contactEmail: 'cafe@durbarrooftop.np',
+    contactPhone: '+977 1 425 6677',
+    managedBy: 'admin',
+    status: 'active'
   }
 ];
+
+// Accepts the canonical role names plus the legacy "promotor" spelling.
+const normalizeManager = (value) => {
+  const normalized = String(value || '').trim().toLowerCase();
+  if (normalized === 'promotor' || normalized === 'promoter') return 'promoter';
+  if (normalized === 'developer') return 'developer';
+  return 'admin';
+};
 
 const sanitizePartner = (partner) => {
   const raw = typeof partner.toObject === 'function' ? partner.toObject() : partner;
@@ -169,6 +310,7 @@ router.post('/register', async (req, res) => {
     discountPercent,
     contactEmail,
     contactPhone,
+    listedBy,
     managedBy
   } = req.body || {};
 
@@ -194,7 +336,8 @@ router.post('/register', async (req, res) => {
     isVerified: false,
     contactEmail: contactEmail || '',
     contactPhone: contactPhone || '',
-    managedBy: ['admin', 'developer', 'promotor'].includes(managedBy) ? managedBy : 'admin',
+    listedBy: listedBy === 'traveller' ? 'traveller' : 'shopkeeper',
+    managedBy: normalizeManager(managedBy),
     status: 'pending'
   };
 

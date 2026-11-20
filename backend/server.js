@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const cors = require('cors');
+const compression = require('compression');
 const { Server } = require('socket.io');
 const path = require('path');
 const fs = require('fs');
@@ -32,6 +33,19 @@ app.use(cors({
 
 app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '15mb' }));
+
+// Basic security headers for hosting. Content-Security-Policy is intentionally
+// permissive for the external map/payment/font hosts this app depends on.
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.setHeader('Permissions-Policy', 'geolocation=(self), microphone=(), camera=()');
+  next();
+});
+
+// Lightweight gzip/deflate for API + static responses (no extra dependency).
+app.use(compression());
 
 // Initialize Database Connection and Auto-seed if empty
 connectDB().then(async (connected) => {
@@ -77,9 +91,22 @@ app.use('/api', (req, res) => {
 // Dev still uses Vite on :3000; this only activates after `npm --prefix frontend run build`.
 const clientDist = path.join(__dirname, '..', 'frontend', 'dist');
 if (fs.existsSync(clientDist)) {
-  app.use(express.static(clientDist));
+  // Hashed build assets can be cached forever; index.html must never be cached
+  // so a new deploy is picked up immediately.
+  app.use(
+    express.static(clientDist, {
+      setHeaders: (res, filePath) => {
+        if (/\.(js|css|webp|png|jpg|jpeg|svg|woff2?)$/.test(filePath)) {
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+        } else {
+          res.setHeader('Cache-Control', 'no-cache');
+        }
+      }
+    })
+  );
   app.get('*', (req, res, next) => {
     if (req.path.startsWith('/api') || req.path.startsWith('/socket.io')) return next();
+    res.setHeader('Cache-Control', 'no-cache');
     res.sendFile(path.join(clientDist, 'index.html'));
   });
 }

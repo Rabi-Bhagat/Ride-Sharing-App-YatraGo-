@@ -1,9 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Globe, Shield, Smartphone, ArrowUpRight, HelpCircle, 
-  MapPin, ChevronDown, Check, Sparkles, Award
-} from 'lucide-react';
-import yatraGoLogo from '../logo/yatrago-logo.png';
+import { Globe, Smartphone, HelpCircle, ChevronDown, Check } from 'lucide-react';
+import yatraGoLogo from '../logo/yatrago-logo.webp';
 
 export default function YatraGoFooter({ onNavigate }) {
   const [selectedLanguage, setSelectedLanguage] = useState('English');
@@ -28,7 +25,7 @@ export default function YatraGoFooter({ onNavigate }) {
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-900">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-2xl bg-white p-1 border border-cyan-500/40 flex items-center justify-center">
-              <img src={yatraGoLogo} alt="YatraGo Logo" className="w-full h-full object-contain" />
+              <img src={yatraGoLogo} alt="YatraGo Logo" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
             </div>
             <div>
               <span className="text-xl font-black text-white tracking-tight">YatraGo</span>

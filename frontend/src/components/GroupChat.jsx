@@ -1,9 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  MessageSquare, Send, X, ShieldCheck, User, Compass, Car, Users,
-  Phone, PhoneOff, MapPin, CheckCheck, Sparkles, AlertTriangle,
-  Smile, Mic, Paperclip, ChevronRight, Volume2, Shield
-} from 'lucide-react';
+import { Send, X, ShieldCheck, Car, Phone, PhoneOff, MapPin, CheckCheck, Mic, Volume2 } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
@@ -276,8 +272,7 @@ export default function GroupChat({
             <img
               src={channel.avatar}
               alt={channel.name}
-              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover ring-2 ring-cyan-500/40 shadow-md"
-            />
+              className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl object-cover ring-2 ring-cyan-500/40 shadow-md" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
             <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-slate-950 animate-pulse" />
           </div>
 
@@ -536,8 +531,7 @@ export default function GroupChat({
               <img
                 src={channel.avatar}
                 alt={channel.name}
-                className="relative w-24 h-24 rounded-full object-cover ring-4 ring-cyan-500 shadow-2xl"
-              />
+                className="relative w-24 h-24 rounded-full object-cover ring-4 ring-cyan-500 shadow-2xl" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
             </div>
 
             <div className="text-center">

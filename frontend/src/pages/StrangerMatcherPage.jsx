@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import StrangerMatcher from '../components/StrangerMatcher';
 import AiTravelMatchmaker from '../components/AiTravelMatchmaker';
-import { Users, Sparkles, ShieldCheck, DollarSign, Brain, Navigation } from 'lucide-react';
+import { Users, Sparkles, Navigation } from 'lucide-react';
 
 // Lazy-load the map engine so the pooling UI renders instantly.
 const MapView = React.lazy(() => import('../components/MapView'));

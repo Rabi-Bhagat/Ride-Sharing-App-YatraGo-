@@ -1,17 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Car, Users, Compass, MessageSquare, AlertTriangle, 
-  ShieldCheck, User, Menu, X, IndianRupee, Home, Globe, 
-  LogIn, UserPlus, LogOut, ChevronDown, Search, 
-  Wallet, Plus, CreditCard, ArrowRight, Plane, MapPin, 
-  Bike, Package, Bus, Zap, Shield, KeyRound, ExternalLink,
-  Navigation, CheckCircle2, Clock, Store
-} from 'lucide-react';
+import { Car, Users, Compass, MessageSquare, AlertTriangle, ShieldCheck, User, Menu, X, IndianRupee, Home, Globe, LogIn, LogOut, ChevronDown, Search, Wallet, Plus, CreditCard, ArrowRight, Plane, MapPin, Bike, Zap, Shield, Store } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import VerificationBadge from './VerificationBadge';
 import UserAvatar from './UserAvatar';
-import yatraGoLogo from '../logo/yatrago-logo.png';
+import yatraGoLogo from '../logo/yatrago-logo.webp';
 
 const POPULAR_SEARCH_PRESETS = [
   { name: 'Delhi Indira Gandhi Airport (DEL)', type: 'Airport', tag: 'Fastest Route', tab: 'book' },
@@ -172,8 +165,7 @@ export default function Navbar({
                 <img
                   src={yatraGoLogo}
                   alt="YatraGo Logo"
-                  className="w-full h-full object-contain"
-                />
+                  className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                 <span className="absolute inset-0 bg-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"></span>
               </div>
               <div>

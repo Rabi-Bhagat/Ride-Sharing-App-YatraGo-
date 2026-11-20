@@ -1,4 +1,5 @@
 import React from 'react';
+
 import { CheckCircle2, ShieldCheck, Award } from 'lucide-react';
 
 export default function VerificationBadge({ type = 'Government ID', size = 'md', showLabel = false }) {

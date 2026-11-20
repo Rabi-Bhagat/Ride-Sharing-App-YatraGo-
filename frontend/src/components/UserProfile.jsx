@@ -1,14 +1,9 @@
 import React, { useState, useRef } from 'react';
-import { 
-  User, ShieldCheck, CheckCircle2, Star, Award, Phone, Mail, 
-  Edit3, X, Save, AlertTriangle, CreditCard, Wallet, Smartphone, 
-  Plus, Trash2, Leaf, Shield, Check, Compass, Car, Zap, RefreshCw, 
-  ChevronRight, Camera, Upload, MapPin, Lock, LogOut, KeyRound, Eye, EyeOff
-} from 'lucide-react';
+import { User, ShieldCheck, CheckCircle2, Star, Award, Phone, Mail, Edit3, X, Save, AlertTriangle, CreditCard, Wallet, Plus, Trash2, Leaf, Shield, Compass, Car, Zap, RefreshCw, Camera, Upload, MapPin, Lock, LogOut, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
 import UserAvatar, { isCustomPhoto } from './UserAvatar';
-import yatraGoLogo from '../logo/yatrago-logo.png';
+import yatraGoLogo from '../logo/yatrago-logo.webp';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 
 export default function UserProfile({ onClose, onSelectPickupForRide }) {
@@ -962,7 +957,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-xl bg-slate-950 p-1 border border-cyan-500/40 shadow-md">
-                      <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
+                      <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                     </div>
                     <div>
                       <span className="text-[10px] tracking-widest uppercase font-extrabold text-cyan-400">YatraGo Black Card</span>
@@ -1204,7 +1199,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
         <div className="p-4 border-t border-slate-800 bg-slate-900/50 flex items-center justify-between text-xs text-slate-400 shrink-0">
           <div className="flex items-center gap-2">
             <div className="w-5 h-5 rounded-md bg-white p-0.5 flex items-center justify-center shrink-0">
-              <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" />
+              <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
             </div>
             <span className="font-mono text-[11px]">Member: {user.email} • <span className={roleTheme.badge.split(' ').find(c => c.startsWith('text-'))}>{roleTheme.label}</span></span>
           </div>

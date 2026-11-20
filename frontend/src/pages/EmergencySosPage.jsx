@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import EmergencySosModal from '../components/EmergencySosModal';
-import { AlertTriangle, ShieldAlert, Phone, MapPin, Radio, CheckCircle2 } from 'lucide-react';
+import { AlertTriangle, Phone, Radio } from 'lucide-react';
 import { useSocket } from '../context/SocketContext';
 import { useAuth } from '../context/AuthContext';
 

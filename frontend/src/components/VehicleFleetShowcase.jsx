@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
-import { 
-  Bike, Car, Zap, ShieldCheck, ChevronRight, ArrowRight, Eye, 
-  Sparkles, BatteryCharging, Gauge, Users, Compass, Check, X,
-  ExternalLink, Layers, Award, Radio
-} from 'lucide-react';
+import { ShieldCheck, ChevronRight, ArrowRight, Eye, Sparkles, BatteryCharging, Gauge, Users, Check, X, Award, Radio } from 'lucide-react';
 
 export const VEHICLE_FLEET_DATA = [
   {
@@ -12,7 +8,7 @@ export const VEHICLE_FLEET_DATA = [
     edition: 'Apex Track Edition',
     category: 'Electric Superbike',
     tagline: 'Hyper-acceleration for swift urban & highway transit',
-    image: '/yatrago-superbike-realistic.jpg',
+    image: '/yatrago-superbike-realistic.webp',
     baseFare: 45.00,
     perKm: 12.00,
     acceleration: '2.4s',
@@ -38,7 +34,7 @@ export const VEHICLE_FLEET_DATA = [
     edition: 'Executive Autopilot',
     category: 'Autonomous Electric Sedan',
     tagline: 'Whisper-quiet luxury with panoramic smart glass & FSD',
-    image: '/yatrago-car-realistic.jpg',
+    image: '/yatrago-car-realistic.webp',
     baseFare: 80.00,
     perKm: 18.00,
     acceleration: '3.1s',
@@ -64,7 +60,7 @@ export const VEHICLE_FLEET_DATA = [
     edition: 'Long-Range Grand Tourer',
     category: '7-Seater Electric SUV',
     tagline: 'Spacious group commuting with roof LiDAR & massive luggage capacity',
-    image: '/yatrago-suv-realistic.jpg',
+    image: '/yatrago-suv-realistic.webp',
     baseFare: 140.00,
     perKm: 24.00,
     acceleration: '4.8s',
@@ -90,7 +86,7 @@ export const VEHICLE_FLEET_DATA = [
     edition: 'AERO-E 01 Urban Agile',
     category: 'Smart Micro-Transit',
     tagline: 'Ultra-low cost zero-congestion commute for city hops',
-    image: '/yatrago-scooter-realistic.jpg',
+    image: '/yatrago-scooter-realistic.webp',
     baseFare: 30.00,
     perKm: 9.00,
     acceleration: '5.2s',
@@ -204,8 +200,7 @@ export default function VehicleFleetShowcase({
                   src={veh.image}
                   alt={veh.name}
                   className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-108"
-                  loading="lazy"
-                />
+                  loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
 
                 {/* Subtle dark gradient overlay on photo */}
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-black/30 pointer-events-none"></div>
@@ -313,8 +308,7 @@ export default function VehicleFleetShowcase({
               <img
                 src={current.image}
                 alt={current.name}
-                className="w-full h-full object-cover"
-              />
+                className="w-full h-full object-cover" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
             </div>
 
             <div>
@@ -415,8 +409,7 @@ export default function VehicleFleetShowcase({
               <img
                 src={lightboxImage.image}
                 alt={lightboxImage.name}
-                className="w-full h-full object-contain max-h-[520px]"
-              />
+                className="w-full h-full object-contain max-h-[520px]" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
               <div className="absolute bottom-3 left-3 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs font-mono text-slate-300">
                 8K Photorealistic Render • 60 FPS Engine
               </div>

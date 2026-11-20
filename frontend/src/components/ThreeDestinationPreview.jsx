@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { Box, Sun, Moon, Eye, RotateCw, Sparkles, MapPin, CheckCircle2, CloudRain, Shield, Navigation, ArrowRight } from 'lucide-react';
+import { Box, RotateCw, MapPin, CheckCircle2, Navigation, ArrowRight } from 'lucide-react';
 import { DESTINATIONS_3D } from '../data/mockData';
 
 export default function ThreeDestinationPreview({ initialDestinationId = 'downtown', onSelectLocationForRide }) {

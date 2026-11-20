@@ -126,6 +126,22 @@
   animation: fadeIn 0.35s ease-out forwards;
 }
 
+/* Staggered grid entrance: holds the start state during the delay so cards
+   never flash at full opacity before their turn. */
+.animate-stagger-in {
+  animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* Modal panel: rises and scales in */
+@keyframes modalRise {
+  0% { opacity: 0; transform: translateY(18px) scale(0.97); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-modalRise {
+  animation: modalRise 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 @keyframes slideDown {
   from { opacity: 0; transform: translateY(-10px); }
   to { opacity: 1; transform: translateY(0); }
@@ -284,6 +300,8 @@
   }
   .page-enter-kinetic,
   .animate-fadeIn,
+  .animate-stagger-in,
+  .animate-modalRise,
   .animate-slideDown,
   .animate-aiPanelIn,
   .animate-aiMessageIn,

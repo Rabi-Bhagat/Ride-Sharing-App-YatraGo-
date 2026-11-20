@@ -1,0 +1,49 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Bhaktapur Heritage Inn Newari courtyard">
+  <defs>
+    <linearGradient id="brick" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7c3f2b"/>
+      <stop offset="100%" stop-color="#4a2418"/>
+    </linearGradient>
+    <linearGradient id="dusk" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1c2547"/>
+      <stop offset="100%" stop-color="#6b3f2a"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#dusk)"/>
+  <circle cx="400" cy="150" r="120" fill="#f59e0b" opacity="0.12"/>
+  <g>
+    <rect x="70" y="180" width="660" height="260" fill="url(#brick)"/>
+    <rect x="70" y="180" width="660" height="22" fill="#93543a"/>
+    <path d="M70 180 h660 l-40 -46 h-580 z" fill="#5c3020"/>
+    <g fill="#3a1d13">
+      <rect x="120" y="230" width="90" height="120" rx="4"/>
+      <rect x="256" y="230" width="90" height="120" rx="4"/>
+      <rect x="392" y="230" width="90" height="120" rx="4"/>
+      <rect x="528" y="230" width="90" height="120" rx="4"/>
+    </g>
+    <g stroke="#c08457" stroke-width="3" fill="none">
+      <rect x="120" y="230" width="90" height="120" rx="4"/>
+      <rect x="256" y="230" width="90" height="120" rx="4"/>
+      <rect x="392" y="230" width="90" height="120" rx="4"/>
+      <rect x="528" y="230" width="90" height="120" rx="4"/>
+    </g>
+    <g fill="#fbbf24" opacity="0.85">
+      <rect x="138" y="252" width="22" height="30" rx="3"/>
+      <rect x="274" y="252" width="22" height="30" rx="3"/>
+      <rect x="410" y="252" width="22" height="30" rx="3"/>
+      <rect x="546" y="252" width="22" height="30" rx="3"/>
+    </g>
+    <g fill="#2a140c">
+      <rect x="120" y="376" width="90" height="42" rx="4"/>
+      <rect x="256" y="376" width="90" height="42" rx="4"/>
+      <rect x="528" y="376" width="90" height="42" rx="4"/>
+    </g>
+    <rect x="392" y="376" width="90" height="42" rx="4" fill="#1f0f08"/>
+  </g>
+  <g>
+    <path d="M320 440 h160 l-24 -40 h-112 z" fill="#0f172a" opacity="0.8"/>
+  </g>
+  <g stroke="#f59e0b" stroke-width="2" opacity="0.35" fill="none">
+    <path d="M90 200 h620"/>
+  </g>
+</svg>

@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 500" role="img" aria-label="Lumbini Peace Garden Resort with monk gardens">
+  <defs>
+    <linearGradient id="peace" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#fef3c7"/>
+      <stop offset="55%" stop-color="#bbd7c6"/>
+      <stop offset="100%" stop-color="#2f4858"/>
+    </linearGradient>
+    <linearGradient id="stupa" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#cbd5e1"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="500" fill="url(#peace)"/>
+  <circle cx="400" cy="120" r="46" fill="#fde68a" opacity="0.9"/>
+  <g fill="#3f5f52" opacity="0.55">
+    <path d="M0 320 L180 300 L360 320 L540 296 L720 318 L800 305 L800 500 L0 500 Z"/>
+  </g>
+  <g>
+    <rect x="300" y="250" width="200" height="34" fill="#e5e7eb"/>
+    <rect x="326" y="200" width="148" height="52" fill="#f1f5f9"/>
+    <circle cx="400" cy="188" r="46" fill="url(#stupa)"/>
+    <path d="M378 152 h44 l-22 -34 z" fill="#fbbf24"/>
+    <rect x="386" y="234" width="28" height="16" fill="#d97706"/>
+  </g>
+  <g fill="#0f2a22" opacity="0.75">
+    <rect x="150" y="300" width="230" height="120" rx="6"/>
+    <path d="M150 300 h230 l-30 -46 h-170 z"/>
+    <g fill="#fbbf24" opacity="0.85">
+      <rect x="180" y="324" width="26" height="24" rx="3"/>
+      <rect x="228" y="324" width="26" height="24" rx="3"/>
+      <rect x="276" y="324" width="26" height="24" rx="3"/>
+      <rect x="324" y="324" width="26" height="24" rx="3"/>
+    </g>
+  </g>
+  <g stroke="#2f4858" stroke-width="2" opacity="0.35">
+    <path d="M80 440 h640"/>
+    <path d="M120 462 h560"/>
+  </g>
+</svg>

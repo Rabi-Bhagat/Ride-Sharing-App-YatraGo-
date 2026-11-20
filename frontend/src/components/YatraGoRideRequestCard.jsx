@@ -1,10 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Car, Users, Clock, Calendar, MapPin, Navigation, ArrowRight, 
-  Sparkles, ShieldCheck, LocateFixed, Check, Bike, Package, 
-  ChevronDown, Search, X, DollarSign, Award, Info, Zap,
-  Compass, AlertCircle, Loader2
-} from 'lucide-react';
+import { Car, Users, Clock, Calendar, MapPin, Navigation, ArrowRight, Sparkles, LocateFixed, Check, Bike, ChevronDown, Search, X, Zap, Compass, Loader2 } from 'lucide-react';
 
 const POPULAR_PRESETS = [
   { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', lat: 28.4950, lng: 77.0890, desc: 'Tech corridor & dining plaza' },

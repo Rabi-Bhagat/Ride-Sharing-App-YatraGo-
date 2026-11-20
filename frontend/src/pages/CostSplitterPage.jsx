@@ -1,4 +1,5 @@
 import React from 'react';
+
 import CostSplitter from '../components/CostSplitter';
 import { Receipt, ShieldCheck, Users, Wallet } from 'lucide-react';
 

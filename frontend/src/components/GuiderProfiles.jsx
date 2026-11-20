@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Compass, Star, Languages, Award, CheckCircle2, 
-  MapPin, Clock, ArrowRight, ShieldCheck 
-} from 'lucide-react';
+import { Compass, Star, Languages, CheckCircle2, MapPin, ArrowRight } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 
 export default function GuiderProfiles({ onSelectGuider, selectedGuider }) {
@@ -67,8 +64,7 @@ export default function GuiderProfiles({ onSelectGuider, selectedGuider }) {
                     <img
                       src={g.avatar}
                       alt={g.name}
-                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-violet-500/40"
-                    />
+                      className="w-14 h-14 rounded-2xl object-cover ring-2 ring-violet-500/40" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                     <div>
                       <div className="flex items-center gap-1.5">
                         <h3 className="text-base font-bold text-white">{g.name}</h3>

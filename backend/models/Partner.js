@@ -16,7 +16,8 @@ const partnerSchema = new mongoose.Schema({
   contactEmail: { type: String },
   contactPhone: { type: String },
   website: { type: String },
-  managedBy: { type: String, enum: ['admin', 'developer', 'promotor'], default: 'admin' },
+  managedBy: { type: String, enum: ['admin', 'developer', 'promoter', 'promotor'], default: 'admin' },
+  listedBy: { type: String, enum: ['traveller', 'shopkeeper'], default: 'shopkeeper' },
   status: { type: String, enum: ['active', 'pending', 'rejected'], default: 'active' }
 }, { timestamps: true });
 

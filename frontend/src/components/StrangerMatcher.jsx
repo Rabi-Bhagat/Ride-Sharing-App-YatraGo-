@@ -1,8 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Users, ShieldCheck, DollarSign, Sparkles, MapPin, 
-  ArrowRight, Percent, UserCheck, CheckCircle2 
-} from 'lucide-react';
+import { ShieldCheck, Sparkles, MapPin, Percent, UserCheck } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 import { useSocket } from '../context/SocketContext';
 
@@ -91,8 +88,7 @@ export default function StrangerMatcher({ onCombineSuccess }) {
                   <img
                     src={match.rider.avatar}
                     alt={match.rider.name}
-                    className="w-12 h-12 rounded-xl object-cover ring-2 ring-emerald-500/40 shrink-0"
-                  />
+                    className="w-12 h-12 rounded-xl object-cover ring-2 ring-emerald-500/40 shrink-0" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-base font-bold text-white">{match.rider.name}</span>

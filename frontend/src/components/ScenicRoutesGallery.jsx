@@ -59,8 +59,7 @@ export default function ScenicRoutesGallery({ onBookRideWithRoute, onNavigate })
                 src={route.src}
                 alt=""
                 aria-hidden="true"
-                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110 pointer-events-none"
-              />
+                className="absolute inset-0 w-full h-full object-cover blur-2xl opacity-30 scale-110 pointer-events-none" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
               <div className="absolute inset-0 bg-slate-950/50 pointer-events-none" />
 
               {/* Contained (uncropped) frame with padding */}
@@ -69,8 +68,7 @@ export default function ScenicRoutesGallery({ onBookRideWithRoute, onNavigate })
                   src={route.src}
                   alt={route.title}
                   className="max-w-full max-h-full w-auto h-auto object-contain rounded-xl border border-slate-800/80 shadow-md transition-transform duration-300 group-hover:scale-[1.03]"
-                  loading="lazy"
-                />
+                  loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
 
                 {/* Route tag */}
                 <span className="absolute top-2.5 left-2.5 text-[9px] font-mono font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-950/85 border border-slate-700/80 text-cyan-300 backdrop-blur-sm">

@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, ArrowRight, MapPin, Zap, Maximize2, Minimize2 } from 'lucide-react';
+import { ArrowRight, MapPin, Maximize2, Minimize2 } from 'lucide-react';
 
 export const HERO_IMAGES = [
   {
     id: 0,
-    src: '/hero-images/hero-main.png',
+    src: '/hero-images/hero-main.webp',
     title: 'Next-Gen Urban Transit',
     subtitle: 'Connecting Commuters Across Smart City Corridors',
     tag: 'FLAGSHIP MOBILITY',
@@ -14,7 +14,7 @@ export const HERO_IMAGES = [
   },
   {
     id: 1,
-    src: '/hero-images/hero-slide-1.png',
+    src: '/hero-images/hero-slide-1.webp',
     title: 'High-Speed Highway Cruiser',
     subtitle: 'Seamless Zero-Emission Long Range Commutes',
     tag: 'ELECTRIC HIGHWAY',
@@ -24,7 +24,7 @@ export const HERO_IMAGES = [
   },
   {
     id: 2,
-    src: '/hero-images/hero-slide-2.png',
+    src: '/hero-images/hero-slide-2.webp',
     title: 'Hyper-Agile City Transit',
     subtitle: 'Bypass Rush-Hour Congestion With Verified Drivers',
     tag: 'RAPID DISPATCH',
@@ -34,7 +34,7 @@ export const HERO_IMAGES = [
   },
   {
     id: 3,
-    src: '/hero-images/hero-slide-3.png',
+    src: '/hero-images/hero-slide-3.webp',
     title: 'Real-Time Navigation & Traffic',
     subtitle: 'Dynamic Route Optimization and Fast Commutes',
     tag: 'LIVE NAVIGATION',
@@ -44,7 +44,7 @@ export const HERO_IMAGES = [
   },
   {
     id: 4,
-    src: '/hero-images/hero-slide-4.png',
+    src: '/hero-images/hero-slide-4.webp',
     title: 'Zero-Emission Urban Rides',
     subtitle: 'Clean Sustainable Mobility for Modern Commuters',
     tag: 'ECO FLEET',
@@ -54,7 +54,7 @@ export const HERO_IMAGES = [
   },
   {
     id: 5,
-    src: '/hero-images/hero-slide-5.png',
+    src: '/hero-images/hero-slide-5.webp',
     title: 'Safety First on Every Trip',
     subtitle: 'Government ID Verified Riders & 24/7 Safety Support',
     tag: 'VERIFIED SAFETY',
@@ -64,7 +64,7 @@ export const HERO_IMAGES = [
   },
   {
     id: 6,
-    src: '/hero-images/hero-slide-6.png',
+    src: '/hero-images/hero-slide-6.webp',
     title: 'Carpool & Shared Rides',
     subtitle: 'Share rides along identical routes & slash fare prices',
     tag: 'SHARED TRANSIT',
@@ -74,7 +74,7 @@ export const HERO_IMAGES = [
   },
   {
     id: 7,
-    src: '/hero-images/hero-slide-7.png',
+    src: '/hero-images/hero-slide-7.webp',
     title: 'Metro Skyway Network',
     subtitle: 'Express Inter-City Highway Transit Hubs',
     tag: 'METRO EXPRESS',
@@ -145,8 +145,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
                     src={img.src}
                     alt=""
                     aria-hidden="true"
-                    className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-35 scale-110 pointer-events-none"
-                  />
+                    className="absolute inset-0 w-full h-full object-cover blur-3xl opacity-35 scale-110 pointer-events-none" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
 
                   {/* Soft Cinematic Vignette */}
                   <div className="absolute inset-0 bg-slate-950/40 pointer-events-none" />
@@ -158,8 +157,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
                       src={img.src}
                       alt={img.title}
                       className="max-w-full max-h-full object-contain rounded-2xl shadow-2xl border border-slate-800 transition-transform duration-500 ease-out"
-                      loading={index < 2 ? 'eager' : 'lazy'}
-                    />
+                      loading={index < 2 ? 'eager' : 'lazy'} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                   </div>
                 </>
               ) : (
@@ -169,8 +167,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
                     src={img.src}
                     alt={img.title}
                     className="w-full h-full object-cover transition-transform duration-[3000ms] ease-out scale-100"
-                    loading={index < 2 ? 'eager' : 'lazy'}
-                  />
+                    loading={index < 2 ? 'eager' : 'lazy'} onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
 
                   {/* Cinematic Vignette & Lighting Gradients */}
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/35 to-transparent pointer-events-none" />

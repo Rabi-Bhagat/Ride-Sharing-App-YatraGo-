@@ -109,27 +109,35 @@ Open your browser at **`http://localhost:3000`**.
 
 ```text
 Ride Sharing app/
-├── CREDENTIALS.md            # Complete credentials & free API guide
 ├── README.md                 # Project documentation
+├── design.md                 # Design system reference
+├── AGENTS.md                 # Engineering guide for AI agents
+├── package.json              # Root scripts (dev / build / start)
 ├── backend/                  # Node.js + Express + Socket.io + Mongoose
 │   ├── .env.example          # Sample environment variables
-│   ├── server.js             # API & Socket Server entry point
+│   ├── server.js             # API + Socket + static SPA host
 │   ├── config/db.js          # MongoDB connection with in-memory fallback
-│   ├── models/               # User, Guider, Ride, Message, SosAlert Schemas
-│   ├── routes/               # Auth, Rides, Guiders, SOS REST endpoints
+│   ├── models/               # User, Guider, Ride, Message, SosAlert, Partner
+│   ├── routes/               # Auth, Rides, Guiders, Partners, SOS, Payments
 │   ├── sockets/              # Socket.io handlers for real-time events
+│   ├── utils/                # Auth helper, email service
 │   └── seed.js               # Sample data seeding script
-└── frontend/                 # React 18 + Vite + Tailwind CSS + Three.js + Leaflet
-    ├── .env.example          # Sample client environment variables
-    ├── index.html            # Entry HTML with Google Maps & Leaflet CSS
-    ├── vite.config.js        # Vite build & API proxy setup
+└── frontend/                 # React 18 + Vite + Tailwind + Three.js + Leaflet
+    ├── .env.example          # Client environment variables
+    ├── index.html            # Entry HTML (Google Maps + Leaflet CSS)
+    ├── vite.config.js        # Vite build, chunking, API proxy, Maps key injection
     ├── tailwind.config.js    # Glassmorphism styling configuration
+    ├── public/
+    │   ├── hero-images/      # Optimized WebP hero slides
+    │   └── hotel-images/     # Partner property artwork
     └── src/
         ├── App.jsx           # Main application routing and shell
-        ├── components/       # UI components (Navbar, 3D Scene, Slider, Maps, Chat)
+        ├── components/       # UI components (Navbar, 3D scene, maps, chat…)
         ├── context/          # AuthContext & SocketContext
-        ├── pages/            # Home, Carpool, Driver Portal, Admin Console, SOS
-        └── data/             # Vehicle fleet specs & landmark presets
+        ├── pages/            # Home, Book, Carpool, Split, Business, Portals…
+        ├── data/             # Vehicle specs, 3D destinations, partner seed
+        ├── utils/            # Razorpay checkout, receipts, Google auth
+        └── logo/             # Brand mark
 ```
 
 ---
@@ -137,10 +145,63 @@ Ride Sharing app/
 ## 🧪 Production Build Verification
 
 ```powershell
-npm --prefix frontend run build
+npm run build          # builds frontend/dist
+npm start              # serves API + built SPA on PORT (default 5000)
 ```
 
-Build outputs are compiled into `frontend/dist` with minification and gzip compression.
+The Express server serves `frontend/dist` when it exists:
+
+- Hashed assets (`*.js`, `*.css`, `*.webp`, `*.svg`) → `Cache-Control: immutable, max-age=1y`
+- `index.html` and SPA routes → `no-cache`, so deploys take effect immediately
+- Unknown non-API paths fall back to `index.html` (client-side routing)
+- Responses are gzip-compressed; baseline security headers are applied
+
+---
+
+## 🚀 Deployment
+
+### Option A — Single server (simplest)
+
+```powershell
+npm run install:all
+npm run build
+# set backend/.env (MONGO_URI, JWT_SECRET, RAZORPAY_*, etc.) then:
+npm start
+```
+
+Deploy the repo to any Node host (Render, Railway, Fly.io, a VPS). The Express
+server serves both the API and the built frontend on one port — no separate
+static host is needed. Set `PORT` in the environment; most hosts do this for you.
+
+### Option B — Split frontend / backend
+
+- **Frontend** → Vercel / Netlify / Cloudflare Pages
+  - Build command: `npm --prefix frontend run build`
+  - Publish directory: `frontend/dist`
+- **Backend** → Render / Railway
+  - Start command: `node backend/server.js`
+  - Then set `VITE_BACKEND_URL` on the frontend to the backend origin so API and
+    socket calls resolve correctly.
+
+### Environment variables to set before going live
+
+| Location | Variable | Purpose |
+|----------|----------|---------|
+| backend | `MONGO_URI` | MongoDB Atlas connection string |
+| backend | `JWT_SECRET` | Token signing — **must** be set in production |
+| backend | `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET` | Live payments |
+| backend | `SMTP_*` | OTP / email delivery |
+| frontend | `VITE_GOOGLE_MAPS_API_KEY` | Google Maps (injected into `index.html` at build) |
+| frontend | `VITE_BACKEND_URL` | Only needed for split hosting |
+
+### Pre-launch checklist
+
+- [ ] Set a strong `JWT_SECRET` (the code falls back to a dev value otherwise).
+- [ ] Restrict the Google Maps key by HTTP referrer in Google Cloud Console.
+- [ ] Switch Razorpay to live keys and verify one real transaction.
+- [ ] Run `npm run seed` only against a database you intend to overwrite.
+- [ ] Confirm `MONGO_URI` is reachable from the host (the app falls back to
+      in-memory stores if it is not, which loses data on restart).
 
 ---
 

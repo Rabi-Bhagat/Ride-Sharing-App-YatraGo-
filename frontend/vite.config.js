@@ -1,10 +1,42 @@
-import { defineConfig } from 'vite'
+import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
 
+// Google Maps key: prefers VITE_GOOGLE_MAPS_API_KEY, falls back to the project
+// key so the site keeps working if the env var is not set at build time.
+const FALLBACK_GOOGLE_MAPS_KEY = 'AIzaSyDXVfx1YGENdQhxfAfDOGiYzFJ8QHbQ5Ec'
+
+const googleMapsKeyPlugin = (env) => ({
+  name: 'inject-google-maps-key',
+  transformIndexHtml(html) {
+    const key = env.VITE_GOOGLE_MAPS_API_KEY || FALLBACK_GOOGLE_MAPS_KEY
+    return html.replace(/__GOOGLE_MAPS_API_KEY__/g, key)
+  }
+})
+
 // https://vitejs.dev/config/
-export default defineConfig({
-  plugins: [react()],
-  server: {
+export default defineConfig(({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), 'VITE_')
+
+  return {
+    plugins: [react(), googleMapsKeyPlugin(env)],
+    build: {
+      outDir: 'dist',
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes('node_modules')) return undefined
+            // Keep React and its ecosystem together to avoid circular chunks.
+            if (/node_modules[\\/](react|react-dom|scheduler|use-sync-external-store)[\\/]/.test(id)) return 'react'
+            if (id.includes('/three/') || id.includes('\\three\\')) return 'three'
+            if (id.includes('leaflet')) return 'maps'
+            if (id.includes('socket.io') || id.includes('engine.io')) return 'socket'
+            return 'vendor'
+          }
+        }
+      }
+    },
+    server: {
     host: '0.0.0.0',
     port: 3000,
     strictPort: false,
@@ -39,5 +71,6 @@ export default defineConfig({
         }
       }
     }
+  }
   }
 })

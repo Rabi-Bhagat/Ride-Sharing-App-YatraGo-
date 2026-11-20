@@ -1,15 +1,9 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { 
-  User, Mail, Lock, Phone, Eye, EyeOff, ShieldCheck, 
-  Sparkles, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft,
-  Compass, Car, MapPin, Loader2, Check, KeyRound, 
-  HeartHandshake, Shield, Smartphone, Globe, ExternalLink,
-  Zap, LogIn, UserPlus, HelpCircle
-} from 'lucide-react';
+import { User, Mail, Lock, Phone, Eye, EyeOff, ShieldCheck, Sparkles, CheckCircle2, AlertCircle, ArrowRight, ArrowLeft, Compass, Car, MapPin, Loader2, Check, KeyRound, HeartHandshake, LogIn, UserPlus } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { preloadGoogleAuth } from '../utils/googleAuth';
 import UserAvatar from '../components/UserAvatar';
-import yatraGoLogo from '../logo/yatrago-logo.png';
+import yatraGoLogo from '../logo/yatrago-logo.webp';
 
 // Google Official SVG Icon
 function GoogleIcon({ className = "w-5 h-5" }) {
@@ -346,7 +340,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
               {/* Brand Header */}
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-white p-1.5 border border-cyan-400/50 shadow-lg shadow-cyan-500/10 flex items-center justify-center shrink-0">
-                  <img src={yatraGoLogo} alt="YatraGo Logo" className="w-full h-full object-contain" />
+                  <img src={yatraGoLogo} alt="YatraGo Logo" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
                 </div>
                 <div>
                   <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { Navigation, MapPin, Car, Compass, Crosshair, Check, Sparkles, Layers, Info } from 'lucide-react';
+import { Navigation, MapPin, Crosshair, Check } from 'lucide-react';
 import { MapContainer, TileLayer, Marker as LeafletMarker, Popup as LeafletPopup, Polyline as LeafletPolyline, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 

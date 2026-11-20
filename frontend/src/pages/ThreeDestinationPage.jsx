@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import ErrorBoundary from '../components/ErrorBoundary';
 import { DESTINATIONS_3D } from '../data/mockData';
-import { Box, Globe, Sparkles, MapPin, Search, Bike } from 'lucide-react';
+import { Box, Globe, Search, Bike } from 'lucide-react';
 
 // Code-split the heavy 3D / map engines so this route renders instantly.
 const ThreeDestinationPreview = React.lazy(() => import('../components/ThreeDestinationPreview'));

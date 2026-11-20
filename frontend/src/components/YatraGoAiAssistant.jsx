@@ -1,8 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import {
-  Sparkles, Send, X, Bot, User, MapPin, ShieldCheck, ArrowRight,
-  ThumbsUp, ThumbsDown, RefreshCw, Loader2, BrainCircuit
-} from 'lucide-react';
+import { Sparkles, Send, X, Bot, User, MapPin, ShieldCheck, ArrowRight, ThumbsUp, ThumbsDown, RefreshCw, Loader2, BrainCircuit } from 'lucide-react';
 
 const SUGGESTED_PROMPTS = [
   'How does fare splitting work?',

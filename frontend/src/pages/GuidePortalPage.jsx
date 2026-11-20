@@ -1,10 +1,6 @@
 import React, { useState } from 'react';
-import { 
-  Compass, MapPin, Star, Award, CheckCircle2, Calendar, 
-  Clock, IndianRupee, Users, ShieldCheck, ToggleLeft, ToggleRight, 
-  Check, ArrowRight, MessageSquare, Globe, HeartHandshake
-} from 'lucide-react';
-import VerificationBadge from '../components/VerificationBadge';
+import { Compass, Star, Award, CheckCircle2, Calendar, Clock, IndianRupee, ToggleLeft, ToggleRight, ArrowRight, MessageSquare } from 'lucide-react';
+
 import { useAuth } from '../context/AuthContext';
 
 export default function GuidePortalPage({ onNavigate }) {

@@ -1,15 +1,9 @@
 import React, { useCallback, useState } from 'react';
-import { 
-  Car, Users, DollarSign, Box, Compass, AlertTriangle, 
-  ShieldCheck, ArrowRight, Sparkles, MapPin, Zap, CheckCircle2, Bike,
-  Navigation, Shield, Check, Clock, Radio, ChevronRight, Layers, 
-  Image as ImageIcon, Plane, Smartphone, QrCode, Briefcase, Award,
-  Calendar, Package, HeartHandshake, Eye, Utensils
-} from 'lucide-react';
-import VerificationBadge from '../components/VerificationBadge';
-import yatraGoLogo from '../logo/yatrago-logo.png';
+import { Car, Users, Box, Compass, ShieldCheck, ArrowRight, Sparkles, Zap, Bike, Navigation, Plane, Smartphone, QrCode, Briefcase, Calendar, Package, HeartHandshake, Eye, Utensils } from 'lucide-react';
+
+
 import ScenicRoutesGallery from '../components/ScenicRoutesGallery';
-import VehicleFleetShowcase, { VEHICLE_FLEET_DATA } from '../components/VehicleFleetShowcase';
+import VehicleFleetShowcase from '../components/VehicleFleetShowcase';
 import YatraGoRideRequestCard from '../components/YatraGoRideRequestCard';
 import YatraGoReserveSection from '../components/YatraGoReserveSection';
 import YatraGoAirportIntercityHub from '../components/YatraGoAirportIntercityHub';

@@ -1,11 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { 
-  Bike, Car, Zap, Eye, Compass, Gauge, Play, Pause, 
-  RotateCcw, Sparkles, MapPin, Shield, ArrowRight, Volume2, VolumeX, 
-  Maximize2, Minimize2, Sun, Moon, CloudRain, Sunset, Palette, Navigation,
-  Activity, Radio, FastForward
-} from 'lucide-react';
+import { Bike, Car, Zap, Play, Pause, MapPin, ArrowRight, Volume2, VolumeX, Maximize2, Minimize2, Sun, Moon, CloudRain, Sunset, Navigation, Radio } from 'lucide-react';
 
 // Sound Synthesizer using Native Web Audio API
 class RideAudioSynthesizer {

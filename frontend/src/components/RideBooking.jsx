@@ -1,10 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Navigation, MapPin, Car, Bike, Shield, Bus, Compass, 
-  ArrowRight, LocateFixed, Search, X, Loader2, Sparkles, Check
-} from 'lucide-react';
+import { Navigation, MapPin, Car, Bike, Compass, ArrowRight, LocateFixed, Search, X, Loader2 } from 'lucide-react';
 import { VEHICLE_TIERS } from '../data/mockData';
-import VerificationBadge from './VerificationBadge';
+
 
 // Helper to calculate distance in km
 function calculateDistance(lat1, lon1, lat2, lon2) {

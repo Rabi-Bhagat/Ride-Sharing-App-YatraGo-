@@ -3,12 +3,15 @@ node_modules/
 */node_modules/
 package-lock.json.bak
 
-# Environment variables & secrets
+# Environment variables & secrets (never commit real values)
 .env
 .env.*
+!.env.example
 *.env
 backend/.env
 frontend/.env
+frontend/.env.local
+frontend/.env.*.local
 
 # Production builds
 dist/
@@ -16,7 +19,8 @@ build/
 frontend/dist/
 frontend/build/
 
-# OS / Editor files
+# Tooling / editor
+.commandcode/
 .DS_Store
 Thumbs.db
 .vscode/

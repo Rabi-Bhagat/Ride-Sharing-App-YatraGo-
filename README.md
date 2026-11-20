@@ -16,14 +16,14 @@
 8. [API Reference](#-api-reference)
 9. [Real-Time Events](#-real-time-events)
 10. [Design System](#-design-system)
-11. [Installation & Running](#-installation--running)
+11. [Installation & Running](#-installation-running)
 12. [Environment Variables](#-environment-variables)
 13. [Deployment](#-deployment)
 14. [Project Metrics](#-project-metrics)
 15. [Engineering Conventions](#-engineering-conventions)
 16. [Known Limitations](#-known-limitations)
 17. [Future Scope](#-future-scope)
-18. [Resume / Portfolio Summary](#-resume--portfolio-summary)
+18. [Resume / Portfolio Summary](#-resume-portfolio-summary)
 19. [License](#-license)
 
 ---

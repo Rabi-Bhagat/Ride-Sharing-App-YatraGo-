@@ -20,7 +20,7 @@ export default function VerificationBadge({ type = 'Government ID', size = 'md',
 
       {/* Tooltip */}
       <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:flex flex-col items-center z-50 pointer-events-none">
-        <div className="bg-slate-900/95 border border-cyan-500/30 text-slate-200 text-xs py-1.5 px-3 rounded-lg shadow-xl backdrop-blur-md whitespace-nowrap flex items-center gap-1.5">
+        <div className="bg-slate-900/95 border border-cyan-500/30 text-slate-200 text-xs py-1.5 px-3 rounded-lg shadow-xl backdrop-blur-md whitespace-nowrap max-w-[70vw] truncate flex items-center gap-1.5">
           <Award size={14} className="text-cyan-400" />
           <span>Identity Verified • <strong className="text-cyan-300">{type}</strong></span>
         </div>

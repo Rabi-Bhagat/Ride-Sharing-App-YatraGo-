@@ -248,7 +248,7 @@ export default function VehicleFleetShowcase({
                 </div>
 
                 {/* Key Specs Pills */}
-                <div className="grid grid-cols-3 gap-1.5 py-2 border-y border-slate-800/80 text-center font-mono">
+                <div className="grid grid-cols-3 gap-1 sm:gap-1.5 py-2 border-y border-slate-800/80 text-center font-mono">
                   <div className="bg-slate-950/60 p-1 rounded-lg border border-slate-800/50">
                     <span className="text-[9px] text-slate-400 block uppercase">Max Spd</span>
                     <strong className="text-[11px] text-white font-bold">{veh.topSpeed}</strong>

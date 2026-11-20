@@ -151,10 +151,13 @@ export default function LiveTransitTrack({ pickup, destination, ride }) {
       {/* Live track */}
       <div className="relative h-14 overflow-hidden rounded-xl border border-slate-800/80 bg-slate-950/90 shadow-inner">
         <div className="absolute inset-x-6 top-1/2 -translate-y-1/2 sm:inset-x-8">
-          {/* Dashed idle lane */}
-          <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between gap-2 opacity-40">
+          {/* Dashed idle lane — count scales down so it never overflows */}
+          <div className="absolute inset-x-0 top-1/2 flex -translate-y-1/2 justify-between gap-1 opacity-40 sm:gap-2">
+            {[...Array(12)].map((_, index) => (
+              <span key={`sm-${index}`} className="h-1 w-2 shrink rounded-full bg-yellow-400/80 sm:hidden"></span>
+            ))}
             {[...Array(28)].map((_, index) => (
-              <span key={index} className="h-1 w-3 shrink-0 rounded-full bg-yellow-400/80"></span>
+              <span key={`lg-${index}`} className="hidden h-1 w-3 shrink-0 rounded-full bg-yellow-400/80 sm:block"></span>
             ))}
           </div>
 

@@ -1376,9 +1376,28 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
         // Vehicle dynamics & wheel rotation (stops rotating when 0 km/h)
         const wheelRotSpeed = currentKmh > 0 ? delta * (currentKmh * 0.28) : 0;
         if (vehicleType === 'bike') {
+          // Lean into the apex.
           bikeGroup.rotation.z = THREE.MathUtils.lerp(bikeGroup.rotation.z, currentKmh > 0 ? -curvature * 1.6 : 0, delta * 8);
-          rearWheel.rotation.x += wheelRotSpeed;
+
+          // Counter-steer the handlebars into the turn, like a real rider.
+          const steerTarget = currentKmh > 0 ? THREE.MathUtils.clamp(curvature * 0.42, -0.34, 0.34) : 0;
+          animRef.current.steer = THREE.MathUtils.lerp(animRef.current.steer || 0, steerTarget, delta * 7);
+          handlebar.rotation.y = animRef.current.steer;
+          dashScreen.rotation.y = animRef.current.steer * 0.6;
+
+          // Front wheel follows the steering angle.
           frontWheel.rotation.x += wheelRotSpeed;
+          frontWheel.rotation.y = animRef.current.steer;
+          rearWheel.rotation.x += wheelRotSpeed;
+
+          // Suspension bob + engine vibration: subtle at speed, harder under nitro.
+          const bobAmplitude = (isNitro ? 0.035 : 0.018) * Math.min(1, currentKmh / 60);
+          const t = clock.elapsedTime * (isNitro ? 26 : 17);
+          bikeGroup.position.y = Math.sin(t) * bobAmplitude + Math.sin(t * 2.7) * bobAmplitude * 0.3;
+
+          // Pitch forward under braking, squat under acceleration.
+          const pitchTarget = isBraking ? 0.055 : isAccelerating || isNitro ? -0.045 : 0;
+          bikeGroup.rotation.x = THREE.MathUtils.lerp(bikeGroup.rotation.x, pitchTarget, delta * 6);
         } else {
           carGroup.rotation.z = THREE.MathUtils.lerp(carGroup.rotation.z, currentKmh > 0 ? -curvature * 0.45 : 0, delta * 6);
           carWheels.forEach(w => {
@@ -1466,6 +1485,18 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
         const percent = Math.round(prog * 100);
         setProgressPercent(percent);
 
+        // Nitro speed rush: widen the FOV and shake the camera slightly.
+        const targetFov = isNitro ? 82 : cameraMode === 'cockpit' ? 68 : 60;
+        if (Math.abs(camera.fov - targetFov) > 0.2) {
+          camera.fov = THREE.MathUtils.lerp(camera.fov, targetFov, delta * 4);
+          camera.updateProjectionMatrix();
+        }
+        if (isNitro && currentKmh > 40) {
+          const shake = 0.05 * (currentKmh / 132);
+          camera.position.x += (Math.random() - 0.5) * shake;
+          camera.position.y += (Math.random() - 0.5) * shake;
+        }
+
         // Active Waypoint
         let closestWp = waypoints[0];
         for (let i = 0; i < waypoints.length; i++) {
@@ -1525,7 +1556,7 @@ export default function Interactive3DRideScene({ activeVehicleType, onBookRideWi
 
   return (
     <div className={`relative rounded-3xl overflow-hidden glass-panel border border-slate-800 shadow-2xl transition-all duration-300 ${
-      isFullscreen ? 'fixed inset-4 z-50 bg-slate-950/98 flex flex-col' : 'w-full h-[520px] sm:h-[560px]'
+      isFullscreen ? 'fixed inset-4 z-50 bg-slate-950/98 flex flex-col' : 'w-full h-[min(360px,55dvh)] sm:h-[min(480px,60dvh)] lg:h-[560px]'
     }`}>
       
       {/* 3D WebGL Canvas Mount Container */}

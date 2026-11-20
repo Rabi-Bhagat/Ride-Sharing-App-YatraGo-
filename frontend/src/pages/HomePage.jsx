@@ -8,10 +8,10 @@ import YatraGoRideRequestCard from '../components/YatraGoRideRequestCard';
 import YatraGoReserveSection from '../components/YatraGoReserveSection';
 import YatraGoAirportIntercityHub from '../components/YatraGoAirportIntercityHub';
 import YatraGoFaqSection from '../components/YatraGoFaqSection';
+import YatraGoFutureScope from '../components/YatraGoFutureScope';
 
 // Heavy WebGL / map engines are code-split so they never block the initial page load.
 const MapView = React.lazy(() => import('../components/MapView'));
-const Interactive3DRideScene = React.lazy(() => import('../components/Interactive3DRideScene'));
 
 export default function HomePage({ onNavigate, user }) {
   const [selectedVehicleId, setSelectedVehicleId] = useState('superbike');
@@ -69,7 +69,7 @@ export default function HomePage({ onNavigate, user }) {
       {/* ======================================================== */}
       {/* 1. YATRAGO HERO SPLIT: RIDE REQUEST CARD + HERO IMAGE SLIDER */}
       {/* ======================================================== */}
-      <section className="relative">
+      <section className="relative overflow-hidden">
         
         {/* Background Ambient Glow */}
         <div className="absolute -top-12 -left-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
@@ -111,7 +111,7 @@ export default function HomePage({ onNavigate, user }) {
             </div>
 
             {/* Professional Framed Map */}
-            <div className="relative flex-1 min-h-[460px] sm:min-h-[520px] rounded-3xl overflow-hidden border border-slate-700/70 bg-slate-950 shadow-2xl ring-1 ring-cyan-500/10">
+            <div className="relative flex-1 min-h-[320px] sm:min-h-[460px] lg:min-h-[520px] rounded-3xl overflow-hidden border border-slate-700/70 bg-slate-950 shadow-2xl ring-1 ring-cyan-500/10">
               {/* Inner bezel accent */}
               <div className="absolute inset-0 pointer-events-none rounded-3xl ring-1 ring-inset ring-white/5 z-20"></div>
               {/* Corner brackets */}
@@ -450,7 +450,12 @@ export default function HomePage({ onNavigate, user }) {
       </section>
 
       {/* ======================================================== */}
-      {/* 8. FREQUENTLY ASKED QUESTIONS ACCORDION                  */}
+      {/* 8. FUTURE SCOPE / ROADMAP                                */}
+      {/* ======================================================== */}
+      <YatraGoFutureScope />
+
+      {/* ======================================================== */}
+      {/* 9. FREQUENTLY ASKED QUESTIONS ACCORDION                  */}
       {/* ======================================================== */}
       <section>
         <YatraGoFaqSection />
@@ -491,84 +496,9 @@ export default function HomePage({ onNavigate, user }) {
       </section>
 
       {/* ======================================================== */}
-      {/* 10. IMMERSIVE 3D DRIVE SIMULATOR (SEPARATE EXPERIENCE)   */}
+      {/* 10. IMMERSIVE 3D DRIVE SIMULATOR lives in Explore & 3D     */}
+      {/*     (preview-3d → 3D Highway Simulator view mode)          */}
       {/* ======================================================== */}
-      <section className="relative overflow-hidden rounded-3xl border border-cyan-500/25 bg-gradient-to-br from-slate-950 via-slate-900 to-cyan-950/30 p-5 sm:p-7 lg:p-8 shadow-2xl">
-        {/* Ambient glow + grid decoration */}
-        <div className="absolute -top-24 -right-16 w-80 h-80 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute -bottom-24 -left-16 w-80 h-80 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute inset-0 opacity-[0.06] pointer-events-none [background-image:linear-gradient(to_right,#22d3ee_1px,transparent_1px),linear-gradient(to_bottom,#22d3ee_1px,transparent_1px)] [background-size:44px_44px]"></div>
-
-        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-          <div className="max-w-2xl space-y-2">
-            <div className="flex items-center gap-2 flex-wrap">
-              <div className="w-10 h-10 rounded-2xl bg-cyan-500/15 text-cyan-300 border border-cyan-500/30 flex items-center justify-center shadow-lg shadow-cyan-500/10">
-                <Box size={20} />
-              </div>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-cyan-300 bg-cyan-500/10 border border-cyan-500/30 px-2.5 py-0.5 rounded-full">
-                Immersive Lab
-              </span>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-wider text-emerald-300 bg-emerald-500/10 border border-emerald-500/30 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                WebGL Live
-              </span>
-            </div>
-
-            <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Interactive 3D Drive Simulator
-            </h2>
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed">
-              Take the wheel in a real-time 3D city. Switch between the Superbike and EV Shuttle, use chase, POV, 360° and drone cameras, trigger nitro, and preview the exact route before you book.
-            </p>
-          </div>
-
-          <div className="flex flex-col sm:flex-row lg:flex-col gap-2.5 shrink-0 w-full sm:w-auto">
-            <button
-              onClick={() => onNavigate && onNavigate('preview-3d')}
-              className="px-5 py-3 rounded-2xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs sm:text-sm transition-all shadow-lg flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Navigation size={15} />
-              <span>Open Full 3D Hub</span>
-              <ArrowRight size={15} />
-            </button>
-            <button
-              onClick={() => handleInstantBook({ pickup: quickPickup, dropoff: quickDropoff })}
-              className="px-5 py-3 rounded-2xl bg-slate-900/90 hover:bg-slate-800 text-cyan-300 border border-cyan-500/30 font-bold text-xs sm:text-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <Zap size={15} />
-              <span>Book This Route</span>
-            </button>
-          </div>
-        </div>
-
-        <div className="relative z-10 mt-5 rounded-2xl overflow-hidden border border-slate-800 shadow-xl">
-          <React.Suspense fallback={
-            <div className="w-full h-[320px] flex flex-col items-center justify-center gap-3 bg-slate-950/70">
-              <div className="w-10 h-10 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />
-              <span className="text-xs font-mono text-slate-400">Loading 3D drive simulator…</span>
-            </div>
-          }>
-            <Interactive3DRideScene
-              activeVehicleType={selectedVehicleId === 'superbike' || selectedVehicleId === 'aeroscooter' ? 'bike' : 'car'}
-              onBookRideWithRoute={() => handleInstantBook({ pickup: quickPickup, dropoff: quickDropoff })}
-            />
-          </React.Suspense>
-        </div>
-
-        <div className="relative z-10 mt-4 flex flex-wrap items-center gap-2 text-[10px] font-mono text-slate-300">
-          {[
-            { icon: Eye, label: '4 Camera Modes' },
-            { icon: Zap, label: 'Nitro Boost' },
-            { icon: Navigation, label: 'Live Route Telemetry' },
-            { icon: ShieldCheck, label: 'Safe Preview' }
-          ].map(({ icon: Icon, label }) => (
-            <span key={label} className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-950/70 border border-slate-800">
-              <Icon size={12} className="text-cyan-400" />
-              {label}
-            </span>
-          ))}
-        </div>
-      </section>
 
     </div>
   );

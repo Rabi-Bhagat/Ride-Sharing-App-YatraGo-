@@ -1,21 +1,11 @@
 import React, { useState } from 'react';
 import { Globe, Smartphone, HelpCircle, ChevronDown, Check } from 'lucide-react';
 import yatraGoLogo from '../logo/yatrago-logo.webp';
+import { useLanguage } from '../i18n/LanguageContext';
 
 export default function YatraGoFooter({ onNavigate }) {
-  const [selectedLanguage, setSelectedLanguage] = useState('English');
+  const { language, setLanguage, languages, t, currentLanguage } = useLanguage();
   const [showLangModal, setShowLangModal] = useState(false);
-
-  const LANGUAGES = [
-    { code: 'en', name: 'English', native: 'English' },
-    { code: 'hi', name: 'Hindi', native: 'हिन्दी' },
-    { code: 'bn', name: 'Bangla', native: 'বাংলা' },
-    { code: 'te', name: 'Telugu', native: 'తెలుగు' },
-    { code: 'mr', name: 'Marathi', native: 'मराठी' },
-    { code: 'ta', name: 'Tamil', native: 'தமிழ்' },
-    { code: 'kn', name: 'Kannada', native: 'ಕನ್ನಡ' },
-    { code: 'ur', name: 'Urdu', native: 'اردو' }
-  ];
 
   return (
     <footer className="bg-slate-950 border-t border-slate-900 pt-16 pb-12 text-slate-400 text-xs">
@@ -29,7 +19,7 @@ export default function YatraGoFooter({ onNavigate }) {
             </div>
             <div>
               <span className="text-xl font-black text-white tracking-tight">YatraGo</span>
-              <p className="text-[10px] text-slate-400 font-mono">Zero-Emission Urban & Intercity Transit</p>
+              <p className="text-[10px] text-slate-400 font-mono">{t('footer.tagline')}</p>
             </div>
           </div>
 
@@ -108,7 +98,7 @@ export default function YatraGoFooter({ onNavigate }) {
               className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white border border-slate-800 transition-all font-bold"
             >
               <Globe size={15} className="text-cyan-400" />
-              <span>{selectedLanguage}</span>
+              <span>{currentLanguage.name}</span>
               <ChevronDown size={14} className="text-slate-400" />
             </button>
 
@@ -132,22 +122,23 @@ export default function YatraGoFooter({ onNavigate }) {
 
         {/* Language Modal (Dropdown) */}
         {showLangModal && (
-          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-2 animate-fadeIn">
-            {LANGUAGES.map((lang) => (
+          <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-2 animate-modalRise">
+            {languages.map((lang) => (
               <button
                 key={lang.code}
                 onClick={() => {
-                  setSelectedLanguage(lang.name);
+                  setLanguage(lang.code);
                   setShowLangModal(false);
                 }}
+                aria-pressed={language === lang.code}
                 className={`p-2 rounded-xl text-left flex items-center justify-between transition-all ${
-                  selectedLanguage === lang.name
+                  language === lang.code
                     ? 'bg-cyan-500/20 text-cyan-300 font-bold border border-cyan-500/40'
                     : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
                 <span>{lang.name} ({lang.native})</span>
-                {selectedLanguage === lang.name && <Check size={14} className="text-cyan-400" />}
+                {language === lang.code && <Check size={14} className="text-cyan-400" />}
               </button>
             ))}
           </div>

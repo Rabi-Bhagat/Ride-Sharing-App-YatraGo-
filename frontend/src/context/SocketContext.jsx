@@ -52,24 +52,30 @@ export const SocketProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    // Connect to Socket server with polling fallback and graceful error handling
+    // Connect to Socket server with polling fallback and graceful error handling.
+    // Keeps retrying indefinitely so a backend that boots after the UI (common in
+    // dev, and on cold serverless starts) is picked up without a page refresh.
     const newSocket = io(window.location.origin, {
       transports: ['polling', 'websocket'],
-      reconnectionAttempts: 5,
-      reconnectionDelay: 3000,
-      autoConnect: true,
+      reconnection: true,
+      reconnectionAttempts: Infinity,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 10000,
+      randomizationFactor: 0.5,
       timeout: 5000
     });
 
     setSocket(newSocket);
 
     newSocket.on('connect', () => {
-      console.log('⚡ Socket Connected to server:', newSocket.id);
+      if (import.meta.env.DEV) {
+        console.log('⚡ Socket connected:', newSocket.id);
+      }
       newSocket.emit('join_ride', 'ride_101');
     });
 
     newSocket.on('connect_error', () => {
-      // Quietly handle offline backend without throwing errors
+      // Backend not up yet (or proxy still starting). Reconnection handles it.
     });
 
     // Load persisted chat history from MongoDB

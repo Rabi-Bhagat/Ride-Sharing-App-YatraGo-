@@ -122,7 +122,7 @@ export default function HeroImageSlider({ onBookRideWithRoute, onSelectSlide }) 
     <div
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
-      className="relative w-full h-[520px] sm:h-[560px] rounded-3xl overflow-hidden glass-panel border border-slate-800 shadow-2xl select-none"
+      className="relative w-full h-[min(380px,55dvh)] sm:h-[min(480px,60dvh)] lg:h-[560px] rounded-3xl overflow-hidden glass-panel border border-slate-800 shadow-2xl select-none"
     >
       {/* ======================================================== */}
       {/* CINEMATIC IMAGE AUTO-TRANSITION STACK                    */}

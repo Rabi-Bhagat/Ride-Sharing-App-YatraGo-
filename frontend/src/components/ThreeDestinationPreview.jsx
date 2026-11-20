@@ -238,7 +238,7 @@ export default function ThreeDestinationPreview({ initialDestinationId = 'downto
       </div>
 
       {/* 3D WebGL Canvas Container */}
-      <div className="relative w-full h-[420px] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner group">
+      <div className="relative w-full h-[min(420px,65dvh)] min-h-[300px] rounded-2xl overflow-hidden border border-slate-800 bg-slate-950 shadow-inner group">
         
         <div ref={mountRef} className="w-full h-full cursor-grab active:cursor-grabbing"></div>
 

@@ -6,6 +6,8 @@
   html {
     scroll-behavior: smooth;
     -webkit-text-size-adjust: 100%;
+    /* Prevent decorative/absolute elements from creating page-level sideways scroll */
+    overflow-x: hidden;
   }
 
   body {
@@ -14,6 +16,7 @@
     color: #f8fafc;
     margin: 0;
     padding: 0;
+    overflow-x: hidden;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -130,6 +133,19 @@
    never flash at full opacity before their turn. */
 .animate-stagger-in {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+/* Attract attention to a field that needs input */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(3px); }
+}
+
+.animate-shake {
+  animation: shake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) 1;
 }
 
 /* Modal panel: rises and scales in */

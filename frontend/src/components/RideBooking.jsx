@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigation, MapPin, Car, Bike, Compass, ArrowRight, LocateFixed, Search, X, Loader2 } from 'lucide-react';
 import { VEHICLE_TIERS } from '../data/mockData';
+import { rankByNearest, getUserLocation, formatDistanceKm } from '../utils/geo';
 
 
 // Helper to calculate distance in km
@@ -114,9 +115,11 @@ export default function RideBooking({
     const timer = setTimeout(async () => {
       setIsSearchingDest(true);
       try {
+        // Prefer proximity to the chosen pickup; otherwise rank from the traveller.
+        const origin = pickup?.lat && pickup?.lng ? { lat: pickup.lat, lng: pickup.lng } : await getUserLocation();
         const proximity = pickup ? `&viewbox=${pickup.lng-0.5},${pickup.lat+0.5},${pickup.lng+0.5},${pickup.lat-0.5}` : '';
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destQuery)}${proximity}&limit=5`,
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(destQuery)}${proximity}&limit=8`,
           { headers: { 'Accept-Language': 'en' } }
         );
         const data = await res.json();
@@ -130,7 +133,8 @@ export default function RideBooking({
               lng: parseFloat(item.lon)
             };
           });
-          setDestSuggestions(formatted);
+          // Nearest results first, relative to pickup (or the traveller).
+          setDestSuggestions(rankByNearest(formatted, origin));
           setShowDestDropdown(true);
         }
       } catch (e) {
@@ -153,8 +157,9 @@ export default function RideBooking({
     const timer = setTimeout(async () => {
       setIsSearchingPickup(true);
       try {
+        const origin = await getUserLocation();
         const res = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickupQuery)}&limit=5`,
+          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(pickupQuery)}&limit=8`,
           { headers: { 'Accept-Language': 'en' } }
         );
         const data = await res.json();
@@ -168,7 +173,8 @@ export default function RideBooking({
               lng: parseFloat(item.lon)
             };
           });
-          setPickupSuggestions(formatted);
+          // Nearest results first, relative to the traveller's location.
+          setPickupSuggestions(rankByNearest(formatted, origin));
           setShowPickupDropdown(true);
         }
       } catch (e) {
@@ -402,9 +408,15 @@ export default function RideBooking({
             </button>
           </div>
 
-          {/* Pickup Autocomplete Dropdown */}
+          {/* Pickup Autocomplete Dropdown — nearest results first */}
           {showPickupDropdown && pickupSuggestions.length > 0 && (
             <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden divide-y divide-slate-800 z-50 animate-fadeIn">
+              <div className="flex items-center justify-between px-3 py-1.5 bg-slate-950/60">
+                <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-cyan-400">
+                  Nearest results
+                </span>
+                <span className="font-mono text-[9px] text-slate-500">{pickupSuggestions.length} found</span>
+              </div>
               {pickupSuggestions.map((item, idx) => (
                 <div
                   key={idx}
@@ -412,10 +424,15 @@ export default function RideBooking({
                   className="p-3 hover:bg-cyan-950/40 cursor-pointer flex items-center gap-2.5 text-xs transition-colors"
                 >
                   <Navigation size={14} className="text-cyan-400 shrink-0" />
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <strong className="text-white block truncate">{item.shortName}</strong>
                     <span className="text-[11px] text-slate-400 block truncate">{item.fullName}</span>
                   </div>
+                  {item.distanceKm != null && (
+                    <span className="shrink-0 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5 font-mono text-[10px] font-bold text-emerald-300">
+                      {formatDistanceKm(item.distanceKm)}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
@@ -471,6 +488,12 @@ export default function RideBooking({
           {showDestDropdown && (
             destSuggestions.length > 0 ? (
               <div className="absolute top-full left-0 right-0 mt-1 bg-slate-900 border border-slate-700 rounded-xl shadow-2xl backdrop-blur-xl overflow-hidden divide-y divide-slate-800 z-50 animate-fadeIn max-h-72 overflow-y-auto no-scrollbar">
+                <div className="flex items-center justify-between px-3 py-1.5 bg-slate-950/60">
+                  <span className="font-mono text-[9px] font-bold uppercase tracking-wider text-purple-400">
+                    Nearest results
+                  </span>
+                  <span className="font-mono text-[9px] text-slate-500">{destSuggestions.length} found</span>
+                </div>
                 {destSuggestions.map((item, idx) => (
                   <div
                     key={idx}
@@ -484,7 +507,13 @@ export default function RideBooking({
                         <span className="text-[11px] text-slate-400 block truncate">{item.fullName}</span>
                       </div>
                     </div>
-                    <span className="text-[10px] text-purple-400 font-mono font-bold shrink-0 ml-2">Select ➔</span>
+                    {item.distanceKm != null ? (
+                      <span className="text-[10px] text-emerald-300 font-mono font-bold shrink-0 ml-2 rounded-md border border-emerald-500/30 bg-emerald-500/10 px-1.5 py-0.5">
+                        {formatDistanceKm(item.distanceKm)}
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-purple-400 font-mono font-bold shrink-0 ml-2">Select ➔</span>
+                    )}
                   </div>
                 ))}
               </div>

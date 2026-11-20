@@ -66,7 +66,7 @@ export default function BookRidePage({
         </div>
 
         {/* Right Column (7 cols): Interactive Google Map */}
-        <div className="lg:col-span-7 h-[580px] lg:h-auto min-h-[500px]">
+        <div className="lg:col-span-7 h-[min(580px,70dvh)] lg:h-auto min-h-[320px]">
           <React.Suspense fallback={
             <div className="w-full h-full min-h-[400px] rounded-3xl border border-slate-800 bg-slate-900/60 flex flex-col items-center justify-center gap-3">
               <div className="w-10 h-10 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />

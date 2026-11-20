@@ -22,6 +22,7 @@ import YatraGoFooter from './components/YatraGoFooter';
 import { DESTINATIONS_3D } from './data/mockData';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider, useSocket } from './context/SocketContext';
+import { LanguageProvider } from './i18n/LanguageContext';
 import { Sparkles } from 'lucide-react';
 
 function MainApp() {
@@ -420,11 +421,13 @@ function MainApp() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <AuthProvider>
-        <SocketProvider>
-          <MainApp />
-        </SocketProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <SocketProvider>
+            <MainApp />
+          </SocketProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </ErrorBoundary>
   );
 }

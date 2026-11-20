@@ -346,7 +346,7 @@ export default function GroupChatPage() {
         {/* ======================================================= */}
         {/* RIGHT COLUMN: INTERACTIVE GROUP CHAT WORKSPACE           */}
         {/* ======================================================= */}
-        <div className="lg:col-span-8 h-[680px]">
+        <div className="h-[min(680px,80dvh)] lg:col-span-8">
           <GroupChat 
             key={activeChannel}
             activeChannel={activeChannel}

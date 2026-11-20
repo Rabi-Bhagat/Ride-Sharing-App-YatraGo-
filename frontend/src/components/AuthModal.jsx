@@ -603,7 +603,7 @@ export default function AuthModal({ isOpen, onClose, onAuthSuccess }) {
                     <label className="block text-[11px] font-bold text-slate-300 mb-1.5">
                       I want to join YatraGo as:
                     </label>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                       
                       {/* Role 1: Traveler */}
                       <button

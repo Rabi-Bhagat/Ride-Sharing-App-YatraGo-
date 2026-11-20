@@ -292,13 +292,17 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
 
   // Initialize or update Google 3D Satellite Map
   useEffect(() => {
-    if (!useGoogle3D || !googleMapsReady || !googleMapContainerRef.current) return;
+    if (!useGoogle3D || !googleMapsReady) return;
+    const container = googleMapContainerRef.current;
+    // Guard against unmount: Google Maps throws an unhandled promise rejection
+    // ("observe ... not of type Element") if handed a detached container.
+    if (!container || !(container instanceof Element)) return;
 
     try {
       const position = { lat: activePlace.lat, lng: activePlace.lng };
 
       if (!googleMapInstanceRef.current) {
-        const map = new window.google.maps.Map(googleMapContainerRef.current, {
+        const map = new window.google.maps.Map(container, {
           center: position,
           zoom: activePlace.zoom || 17,
           mapTypeId: mapLayerType === 'street3d' ? 'roadmap' : 'satellite',
@@ -336,6 +340,22 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
       console.warn('Google 3D Map initialization note:', err);
     }
   }, [activePlace, mapLayerType, is3DTilt, useGoogle3D, googleMapsReady]);
+
+  // Release the Google Maps instance when this screen unmounts, so a detached
+  // container is never observed later.
+  useEffect(() => {
+    return () => {
+      try {
+        if (googleMarkerRef.current) {
+          googleMarkerRef.current.setMap(null);
+          googleMarkerRef.current = null;
+        }
+        googleMapInstanceRef.current = null;
+      } catch {
+        /* map already torn down */
+      }
+    };
+  }, []);
 
   // Search My Location in 3D function
   const handleLocateMeIn3D = () => {
@@ -649,7 +669,7 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
       </div>
 
       {/* Main 3D Satellite Map Canvas Viewport */}
-      <div className="relative w-full h-[500px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
+      <div className="relative w-full h-[min(500px,70dvh)] min-h-[320px] rounded-2xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
         
         {/* Google Maps 3D Real Satellite Canvas */}
         {useGoogle3D && googleMapsReady ? (

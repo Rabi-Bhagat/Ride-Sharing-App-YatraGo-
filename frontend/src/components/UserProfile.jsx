@@ -1,10 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { User, ShieldCheck, CheckCircle2, Star, Award, Phone, Mail, Edit3, X, Save, AlertTriangle, CreditCard, Wallet, Plus, Trash2, Leaf, Shield, Compass, Car, Zap, RefreshCw, Camera, Upload, MapPin, Lock, LogOut, KeyRound, Eye, EyeOff } from 'lucide-react';
+import { User, ShieldCheck, CheckCircle2, Star, Award, Phone, Mail, Edit3, X, Save, AlertTriangle, Wallet, Plus, Trash2, Leaf, Shield, Compass, Car, Zap, RefreshCw, Camera, Upload, MapPin, Lock, LogOut, KeyRound, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import VerificationBadge from './VerificationBadge';
 import UserAvatar, { isCustomPhoto } from './UserAvatar';
 import yatraGoLogo from '../logo/yatrago-logo.webp';
-import { openRazorpayCheckout } from '../utils/razorpayCheckout';
+import WalletSection from './WalletSection';
 
 export default function UserProfile({ onClose, onSelectPickupForRide }) {
   const { 
@@ -231,27 +231,6 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
     }
   };
 
-  // Top-Up Wallet via Razorpay Standard Checkout
-  const handleTopUpWallet = (amount) => {
-    openRazorpayCheckout({
-      amountInRupees: amount,
-      riderName: user?.name || 'Alex Rivera',
-      riderEmail: user?.email || 'alex.rivera@yatrago.com',
-      riderPhone: user?.phone || '+91 98765 43210',
-      description: `YatraGo Wallet Top-Up (₹${amount})`,
-      rideId: 'wallet_' + Date.now(),
-      onSuccess: (verifyData, razorpayRes) => {
-        const updated = walletBalance + amount;
-        setWalletBalance(updated);
-        updateUserProfile({ walletBalance: updated });
-        showToast(`Payment Verified! Added ₹${amount}.00 to YatraGo Wallet.`);
-      },
-      onFailure: (err) => {
-        showToast(`Payment Failed: ${err}`);
-      }
-    });
-  };
-
   // Add Emergency Contact
   const handleAddEmergencyContact = () => {
     if (!newContactName.trim() || !newContactPhone.trim()) return;
@@ -400,8 +379,8 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
                   {user.isVerified && <VerificationBadge type={user.verificationBadgeType || 'Government ID'} size="md" showLabel={true} />}
                 </div>
                 <div className="flex items-center gap-3 text-xs text-slate-400 flex-wrap">
-                  <span className="flex items-center gap-1 text-cyan-300 font-semibold">
-                    <Mail size={12} /> {user.email}
+                  <span className="flex max-w-full items-center gap-1 truncate font-semibold text-cyan-300">
+                    <Mail size={12} className="shrink-0" /> <span className="truncate">{user.email}</span>
                   </span>
                   <span>•</span>
                   <span className="flex items-center gap-1 text-slate-300">
@@ -433,7 +412,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
           </div>
 
           {/* Quick Metrics Bar */}
-          <div className="grid grid-cols-4 gap-2 px-6 pt-3 pb-2 text-center">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 px-6 pt-3 pb-2 text-center">
             <div className="p-2 rounded-xl bg-slate-900/60 border border-slate-800/80 transition-all duration-300 hover:bg-slate-800/60">
               <span className="text-[10px] text-slate-400 block uppercase font-bold">Rating</span>
               <span className="text-sm font-black text-amber-400 flex items-center justify-center gap-1">
@@ -948,62 +927,15 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
           {/* TAB 4: WALLET & PAYMENTS */}
           {/* ========================================================= */}
           {activeTab === 'wallet' && (
-            <div className="space-y-5 animate-fadeIn">
-              
-              {/* Virtual Holographic YatraGo Black Card */}
-              <div className="relative p-6 rounded-2xl bg-gradient-to-tr from-slate-900 via-slate-800 to-cyan-950 border border-cyan-500/40 shadow-2xl overflow-hidden">
-                <div className="absolute top-0 right-0 w-48 h-48 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-xl bg-slate-950 p-1 border border-cyan-500/40 shadow-md">
-                      <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
-                    </div>
-                    <div>
-                      <span className="text-[10px] tracking-widest uppercase font-extrabold text-cyan-400">YatraGo Black Card</span>
-                      <h4 className="text-white font-extrabold text-lg">In-App Mobility Credit</h4>
-                    </div>
-                  </div>
-                  <CreditCard size={28} className="text-cyan-400" />
-                </div>
-
-                <div className="mb-6">
-                  <span className="text-[10px] text-slate-400 uppercase font-mono block">Available Balance</span>
-                  <span className="text-3xl font-black text-white tracking-tight">₹{walletBalance.toFixed(2)}</span>
-                </div>
-
-                <div className="flex items-center justify-between text-xs font-mono text-slate-300 border-t border-slate-700/60 pt-3">
-                  <div>
-                    <span className="text-[9px] text-slate-500 block uppercase">Cardholder</span>
-                    <strong className="text-white">{user.name}</strong>
-                  </div>
-                  <div className="text-right">
-                    <span className="text-[9px] text-slate-500 block uppercase">Linked UPI</span>
-                    <strong className="text-cyan-400">{upiId}</strong>
-                  </div>
-                </div>
-              </div>
-
-              {/* Instant Top-Up Buttons */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block">
-                  Quick Balance Top-Up
-                </label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[100, 250, 500].map((amt) => (
-                    <button
-                      key={amt}
-                      onClick={() => handleTopUpWallet(amt)}
-                      className="py-2.5 px-3 rounded-xl bg-slate-900 hover:bg-cyan-950/40 border border-slate-800 hover:border-cyan-500/50 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-all hover:scale-105"
-                    >
-                      <Plus size={14} className="text-cyan-400" />
-                      <span>+₹{amt}.00</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-            </div>
+            <WalletSection
+              user={user}
+              walletBalance={walletBalance}
+              onBalanceChange={(next) => {
+                setWalletBalance(next);
+                updateUserProfile({ walletBalance: next });
+              }}
+              onToast={(message, tone) => showToast(message, tone)}
+            />
           )}
 
           {/* ========================================================= */}
@@ -1201,7 +1133,7 @@ export default function UserProfile({ onClose, onSelectPickupForRide }) {
             <div className="w-5 h-5 rounded-md bg-white p-0.5 flex items-center justify-center shrink-0">
               <img src={yatraGoLogo} alt="YatraGo" className="w-full h-full object-contain" onError={(e) => { e.currentTarget.style.display = 'none'; e.currentTarget.parentElement?.classList?.add('img-fallback'); }} />
             </div>
-            <span className="font-mono text-[11px]">Member: {user.email} • <span className={roleTheme.badge.split(' ').find(c => c.startsWith('text-'))}>{roleTheme.label}</span></span>
+            <span className="min-w-0 truncate font-mono text-[11px]">Member: {user.email} • <span className={roleTheme.badge.split(' ').find(c => c.startsWith('text-'))}>{roleTheme.label}</span></span>
           </div>
           <button
             onClick={onClose}

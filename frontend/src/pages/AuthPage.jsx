@@ -504,7 +504,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                           {user.role}
                         </span>
                       </div>
-                      <span className="text-[11px] text-slate-400 font-mono block">{user.email}</span>
+                      <span className="block truncate text-[11px] font-mono text-slate-400">{user.email}</span>
                     </div>
                   </div>
 
@@ -654,7 +654,7 @@ export default function AuthPage({ onNavigate, initialTab = 'login' }) {
                     <label className="block text-xs font-bold text-slate-300 mb-1.5">
                       Choose Your Account Profile Type
                     </label>
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
+                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 sm:gap-3">
                       
                       <button
                         type="button"

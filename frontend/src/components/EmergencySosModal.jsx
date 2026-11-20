@@ -10,6 +10,18 @@ export default function EmergencySosModal({ onClose }) {
   const [countdown, setCountdown] = useState(3);
   const [isCounting, setIsCounting] = useState(false);
   const [triggered, setTriggered] = useState(!!activeSosBroadcast);
+  const [coords, setCoords] = useState(null);
+
+  // Capture real GPS as soon as the dialog opens so the broadcast carries the
+  // traveller's actual position instead of a placeholder.
+  useEffect(() => {
+    if (typeof navigator === 'undefined' || !navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
+      () => {},
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 30000 }
+    );
+  }, []);
 
   useEffect(() => {
     let timer;
@@ -38,9 +50,11 @@ export default function EmergencySosModal({ onClose }) {
       userId: user?.id || user?._id || 'usr_guest',
       userName: user?.name || 'YatraGo Rider',
       userPhone: user?.phone || '112',
-      lat: 37.7749,
-      lng: -122.4194,
-      addressName: 'Innovation Tech Park (37.7749 N, 122.4194 W)'
+      lat: coords?.lat ?? 37.7749,
+      lng: coords?.lng ?? -122.4194,
+      addressName: coords
+        ? `Live GPS (${coords.lat.toFixed(4)}, ${coords.lng.toFixed(4)})`
+        : 'Approximate location — GPS unavailable'
     });
   };
 
@@ -51,7 +65,7 @@ export default function EmergencySosModal({ onClose }) {
       aria-label="Emergency SOS"
       className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-red-950/80 backdrop-blur-lg animate-fadeIn"
     >
-      <div className="glass-panel w-full max-w-md rounded-2xl border border-red-500/50 shadow-2xl p-6 relative text-center space-y-6 overflow-hidden">
+      <div className="glass-panel w-full max-w-md max-h-[90dvh] overflow-y-auto rounded-2xl border border-red-500/50 shadow-2xl p-6 relative text-center space-y-6 overflow-hidden">
         
         {/* Background SOS Glow */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-red-600/20 rounded-full blur-3xl pointer-events-none"></div>

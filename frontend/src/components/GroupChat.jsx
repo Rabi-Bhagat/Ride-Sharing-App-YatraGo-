@@ -411,7 +411,7 @@ export default function GroupChat({
 
                 {/* Message Bubble */}
                 <div
-                  className={`p-3 sm:p-3.5 rounded-2xl text-xs sm:text-sm font-medium shadow-md leading-relaxed ${
+                  className={`p-3 sm:p-3.5 rounded-2xl text-xs sm:text-sm font-medium shadow-md leading-relaxed break-words ${
                     isLocation
                       ? 'bg-gradient-to-r from-cyan-950 via-slate-900 to-emerald-950 border border-cyan-500/40 text-cyan-200 rounded-br-none'
                       : isMe
@@ -426,7 +426,7 @@ export default function GroupChat({
                       </div>
                       <div className="space-y-1">
                         <strong className="block text-white font-bold text-xs">Live Pickup Waypoint Shared</strong>
-                        <p className="text-xs text-slate-300 leading-normal">{msg.text.replace('📍 ', '')}</p>
+                        <p className="text-xs text-slate-300 leading-normal break-words">{msg.text.replace('📍 ', '')}</p>
                         <span className="inline-block text-[10px] font-mono text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-full border border-cyan-500/30">
                           Accurate to 3 meters • GPS Synced
                         </span>
@@ -585,7 +585,7 @@ export default function GroupChat({
   if (isModal) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md animate-fadeIn">
-        <div className="w-full max-w-lg h-[620px] relative">
+        <div className="w-full max-w-lg h-[min(620px,85dvh)] relative">
           {content}
         </div>
       </div>

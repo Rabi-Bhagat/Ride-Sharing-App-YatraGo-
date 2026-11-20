@@ -216,7 +216,10 @@ export default function MapView({
 
   // Initialize and update Google Map
   useEffect(() => {
-    if (!useGoogleMaps || !googleMapsReady || !googleMapRef.current) return;
+    if (!useGoogleMaps || !googleMapsReady) return;
+    const container = googleMapRef.current;
+    // Google Maps rejects a detached container; bail out after unmount.
+    if (!container || !(container instanceof Element)) return;
 
     try {
       const center = hasPickup && hasDestination
@@ -228,7 +231,7 @@ export default function MapView({
             : DEFAULT_CENTER;
 
       if (!mapInstanceRef.current) {
-        const map = new window.google.maps.Map(googleMapRef.current, {
+        const map = new window.google.maps.Map(container, {
           center,
           zoom: 13,
           styles: threeD ? [] : GOOGLE_DARK_MAP_STYLE,
@@ -387,6 +390,21 @@ export default function MapView({
     }
   }, [useGoogleMaps, googleMapsReady, pLat, pLng, dLat, dLng, hasPickup, hasDestination, interactive, threeD, handleMapCoordinateChosen]);
 
+  // Release Google Maps refs on unmount so a detached container is never reused.
+  useEffect(() => {
+    return () => {
+      try {
+        [pickupMarkerRef, destMarkerRef, driverMarkerRef, routePolylineRef].forEach((ref) => {
+          if (ref.current && ref.current.setMap) ref.current.setMap(null);
+          ref.current = null;
+        });
+        mapInstanceRef.current = null;
+      } catch {
+        /* already torn down */
+      }
+    };
+  }, []);
+
   // Leaflet Icons
   const createLeafletDivIcon = (color, label) => {
     return L.divIcon({
@@ -488,7 +506,7 @@ export default function MapView({
       <div className="relative w-full flex-1">
         {useGoogleMaps && googleMapsReady ? (
           // Google Maps Real JavaScript Canvas
-          <div ref={googleMapRef} className="w-full h-full min-h-[460px]" />
+          <div ref={googleMapRef} className="w-full h-full min-h-[300px] sm:min-h-[460px]" />
         ) : (
           // Fallback Leaflet OpenStreetMap Canvas
           <MapContainer

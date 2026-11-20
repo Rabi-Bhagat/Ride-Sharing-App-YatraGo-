@@ -542,6 +542,8 @@ npm run dev
 
 ### Available scripts
 
+**From the repo root:**
+
 | Command | Description |
 |---|---|
 | `npm run dev` | Run backend + frontend concurrently |
@@ -551,6 +553,18 @@ npm run dev
 | `npm start` | Serve API **and** built SPA from one port |
 | `npm run serve` | Build then start |
 | `npm run seed` | Seed demo data — ⚠️ **destructive**, clears collections |
+
+**From inside `frontend/`:**
+
+| Command | Description |
+|---|---|
+| `npm start` | Boots the backend (or reuses one already running), waits for `/api/health`, then starts Vite — no proxy errors |
+| `npm run dev` | Vite dev server only — assumes the backend is already running |
+
+> Running `npm start` in `frontend/` previously started Vite alone, so the `/api`
+> and `/socket.io` proxies had nothing to reach and logged `ECONNREFUSED`. The
+> start script now boots both, and the socket client retries indefinitely rather
+> than giving up after 5 attempts.
 
 ### Demo credentials
 
@@ -671,14 +685,16 @@ Express serves the API and the built SPA on one port. Works on Render, Railway, 
 
 Honest notes about the current state:
 
-1. **Demo data in places.** Chat history, emergency contacts and some rider lists use seeded sample data rather than live records.
-2. **In-memory fallback is not persistent.** Without `MONGO_URI`, all data resets when the server restarts.
-3. **No automated test suite.** Validation is manual plus build and route smoke checks. Adding Vitest/Jest is the highest-value next step.
-4. **No rate limiting.** Auth and payment endpoints would benefit from `express-rate-limit` before public launch.
-5. **JWT is hand-rolled.** It works and is correctly signed, but a maintained library (`jsonwebtoken`) is the safer long-term choice.
-6. **Single-server socket scaling.** Socket.io is not backed by a Redis adapter, so horizontal scaling would need one.
-7. **Some large components.** `Interactive3DRideScene` (~1,860 lines) and `YatraGoRideRequestCard` (~1,230 lines) would benefit from splitting.
-8. **Hash routing only.** No SSR or SEO-friendly deep links; migrating to React Router plus prerendering would help discoverability.
+1. **Google Maps quotas.** The shared demo key hits its free daily quota under heavy use, which makes the map panels show Google's own "Something went wrong" placeholder while the rest of the page keeps working. Supply your own key via `VITE_GOOGLE_MAPS_API_KEY` before launch.
+2. **Demo data in places.** Chat history, emergency contacts and some rider lists use seeded sample data rather than live records.
+3. **In-memory fallback is not persistent.** Without `MONGO_URI`, all data resets when the server restarts.
+4. **No automated test suite.** Validation is manual plus build and route smoke checks. Adding Vitest/Jest is the highest-value next step.
+5. **No rate limiting.** Auth and payment endpoints would benefit from `express-rate-limit` before public launch.
+6. **JWT is hand-rolled.** It works and is correctly signed, but a maintained library (`jsonwebtoken`) is the safer long-term choice.
+7. **Single-server socket scaling.** Socket.io is not backed by a Redis adapter, so horizontal scaling would need one.
+8. **Some large components.** `Interactive3DRideScene` (~1,900 lines) and `YatraGoRideRequestCard` (~1,290 lines) would benefit from splitting.
+9. **Partial localization.** Hindi covers the shared chrome (nav, footer, booking labels, wallet, SOS, Future Scope). Deep page copy and user-generated content remain English-only.
+10. **Hash routing only.** No SSR or SEO-friendly deep links; migrating to React Router plus prerendering would help discoverability.
 
 ---
 

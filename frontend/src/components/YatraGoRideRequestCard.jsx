@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Car, Users, Clock, Calendar, MapPin, Navigation, ArrowRight, Sparkles, LocateFixed, Check, Bike, ChevronDown, Search, X, Zap, Compass, Loader2 } from 'lucide-react';
+import { Car, Users, Clock, Calendar, MapPin, Navigation, ArrowRight, Sparkles, LocateFixed, Check, Bike, ChevronDown, Search, X, Zap, Compass, Loader2, AlertCircle } from 'lucide-react';
 
 const POPULAR_PRESETS = [
   { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', lat: 28.4950, lng: 77.0890, desc: 'Tech corridor & dining plaza' },
@@ -119,6 +119,9 @@ export default function YatraGoRideRequestCard({
   const [pickupTimeMode, setPickupTimeMode] = useState('now'); // 'now' or 'later'
   const [timingDropdownOpen, setTimingDropdownOpen] = useState(false);
   const [selectedVehicleTier, setSelectedVehicleTier] = useState('premier');
+  const [validationError, setValidationError] = useState(null);
+  const [pickupHighlighted, setPickupHighlighted] = useState(false);
+  const [dropoffHighlighted, setDropoffHighlighted] = useState(false);
 
   // Coords tracking for accurate distance calculation between pickup and destination
   const [pickupCoords, setPickupCoords] = useState(() => {
@@ -486,7 +489,27 @@ export default function YatraGoRideRequestCard({
   const handleConfirmRequest = () => {
     const finalPickup = pickup.trim();
     const finalDropoff = dropoffInput.trim() || dropoff;
-    if (!finalPickup || !finalDropoff) return;
+
+    // Show the traveller exactly what is missing instead of failing silently.
+    if (!finalPickup || !finalDropoff) {
+      const missing = [];
+      if (!finalPickup) missing.push('pickup');
+      if (!finalDropoff) missing.push('destination');
+      setValidationError(
+        missing.length === 2
+          ? 'Please select your pickup and destination places to request a ride.'
+          : `Please select your ${missing[0]} place to request a ride.`
+      );
+      // Highlight whichever field is empty.
+      if (!finalPickup) setPickupHighlighted(true);
+      if (!finalDropoff) setDropoffHighlighted(true);
+      if (typeof window !== 'undefined') {
+        window.setTimeout(() => setValidationError(null), 5000);
+      }
+      return;
+    }
+
+    setValidationError(null);
     if (onBookRide) {
       onBookRide({
         pickup: {
@@ -806,7 +829,13 @@ export default function YatraGoRideRequestCard({
         </div>
 
         {/* Pickup Input */}
-        <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 focus-within:border-cyan-400 transition-all relative z-20">
+        <div
+          className={`flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border transition-all relative z-20 ${
+            pickupHighlighted
+              ? 'border-rose-500 ring-2 ring-rose-500/30 animate-shake'
+              : 'border-slate-800 hover:border-slate-700 focus-within:border-cyan-400'
+          }`}
+        >
           {/* Black circle icon */}
           <div className="w-4 h-4 rounded-full border-2 border-cyan-400 flex items-center justify-center shrink-0">
             <div className="w-1.5 h-1.5 rounded-full bg-cyan-400"></div>
@@ -822,6 +851,8 @@ export default function YatraGoRideRequestCard({
               onChange={(e) => {
                 const val = e.target.value;
                 setPickup(val);
+                setPickupHighlighted(false);
+                setValidationError(null);
                 const coords = findCoordsOf(val);
                 if (coords) setPickupCoords(coords);
               }}
@@ -843,7 +874,13 @@ export default function YatraGoRideRequestCard({
 
         {/* Dropoff Input with Dynamic Autocomplete & Nearby Fallbacks */}
         <div ref={destDropdownRef} className="relative z-30">
-          <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border border-slate-800 hover:border-slate-700 focus-within:border-emerald-400 transition-all shadow-sm">
+          <div
+            className={`flex items-center gap-3 p-3.5 rounded-2xl bg-slate-950 border transition-all shadow-sm ${
+              dropoffHighlighted
+                ? 'border-rose-500 ring-2 ring-rose-500/30 animate-shake'
+                : 'border-slate-800 hover:border-slate-700 focus-within:border-emerald-400'
+            }`}
+          >
             {/* Emerald square icon */}
             <div className="w-4 h-4 bg-emerald-400 rounded-sm flex items-center justify-center shrink-0">
               <div className="w-1.5 h-1.5 bg-slate-950 rounded-xs"></div>
@@ -864,7 +901,11 @@ export default function YatraGoRideRequestCard({
                 ref={destInputRef}
                 type="text"
                 value={dropoffInput}
-                onChange={handleDropoffInputChange}
+                onChange={(e) => {
+                  setDropoffHighlighted(false);
+                  setValidationError(null);
+                  handleDropoffInputChange(e);
+                }}
                 onFocus={() => setShowDestDropdown(true)}
                 onKeyDown={handleDestKeyDown}
                 placeholder="Search any destination..."
@@ -1203,6 +1244,20 @@ export default function YatraGoRideRequestCard({
           PROMO ₹100 OFF
         </span>
       </div>
+
+      {/* 6.5 MISSING LOCATION VALIDATION */}
+      {validationError && (
+        <div
+          role="alert"
+          className="flex items-start gap-2 rounded-2xl border border-rose-500/40 bg-rose-500/10 p-3 text-[11px] text-rose-200 animate-shake"
+        >
+          <AlertCircle size={14} className="mt-0.5 shrink-0" />
+          <div>
+            <strong className="block text-rose-100">Location required</strong>
+            <span className="mt-0.5 block leading-relaxed">{validationError}</span>
+          </div>
+        </div>
+      )}
 
       {/* 7. PRIMARY ACTION CTA BUTTON (YATRAGO FULL WIDTH) */}
       <button

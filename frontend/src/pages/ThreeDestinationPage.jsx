@@ -10,7 +10,7 @@ const Interactive3DRideScene = React.lazy(() => import('../components/Interactiv
 
 function SceneLoader() {
   return (
-    <div className="w-full h-[420px] rounded-3xl border border-slate-800 bg-slate-900/60 flex flex-col items-center justify-center gap-3">
+    <div className="w-full h-[min(420px,65dvh)] min-h-[280px] rounded-3xl border border-slate-800 bg-slate-900/60 flex flex-col items-center justify-center gap-3">
       <div className="w-10 h-10 rounded-full border-2 border-cyan-400/30 border-t-cyan-400 animate-spin" />
       <span className="text-xs font-mono text-slate-400">Loading 3D experience…</span>
     </div>

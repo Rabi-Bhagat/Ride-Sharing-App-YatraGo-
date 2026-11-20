@@ -63,7 +63,7 @@ export default function StrangerMatcherPage({ onCombineSuccess, activeRide, onNa
           <div className="lg:col-span-6">
             <StrangerMatcher onCombineSuccess={onCombineSuccess} />
           </div>
-          <div className="lg:col-span-6 h-[550px] rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
+          <div className="lg:col-span-6 h-[min(550px,70dvh)] min-h-[320px] rounded-3xl overflow-hidden border border-slate-800 shadow-xl">
             <React.Suspense fallback={
               <div className="w-full h-full flex flex-col items-center justify-center gap-3 bg-slate-900/60">
                 <div className="w-10 h-10 rounded-full border-2 border-emerald-400/30 border-t-emerald-400 animate-spin" />

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Car, Users, Compass, MessageSquare, AlertTriangle, ShieldCheck, User, Menu, X, IndianRupee, Home, Globe, LogIn, LogOut, ChevronDown, Search, Wallet, Plus, CreditCard, ArrowRight, Plane, MapPin, Bike, Zap, Shield, Store } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
+import { useLanguage } from '../i18n/LanguageContext';
 import VerificationBadge from './VerificationBadge';
 import UserAvatar from './UserAvatar';
 import yatraGoLogo from '../logo/yatrago-logo.webp';
@@ -28,6 +29,7 @@ export default function Navbar({
 }) {
   const { user, isAuthenticated, openAuthModal, logout, updateUserProfile } = useAuth();
   const { messages, unreadCount, markMessagesRead } = useSocket();
+  const { t } = useLanguage();
 
   // Dropdown states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -196,7 +198,7 @@ export default function Navbar({
                 }`}
               >
                 <Home size={15} className={activeTab === 'home' ? 'text-cyan-400' : 'text-slate-400'} />
-                <span>Home</span>
+                <span>{t('nav.home')}</span>
               </button>
 
               {/* Ride Services Mega Dropdown */}
@@ -213,7 +215,7 @@ export default function Navbar({
                   }`}
                 >
                   <Car size={15} className={['book', 'stranger'].includes(activeTab) ? 'text-cyan-400' : 'text-slate-400'} />
-                  <span>Ride Services</span>
+                  <span>{t('nav.rideServices')}</span>
                   <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-emerald-500/20 text-emerald-300 font-black font-mono">
                     -44%
                   </span>
@@ -377,7 +379,7 @@ export default function Navbar({
                 }`}
               >
                 <IndianRupee size={15} className={activeTab === 'cost-split' ? 'text-cyan-400' : 'text-slate-400'} />
-                <span>Split Fare</span>
+                <span>{t('nav.splitFare')}</span>
               </button>
 
               {/* Business & Promo Hub */}
@@ -391,7 +393,7 @@ export default function Navbar({
                 title="Partner hotels, shops & restaurants with traveller promo codes"
               >
                 <Store size={15} className={activeTab === 'business' ? 'text-emerald-400' : 'text-slate-400'} />
-                <span>Business & Promos</span>
+                <span>{t('nav.business')}</span>
               </button>
 
               {/* Explore 3D & Guiders Dropdown */}
@@ -408,7 +410,7 @@ export default function Navbar({
                   }`}
                 >
                   <Globe size={15} className={['preview-3d', 'guiders'].includes(activeTab) ? 'text-purple-400' : 'text-slate-400'} />
-                  <span>Explore & 3D</span>
+                  <span>{t('nav.explore')}</span>
                   <ChevronDown size={13} className={`transition-transform duration-200 text-slate-400 ${exploreDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -502,7 +504,7 @@ export default function Navbar({
                   title="Role-Based Workspaces & Portals"
                 >
                   <ShieldCheck size={15} className={['driver', 'admin', 'guide-portal'].includes(activeTab) ? 'text-cyan-400' : 'text-slate-400'} />
-                  <span>Workspaces</span>
+                  <span>{t('nav.workspaces')}</span>
                   <ChevronDown size={13} className={`transition-transform duration-200 text-slate-400 ${portalsDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
@@ -620,7 +622,7 @@ export default function Navbar({
 
                   {/* Quick Wallet Dropdown */}
                   {walletDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-4 z-50 animate-fadeIn space-y-3">
+                    <div className="absolute top-full right-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-4 z-50 animate-fadeIn space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                           <Wallet size={14} className="text-emerald-400" />
@@ -645,7 +647,7 @@ export default function Navbar({
 
                       <div>
                         <span className="text-[10px] uppercase font-bold text-slate-400 block mb-1.5">Quick Top-Up Balance</span>
-                        <div className="grid grid-cols-3 gap-1.5">
+                        <div className="grid grid-cols-3 gap-1 sm:gap-1.5">
                           {[100, 250, 500].map((amt) => (
                             <button
                               key={amt}

@@ -227,6 +227,50 @@ Socket.io will connect to `VITE_SOCKET_URL` over `wss://` automatically.
 
 ---
 
+## 3.5 If your Cloudflare project is “Workers Builds” (Deploy command shown)
+
+The new Workers dashboard shows **Build command** + **Deploy command** instead of a Build output directory. A Vite SPA can still be hosted there with static assets. This repo now includes `wrangler.toml` and `worker/index.js` for that setup.
+
+Fill the dashboard exactly like this:
+
+| Field | Value |
+|---|---|
+| Git repository | your repo |
+| Production branch | `main` |
+| Build command | `npm --prefix frontend ci --include=dev && npm --prefix frontend run build` |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+| Build watch paths → Include | `*` |
+| Build watch paths → Exclude | `node_modules/**, .git/, frontend/node_modules/**` |
+
+**Variables and secrets** → **Add** (all environments):
+
+```
+NODE_VERSION=20
+VITE_API_BASE_URL=https://<your-railway-service>.up.railway.app
+VITE_SOCKET_URL=https://<your-railway-service>.up.railway.app
+VITE_GOOGLE_MAPS_API_KEY=<your-google-maps-key>
+```
+
+How it works:
+- `wrangler.toml` points the Worker's `ASSETS` binding at `./frontend/dist`.
+- `worker/index.js` serves every request from that binding.
+- `not_found_handling = "single-page-application"` falls back to `index.html`.
+- The build command uses `--prefix frontend` because Root is `/`, and `--include=dev` so Vite is installed even though Cloudflare sets `NODE_ENV=production`.
+
+If you prefer the classic Pages flow instead, create a **Pages** project (`Workers & Pages → Create → Pages → Connect to Git`) and use:
+
+| Field | Value |
+|---|---|
+| Root directory | `frontend` |
+| Build command | `npm ci --include=dev && npm run build` |
+| Build output directory | `dist` |
+| Variable | `NODE_VERSION=20` |
+
+Both approaches deploy the same SPA.
+
+---
+
 ## 4. Credentials checklist
 
 | Credential | Where to get it | Where it goes |

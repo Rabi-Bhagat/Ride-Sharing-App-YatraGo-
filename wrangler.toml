@@ -1,0 +1,10 @@
+# Cloudflare Workers Builds configuration for the YatraGo frontend.
+# The Worker serves the built Vite SPA from frontend/dist.
+name = "ride-sharing-app-yatrago"
+compatibility_date = "2024-11-01"
+main = "worker/index.js"
+
+[assets]
+directory = "./frontend/dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"

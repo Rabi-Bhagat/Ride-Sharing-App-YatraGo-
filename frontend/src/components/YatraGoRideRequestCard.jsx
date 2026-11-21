@@ -462,7 +462,6 @@ export default function YatraGoRideRequestCard({
   const sharedTotal = sharedPerPerson * (currentFare.sharedRiders || 3);
   const displayCost = (isPoolMode ? sharedPerPerson : standardCost).toFixed(2);
   const bookingFare = isPoolMode ? sharedTotal : standardCost;
-  const savingPercent = isPoolMode ? currentFare.savingsShared : currentFare.savingsSolo;
 
   // Auto locate user
   const handleLocateMe = () => {
@@ -1240,22 +1239,9 @@ export default function YatraGoRideRequestCard({
                     {isBikeMode ? '🏍️ Moto' : isPoolMode ? '👥 Pool' : '🚗 Car'}
                   </span>
                 </div>
-                <span className="mt-1 block font-mono text-[9px] text-slate-500">
-                  vs Ola/Uber ₹{tierFare.competitorMin}–₹{tierFare.competitorMax}
-                </span>
               </div>
             );
           })}
-        </div>
-
-        {/* Live competitor benchmark for the selected tier */}
-        <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-3 py-2 font-mono text-[10px]">
-          <span className="text-slate-400">
-            Ola/Uber est. <strong className="text-slate-200">₹{currentFare.competitorMin}–₹{currentFare.competitorMax}</strong>
-          </span>
-          <span className="font-bold text-emerald-300">
-            You save {savingPercent != null ? `${savingPercent}%` : '—'}
-          </span>
         </div>
       </div>
 

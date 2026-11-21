@@ -89,6 +89,75 @@ Expected:
 
 If Mongo cannot connect, the server still runs with in-memory stores.
 
+### 1.5 Backend on Render (alternative to Railway)
+
+Render → **New → Web Service** → connect the same repo. Fill:
+
+| Field | Value |
+|---|---|
+| Name | `yatrago-backend` (avoid a trailing `-`) |
+| Language | `Node` |
+| Branch | `main` |
+| Region | `Oregon (US West)` (or the region closest to your MongoDB) |
+| Root Directory | `backend` |
+| Build Command | `npm ci` |
+| Start Command | `npm start` |
+| Health Check Path (Advanced) | `/api/health` |
+| Compute | Free (spins down after inactivity) |
+
+Environment variables (Render → Environment):
+
+| Variable | Value |
+|---|---|
+| `NODE_ENV` | `production` |
+| `NODE_VERSION` | `20` |
+| `MONGO_URI` | MongoDB Atlas connection string |
+| `JWT_SECRET` | random hex (generate below) |
+| `ADMIN_ACCESS_KEY` | random hex / strong passphrase |
+| `GOOGLE_CLIENT_ID` | Google OAuth Web Client ID |
+| `RAZORPAY_KEY_ID` | Razorpay Key ID |
+| `RAZORPAY_KEY_SECRET` | Razorpay Key Secret |
+| `SMTP_HOST` | optional |
+| `SMTP_PORT` | `587` |
+| `SMTP_USER` | optional |
+| `SMTP_PASS` | optional |
+| `SMTP_FROM` | optional |
+
+Do **not** set `PORT` — Render injects it automatically.
+
+Generate secrets:
+
+```bash
+node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
+```
+
+Run it twice for `JWT_SECRET` and `ADMIN_ACCESS_KEY`.
+
+`render.yaml` in the repo root automates the service configuration. You can use **New → Blueprint** instead of the manual form.
+
+After the first deploy, Render gives a URL like:
+
+```
+https://yatrago-backend-xxxx.onrender.com
+```
+
+Verify:
+
+```
+https://yatrago-backend-xxxx.onrender.com/api/health
+```
+
+Render free services spin down after ~15 minutes of inactivity; the first request after that is slow, and Socket.io reconnects automatically. WebSockets are supported.
+
+**After Render is live:** update the Cloudflare Worker variables and redeploy the frontend:
+
+```
+VITE_API_BASE_URL=https://yatrago-backend-xxxx.onrender.com
+VITE_SOCKET_URL=https://yatrago-backend-xxxx.onrender.com
+```
+
+Then add `https://ride-sharing-app-yatrago.rabibhagat789.workers.dev` (and your custom domain) to the Google OAuth **Authorized JavaScript origins**.
+
 ---
 
 ## 2. Frontend on Cloudflare Pages

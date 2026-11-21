@@ -148,13 +148,11 @@ At 8 km this reproduces the table exactly:
 - **Book Ride page (`RideBooking.jsx`):**
   - Every tier card price is `getTierFare(tierId, distanceKm).solo`.
   - Car tiers show “Shared ₹X/person”.
-  - A live benchmark card shows Ola/Uber range, solo, shared and savings, plus the bike saver fare.
   - The CTA total is `solo + guider fee`.
 - **Home request card (`YatraGoRideRequestCard.jsx`):**
   - Ride mode shows solo fare; Pool mode shows per-person shared fare.
-  - Each tier shows the competitor range.
-  - A benchmark strip shows the current competitor estimate and savings.
   - Pool bookings send `sharedTotal` as `fare`, so the cost splitter divides it into exact per-person shares.
+- The engine still computes `competitorMin/Max` and `savingsSolo/savingsShared`, but those comparison values are **not displayed** in the ride UI.
 - **Cost splitter:** consumes `activeRide.totalCost` (solo or shared total) and splits it; shared totals therefore divide to the published per-person prices.
 
 ---
@@ -347,10 +345,10 @@ All API responses use `{ success: boolean, ... }`. Users are always returned thr
 
 ## 18. Environment & Commands
 
-Backend variables: `MONGO_URI`, `JWT_SECRET`, `ADMIN_ACCESS_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `SMTP_*`, `GOOGLE_CLIENT_ID`, `PORT` (Railway injects it).
+Backend variables: `MONGO_URI`, `JWT_SECRET`, `ADMIN_ACCESS_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `SMTP_*`, `GOOGLE_CLIENT_ID`, `NODE_ENV`, `NODE_VERSION`. Do not set `PORT`; Railway and Render inject it.
 
 Frontend build variables (Vite inlines them at build time):
-- `VITE_API_BASE_URL` — Railway backend URL. Empty in local dev so `/api` uses the Vite proxy.
+- `VITE_API_BASE_URL` — Railway/Render backend URL. Empty in local dev so `/api` uses the Vite proxy.
 - `VITE_SOCKET_URL` — Socket.io backend URL; defaults to `VITE_API_BASE_URL`.
 - `VITE_GOOGLE_MAPS_API_KEY` — browser Maps key injected into `index.html`.
 

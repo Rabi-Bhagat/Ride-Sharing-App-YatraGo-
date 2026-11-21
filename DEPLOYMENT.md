@@ -132,7 +132,7 @@ Your frontend URL:
 https://<your-project>.pages.dev
 ```
 
-The app uses hash routing (`/#home`), plus `frontend/public/_redirects` provides a fallback.
+The app uses hash routing (`/#home`). For the Workers static-assets setup, SPA fallback comes from `not_found_handling = "single-page-application"` in `wrangler.toml` — do **not** add a catch-all `_redirects` file. Workers asset validation rejects `/* /index.html 200` with `Infinite loop detected` because `/index.html` matches the rule again.
 
 ### 2.4 If the build fails in ~2 seconds
 
@@ -170,6 +170,7 @@ A 2-second failure is almost always a **root directory / build command mismatch*
 | `npm ci ... lockfileVersion@3` / lockfile error | npm too old for the v3 lockfile | Add `NODE_VERSION=20` |
 | `Output directory "dist" not found` | Output path is relative to the Root directory | With Root `frontend` use `dist`; with repo root use `frontend/dist` |
 | `Could not read package.json` | Root directory points somewhere without `package.json` | Root must be `frontend` (Config A) or repo root (Config B) |
+| `Invalid _redirects configuration: Infinite loop detected` | A catch-all `/* /index.html 200` rule loops on Workers assets | Delete `_redirects`; keep `not_found_handling = "single-page-application"` in `wrangler.toml` |
 
 The repo now includes `frontend/.node-version` (`20`) to reinforce the Node version. If you still see a failure, click **Copy build log** and read the first `ERROR` / `npm ERR!` line — that identifies which row above applies.
 

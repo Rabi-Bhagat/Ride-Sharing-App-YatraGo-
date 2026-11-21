@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Car, Users, Clock, Calendar, MapPin, Navigation, ArrowRight, Sparkles, LocateFixed, Check, Bike, ChevronDown, Search, X, Zap, Compass, Loader2, AlertCircle } from 'lucide-react';
+import { getTierFare } from '../utils/fare';
 
 const POPULAR_PRESETS = [
   { name: 'Downtown Cyber Hub', distance: '8.4 km', distKm: 8.4, type: 'hub', lat: 28.4950, lng: 77.0890, desc: 'Tech corridor & dining plaza' },
@@ -451,11 +452,17 @@ export default function YatraGoRideRequestCard({
       ? POOL_TIERS 
       : CAR_TIERS;
 
-  // Selected tier resolution
+  // Selected tier resolution — all prices come from the shared fare engine.
   const currentTier = activeTierOptions[selectedVehicleTier] || Object.values(activeTierOptions)[0];
-  const standardCost = (currentTier.base + dist * currentTier.perKm);
-  const poolCost = (standardCost * 0.56); // 44% savings with stranger pooling
-  const displayCost = activeService === 'pool' ? poolCost.toFixed(2) : standardCost.toFixed(2);
+  const currentFare = getTierFare(currentTier.id, dist, {
+    fallbackClass: isBikeMode ? 'bike' : 'sedan'
+  });
+  const standardCost = currentFare.solo;
+  const sharedPerPerson = currentFare.sharedPerPerson || Math.round((standardCost * 1.1) / 3);
+  const sharedTotal = sharedPerPerson * (currentFare.sharedRiders || 3);
+  const displayCost = (isPoolMode ? sharedPerPerson : standardCost).toFixed(2);
+  const bookingFare = isPoolMode ? sharedTotal : standardCost;
+  const savingPercent = isPoolMode ? currentFare.savingsShared : currentFare.savingsSolo;
 
   // Auto locate user
   const handleLocateMe = () => {
@@ -526,7 +533,7 @@ export default function YatraGoRideRequestCard({
         tier: currentTier.id,
         vehicleType: currentTier.vehicleType,
         vehicleCategory: isBikeMode ? 'bike' : 'car',
-        fare: displayCost,
+        fare: bookingFare.toFixed(2),
         distanceKm: dist,
         etaMinutes,
         reserveDate: pickupTimeMode === 'later' ? reserveDate : null,
@@ -1190,7 +1197,12 @@ export default function YatraGoRideRequestCard({
           {Object.entries(activeTierOptions).map(([key, t]) => {
             const isSelected = (selectedVehicleTier === key) || (!activeTierOptions[selectedVehicleTier] && key === Object.keys(activeTierOptions)[0]);
             const Icon = t.icon;
-            const cost = activeService === 'pool' ? (t.base + dist * t.perKm) * 0.56 : (t.base + dist * t.perKm);
+            const tierFare = getTierFare(key, dist, {
+              fallbackClass: isBikeMode ? 'bike' : 'sedan'
+            });
+            const cost = isPoolMode
+              ? (tierFare.sharedPerPerson || Math.round((tierFare.solo * 1.1) / 3))
+              : tierFare.solo;
 
             return (
               <div
@@ -1214,7 +1226,10 @@ export default function YatraGoRideRequestCard({
                       <span className="text-[10px] text-slate-400 font-mono block">{t.eta}</span>
                     </div>
                   </div>
-                  <strong className="text-sm font-black text-white font-mono shrink-0">₹{cost.toFixed(2)}</strong>
+                  <div className="shrink-0 text-right">
+                    <strong className="block text-sm font-black text-white font-mono">₹{cost.toFixed(2)}</strong>
+                    {isPoolMode && <span className="block font-mono text-[9px] text-emerald-300">/person</span>}
+                  </div>
                 </div>
 
                 <div className="flex items-center justify-between text-[10px] text-slate-400 font-mono mt-2 pt-1 border-t border-slate-800/60">
@@ -1225,9 +1240,22 @@ export default function YatraGoRideRequestCard({
                     {isBikeMode ? '🏍️ Moto' : isPoolMode ? '👥 Pool' : '🚗 Car'}
                   </span>
                 </div>
+                <span className="mt-1 block font-mono text-[9px] text-slate-500">
+                  vs Ola/Uber ₹{tierFare.competitorMin}–₹{tierFare.competitorMax}
+                </span>
               </div>
             );
           })}
+        </div>
+
+        {/* Live competitor benchmark for the selected tier */}
+        <div className="flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/20 px-3 py-2 font-mono text-[10px]">
+          <span className="text-slate-400">
+            Ola/Uber est. <strong className="text-slate-200">₹{currentFare.competitorMin}–₹{currentFare.competitorMax}</strong>
+          </span>
+          <span className="font-bold text-emerald-300">
+            You save {savingPercent != null ? `${savingPercent}%` : '—'}
+          </span>
         </div>
       </div>
 
@@ -1274,7 +1302,10 @@ export default function YatraGoRideRequestCard({
         </span>
         
         <div className="flex items-center gap-2">
-          <span className="font-mono text-base font-black text-slate-950">₹{displayCost}</span>
+          <div className="text-right leading-none">
+            <span className="font-mono text-base font-black text-slate-950">₹{displayCost}</span>
+            {isPoolMode && <span className="ml-1 font-mono text-[10px] font-bold text-slate-700">/person</span>}
+          </div>
           <div className="w-7 h-7 rounded-full bg-slate-950 text-white flex items-center justify-center group-hover:translate-x-1 transition-transform">
             <ArrowRight size={15} />
           </div>

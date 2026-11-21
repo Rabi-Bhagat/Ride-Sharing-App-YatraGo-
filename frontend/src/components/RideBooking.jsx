@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Navigation, MapPin, Car, Bike, Compass, ArrowRight, LocateFixed, Search, X, Loader2 } from 'lucide-react';
 import { VEHICLE_TIERS } from '../data/mockData';
 import { rankByNearest, getUserLocation, formatDistanceKm } from '../utils/geo';
+import { getTierFare, getFareComparison, getFareEstimate } from '../utils/fare';
 
 
 // Helper to calculate distance in km
@@ -202,12 +203,15 @@ export default function RideBooking({
     : 8.5;
   const etaMinutes = Math.max(3, Math.round(distanceKm * 1.5));
 
-  // Fare Calculation (in Indian Rupees ₹)
+  // Fare Calculation (in Indian Rupees ₹) — powered by the shared fare engine.
+  // Solo prices are calibrated to the published Bike / Mini / Sedan table.
   const isBike = vehicleCategory === 'bike';
-  const basePrice = Math.max(
-    isBike ? 35.00 : 60.00,
-    Math.round(((isBike ? 25.00 : 50.00) + Math.min(distanceKm, 100) * (isBike ? 9.5 : 16.0)) * (vehicleObj?.multiplier || 1.0))
-  );
+  const selectedFare = getTierFare(selectedVehicle, distanceKm, {
+    fallbackClass: isBike ? 'bike' : 'sedan'
+  });
+  const basePrice = selectedFare.solo;
+  const fareComparison = getFareComparison(distanceKm);
+  const bikeSaverFare = getFareEstimate({ fareClass: 'bike', distanceKm, saver: true }).solo;
   const guiderFee = (addGuider || selectedGuider) ? (selectedGuider?.hourlyRate || 350) : 0;
   const totalPrice = (basePrice + guiderFee).toFixed(2);
 
@@ -652,12 +656,11 @@ export default function RideBooking({
         <div className="space-y-2">
           {VEHICLE_TIERS.filter(v => v.category === vehicleCategory).map(v => {
             const isSelected = selectedVehicle === v.id;
-            const cappedDist = Math.min(distanceKm || 10, 100);
             const isBikeMode = vehicleCategory === 'bike';
-            const tierPrice = Math.max(
-              isBikeMode ? 35.00 : 60.00,
-              Math.round(((isBikeMode ? 25.00 : 50.00) + cappedDist * (isBikeMode ? 9.5 : 16.0)) * v.multiplier)
-            );
+            const tierFare = getTierFare(v.id, distanceKm, {
+              fallbackClass: isBikeMode ? 'bike' : 'sedan'
+            });
+            const tierPrice = tierFare.solo;
 
             return (
               <div
@@ -692,6 +695,11 @@ export default function RideBooking({
 
                 <div className="text-right">
                   <span className="text-sm font-extrabold text-white block">₹{tierPrice.toFixed(2)}</span>
+                  {!isBikeMode && tierFare.supportsShared && (
+                    <span className="block font-mono text-[10px] text-cyan-400">
+                      Shared ₹{tierFare.sharedPerPerson}/person
+                    </span>
+                  )}
                   {isSelected && (
                     <span className={`text-[10px] font-bold block ${isBikeMode ? 'text-cyan-400' : 'text-emerald-400'}`}>
                       Selected
@@ -701,6 +709,42 @@ export default function RideBooking({
               </div>
             );
           })}
+        </div>
+
+        {/* Published fare benchmark: Bike / Mini / Sedan vs Ola-Uber */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-3.5 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-mono uppercase font-bold text-slate-400">
+              Fare benchmark · {distanceKm} km
+            </span>
+            <span className="text-[10px] font-mono text-emerald-400 font-bold">vs Ola / Uber</span>
+          </div>
+          <div className="grid grid-cols-4 gap-1.5 border-b border-slate-800 pb-1 text-[9px] font-mono uppercase text-slate-500">
+            <span>Class</span>
+            <span className="text-right">Ola/Uber</span>
+            <span className="text-right">Solo</span>
+            <span className="text-right">Shared</span>
+          </div>
+          {fareComparison.map((row) => (
+            <div key={row.fareClass} className="grid grid-cols-4 items-center gap-1.5 text-[11px]">
+              <span className="font-bold text-white">{row.label}</span>
+              <span className="text-right font-mono text-slate-400">₹{row.competitorMin}–{row.competitorMax}</span>
+              <span className="text-right font-mono font-bold text-cyan-300">₹{row.solo}</span>
+              <span className="text-right font-mono font-bold text-emerald-300">
+                {row.supportsShared ? `₹${row.sharedPerPerson}` : '—'}
+              </span>
+            </div>
+          ))}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-t border-slate-800 pt-1.5 text-[10px] font-mono">
+            <span className="text-emerald-400">
+              Solo up to {Math.max(...fareComparison.map((row) => row.savingsSolo))}% cheaper
+            </span>
+            <span className="text-cyan-400">
+              Shared up to{' '}
+              {Math.max(...fareComparison.filter((row) => row.savingsShared != null).map((row) => row.savingsShared))}% cheaper
+            </span>
+            <span className="text-slate-500">Bike saver ₹{bikeSaverFare} (₹4/km)</span>
+          </div>
         </div>
       </div>
 

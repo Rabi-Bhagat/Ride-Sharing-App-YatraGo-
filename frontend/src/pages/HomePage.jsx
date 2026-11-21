@@ -2,6 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { Car, Users, Box, Compass, ShieldCheck, ArrowRight, Sparkles, Zap, Bike, Navigation, Plane, Smartphone, QrCode, Briefcase, Calendar, Package, HeartHandshake, Eye, Utensils } from 'lucide-react';
 
 
+import HomeAmbient from '../components/HomeAmbient';
 import ScenicRoutesGallery from '../components/ScenicRoutesGallery';
 import VehicleFleetShowcase from '../components/VehicleFleetShowcase';
 import YatraGoRideRequestCard from '../components/YatraGoRideRequestCard';
@@ -64,7 +65,11 @@ export default function HomePage({ onNavigate, user }) {
   };
 
   return (
-    <div className="space-y-12 animate-fadeIn text-slate-100">
+    <div className="relative isolate animate-fadeIn text-slate-100">
+      {/* Ambient mini-stars, bubbles and aurora orbs behind the whole home screen */}
+      <HomeAmbient />
+
+      <div className="relative z-10 space-y-12">
       
       {/* ======================================================== */}
       {/* 1. YATRAGO HERO SPLIT: RIDE REQUEST CARD + HERO IMAGE SLIDER */}
@@ -522,6 +527,7 @@ export default function HomePage({ onNavigate, user }) {
       {/*     (preview-3d → 3D Highway Simulator view mode)          */}
       {/* ======================================================== */}
 
+      </div>
     </div>
   );
 }

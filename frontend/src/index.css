@@ -570,4 +570,96 @@ html.light .hero-grid {
   filter: none !important;
 }
 
+/* ============================================================
+   HOME AMBIENT FIELD — mini-stars & floating bubbles
+   ============================================================ */
+.home-star {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(circle, #f0f9ff 0%, #67e8f9 45%, rgba(34, 211, 238, 0) 72%);
+  box-shadow: 0 0 7px rgba(103, 232, 249, 0.6);
+  opacity: 0.4;
+  animation-name: ambientStarTwinkle;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: opacity, transform;
+}
+
+@keyframes ambientStarTwinkle {
+  0%, 100% { opacity: 0.16; transform: scale(0.7); }
+  50% { opacity: 0.9; transform: scale(1.18); }
+}
+
+.home-bubble {
+  position: absolute;
+  border-radius: 9999px;
+  background: radial-gradient(
+    circle at 30% 28%,
+    rgba(224, 242, 254, 0.22),
+    rgba(56, 189, 248, 0.12) 42%,
+    rgba(59, 130, 246, 0.05) 66%,
+    transparent 72%
+  );
+  border: 1px solid rgba(125, 211, 252, 0.16);
+  box-shadow:
+    inset 0 0 18px rgba(34, 211, 238, 0.12),
+    0 0 22px rgba(34, 211, 238, 0.08);
+  opacity: 0;
+  animation-name: ambientBubbleFloat;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
+}
+
+@keyframes ambientBubbleFloat {
+  0% {
+    transform: translate3d(0, 30px, 0) scale(0.88);
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.55;
+  }
+  50% {
+    transform: translate3d(var(--drift, 18px), -46vh, 0) scale(1.04);
+    opacity: 0.5;
+  }
+  86% {
+    opacity: 0.22;
+  }
+  100% {
+    transform: translate3d(calc(var(--drift, 18px) * -0.6), -98vh, 0) scale(0.9);
+    opacity: 0;
+  }
+}
+
+html.light .home-star {
+  background: radial-gradient(circle, #0f172a 0%, #0891b2 50%, rgba(8, 145, 178, 0) 72%);
+  box-shadow: 0 0 6px rgba(8, 145, 178, 0.35);
+  opacity: 0.3;
+}
+
+html.light .home-bubble {
+  border-color: rgba(2, 132, 199, 0.18);
+  background: radial-gradient(
+    circle at 30% 28%,
+    rgba(255, 255, 255, 0.75),
+    rgba(14, 165, 233, 0.14) 45%,
+    transparent 72%
+  );
+  box-shadow: inset 0 0 18px rgba(14, 165, 233, 0.1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-star,
+  .home-bubble {
+    animation: none !important;
+  }
+  .home-bubble {
+    opacity: 0.28;
+  }
+  .home-star {
+    opacity: 0.4;
+  }
+}
+
 

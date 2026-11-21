@@ -276,19 +276,62 @@ export default function Google3DMapSearch({ onSelectLocationForRide }) {
   const [googleMapsReady, setGoogleMapsReady] = useState(
     typeof window !== 'undefined' && Boolean(window.google && window.google.maps)
   );
-  const [useGoogle3D, setUseGoogle3D] = useState(true);
+  const [useGoogle3D, setUseGoogle3D] = useState(
+    () => typeof window === 'undefined' || !window.__YATRAGO_GMAPS_FAILED__
+  );
 
-  // Check if Google Maps JS API is available
+  // Check if Google Maps JS API is available, and listen for the API's own
+  // auth-failure signal so an invalid/restricted key falls back to Leaflet.
   useEffect(() => {
-    if (googleMapsReady) return;
+    let cancelled = false;
+
+    if (window.__YATRAGO_GMAPS_FAILED__) {
+      setUseGoogle3D(false);
+      return undefined;
+    }
+
+    const markAvailable = () => {
+      if (cancelled) return;
+      setGoogleMapsReady(true);
+      setUseGoogle3D(true);
+    };
+
+    const markUnavailable = () => {
+      if (cancelled) return;
+      setGoogleMapsReady(false);
+      setUseGoogle3D(false);
+    };
+
+    if (window.google?.maps) markAvailable();
+
     const interval = setInterval(() => {
-      if (typeof window !== 'undefined' && window.google && window.google.maps) {
-        setGoogleMapsReady(true);
+      if (window.__YATRAGO_GMAPS_FAILED__) {
         clearInterval(interval);
+        markUnavailable();
+        return;
       }
-    }, 400);
-    return () => clearInterval(interval);
-  }, [googleMapsReady]);
+      if (window.google?.maps) {
+        clearInterval(interval);
+        markAvailable();
+      }
+    }, 250);
+
+    const timeout = setTimeout(() => {
+      if (!window.google?.maps) {
+        clearInterval(interval);
+        markUnavailable();
+      }
+    }, 3500);
+
+    window.addEventListener('yatrago:gmaps-auth-failure', markUnavailable);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      clearTimeout(timeout);
+      window.removeEventListener('yatrago:gmaps-auth-failure', markUnavailable);
+    };
+  }, []);
 
   // Initialize or update Google 3D Satellite Map
   useEffect(() => {

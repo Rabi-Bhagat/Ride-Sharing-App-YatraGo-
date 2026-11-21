@@ -114,6 +114,56 @@ function ChangeLeafletBounds({ pLat, pLng, dLat, dLng }) {
   return null;
 }
 
+// Draws a real driving route (OSRM) in the Leaflet fallback, with a straight
+// line shown immediately so the route is never blank while the request runs.
+function LeafletDrivingRoute({ fromLat, fromLng, toLat, toLng, color = '#06b6d4' }) {
+  const [positions, setPositions] = useState([[fromLat, fromLng], [toLat, toLng]]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 6000);
+
+    setPositions([[fromLat, fromLng], [toLat, toLng]]);
+
+    fetch(
+      `https://router.project-osrm.org/route/v1/driving/${fromLng},${fromLat};${toLng},${toLat}?overview=full&geometries=geojson`,
+      { signal: controller.signal }
+    )
+      .then((res) => res.json())
+      .then((data) => {
+        if (cancelled) return;
+        const coords = data?.routes?.[0]?.geometry?.coordinates;
+        if (Array.isArray(coords) && coords.length > 1) {
+          setPositions(coords.map(([lng, lat]) => [lat, lng]));
+        }
+      })
+      .catch(() => {
+        /* keep the straight-line preview */
+      })
+      .finally(() => clearTimeout(timer));
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+      clearTimeout(timer);
+    };
+  }, [fromLat, fromLng, toLat, toLng]);
+
+  return (
+    <>
+      <LeafletPolyline
+        positions={positions}
+        pathOptions={{ color: '#0f172a', weight: 9, opacity: 0.55 }}
+      />
+      <LeafletPolyline
+        positions={positions}
+        pathOptions={{ color, weight: 5, opacity: 0.95 }}
+      />
+    </>
+  );
+}
+
 // Leaflet Click Listener Helper
 function LeafletMapEvents({ onMapClick }) {
   useMapEvents({
@@ -142,7 +192,9 @@ export default function MapView({
   const routePolylineRef = useRef(null);
   const directionsRequestRef = useRef(0);
 
-  const [useGoogleMaps, setUseGoogleMaps] = useState(true);
+  const [useGoogleMaps, setUseGoogleMaps] = useState(
+    () => typeof window === 'undefined' || !window.__YATRAGO_GMAPS_FAILED__
+  );
   const [googleMapsReady, setGoogleMapsReady] = useState(false);
   const [clickTargetMode, setClickTargetMode] = useState('pickup'); // 'pickup' | 'destination'
   const [driverPos, setDriverPos] = useState([37.7790, -122.4130]);
@@ -196,22 +248,60 @@ export default function MapView({
 
   mapClickHandlerRef.current = handleMapCoordinateChosen;
 
-  // Check if Google Maps script is available
+  // Detect whether the Google Maps JS API actually works. An invalid/restricted
+  // key still defines window.google.maps, so we also listen for the API's
+  // gm_authFailure signal and fall back to Leaflet within a few seconds.
   useEffect(() => {
-    let checkCount = 0;
-    const interval = setInterval(() => {
-      checkCount++;
-      if (window.google && window.google.maps && window.google.maps.Map) {
-        setGoogleMapsReady(true);
-        clearInterval(interval);
-      } else if (checkCount > 40) {
-        // Fallback to Leaflet if Google script didn't load
-        setUseGoogleMaps(false);
-        clearInterval(interval);
-      }
-    }, 200);
+    let cancelled = false;
 
-    return () => clearInterval(interval);
+    if (window.__YATRAGO_GMAPS_FAILED__) {
+      setUseGoogleMaps(false);
+      return undefined;
+    }
+
+    const markAvailable = () => {
+      if (cancelled || !window.google?.maps?.Map) return;
+      setGoogleMapsReady(true);
+      setUseGoogleMaps(true);
+    };
+
+    const markUnavailable = () => {
+      if (cancelled) return;
+      setGoogleMapsReady(false);
+      setUseGoogleMaps(false);
+    };
+
+    if (window.google?.maps?.Map) {
+      markAvailable();
+    }
+
+    const interval = setInterval(() => {
+      if (window.__YATRAGO_GMAPS_FAILED__) {
+        clearInterval(interval);
+        markUnavailable();
+        return;
+      }
+      if (window.google?.maps?.Map) {
+        clearInterval(interval);
+        markAvailable();
+      }
+    }, 250);
+
+    const timeout = setTimeout(() => {
+      if (!window.google?.maps?.Map) {
+        clearInterval(interval);
+        markUnavailable();
+      }
+    }, 3500);
+
+    window.addEventListener('yatrago:gmaps-auth-failure', markUnavailable);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+      clearTimeout(timeout);
+      window.removeEventListener('yatrago:gmaps-auth-failure', markUnavailable);
+    };
   }, []);
 
   // Initialize and update Google Map
@@ -521,19 +611,22 @@ export default function MapView({
             }
             zoom={13}
             scrollWheelZoom={true}
-            className="w-full h-full min-h-[460px]"
+            className={`w-full h-full min-h-[460px] ${threeD ? 'map-satellite' : ''}`}
           >
             <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              key={threeD ? 'satellite' : 'street'}
+              attribution={threeD ? '&copy; Esri World Imagery' : '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'}
+              url={
+                threeD
+                  ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+                  : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
+              }
+              maxZoom={19}
             />
             {hasPickup && hasDestination && (
               <>
                 <ChangeLeafletBounds pLat={pLat} pLng={pLng} dLat={dLat} dLng={dLng} />
-                <LeafletPolyline
-                  positions={[[pLat, pLng], [dLat, dLng]]}
-                  pathOptions={{ color: '#06b6d4', weight: 5, opacity: 0.85 }}
-                />
+                <LeafletDrivingRoute fromLat={pLat} fromLng={pLng} toLat={dLat} toLng={dLng} />
               </>
             )}
             {interactive && <LeafletMapEvents onMapClick={handleMapCoordinateChosen} />}

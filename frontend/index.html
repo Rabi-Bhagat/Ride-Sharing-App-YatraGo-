@@ -13,6 +13,25 @@
     <title>YatraGo - Smart Ride Sharing & 3D Mobility Platform</title>
     <!-- Leaflet Map CSS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <!-- Apply the saved theme before first paint to avoid a dark/light flash -->
+    <script>
+      (function () {
+        try {
+          var saved = localStorage.getItem('yatrago_theme');
+          if (saved === 'light') {
+            document.documentElement.classList.remove('dark');
+            document.documentElement.classList.add('light');
+          }
+        } catch (e) {}
+        window.__YATRAGO_GMAPS_FAILED__ = false;
+        // Google Maps calls this globally when the API key is invalid, restricted,
+        // or billing is disabled. Treat that as "unavailable" so we can fall back.
+        window.gm_authFailure = function () {
+          window.__YATRAGO_GMAPS_FAILED__ = true;
+          try { window.dispatchEvent(new Event('yatrago:gmaps-auth-failure')); } catch (e) {}
+        };
+      })();
+    </script>
     <!-- Google Maps JavaScript API (key via VITE_GOOGLE_MAPS_API_KEY at build time) -->
     <script src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__&libraries=places,geometry"></script>
     <!-- Razorpay Standard Web Checkout SDK -->

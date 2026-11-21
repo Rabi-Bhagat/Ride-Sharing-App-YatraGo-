@@ -23,6 +23,7 @@ import { DESTINATIONS_3D } from './data/mockData';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { SocketProvider, useSocket } from './context/SocketContext';
 import { LanguageProvider } from './i18n/LanguageContext';
+import { ThemeProvider } from './context/ThemeContext';
 import { Sparkles } from 'lucide-react';
 
 function MainApp() {
@@ -260,7 +261,7 @@ function MainApp() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div className="app-shell min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
       
       {/* Keyboard skip link for accessibility */}
       <a href="#main-content" className="skip-link">Skip to main content</a>
@@ -421,13 +422,15 @@ function MainApp() {
 export default function App() {
   return (
     <ErrorBoundary>
-      <LanguageProvider>
-        <AuthProvider>
-          <SocketProvider>
-            <MainApp />
-          </SocketProvider>
-        </AuthProvider>
-      </LanguageProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <AuthProvider>
+            <SocketProvider>
+              <MainApp />
+            </SocketProvider>
+          </AuthProvider>
+        </LanguageProvider>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

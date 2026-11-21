@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Car, Users, Compass, MessageSquare, AlertTriangle, ShieldCheck, User, Menu, X, IndianRupee, Home, Globe, LogIn, LogOut, ChevronDown, Search, Wallet, Plus, CreditCard, ArrowRight, Plane, MapPin, Bike, Zap, Shield, Store } from 'lucide-react';
+import { Car, Users, Compass, MessageSquare, AlertTriangle, ShieldCheck, User, Menu, X, IndianRupee, Home, Globe, LogIn, LogOut, ChevronDown, Search, Wallet, Plus, CreditCard, ArrowRight, Plane, MapPin, Bike, Zap, Shield, Store, Sun, Moon } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useSocket } from '../context/SocketContext';
 import { useLanguage } from '../i18n/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 import VerificationBadge from './VerificationBadge';
 import UserAvatar from './UserAvatar';
 import yatraGoLogo from '../logo/yatrago-logo.webp';
@@ -20,6 +21,45 @@ const POPULAR_SEARCH_PRESETS = [
   { name: 'Lumbini Maya Devi Temple (Nepal)', type: 'Pilgrimage', tag: 'Heritage', tab: 'book' }
 ];
 
+// Sliding Light/Night mode switch used in the header and the mobile drawer.
+function ThemeSwitch({ isDark, onToggle, compact = false }) {
+  const trackSize = compact ? 'h-8 w-16' : 'h-9 w-[72px] sm:w-20';
+  const knobSize = compact ? 'h-6 w-6' : 'h-7 w-7';
+  const knobShift = isDark
+    ? compact
+      ? 'translate-x-6'
+      : 'translate-x-7 sm:translate-x-9'
+    : 'translate-x-0';
+  const knobTint = isDark
+    ? 'from-cyan-400 to-blue-600 shadow-cyan-500/40'
+    : 'from-amber-300 to-orange-400 shadow-amber-500/40';
+
+  return (
+    <button
+      type="button"
+      onClick={onToggle}
+      role="switch"
+      aria-checked={isDark}
+      aria-label={isDark ? 'Switch to light mode' : 'Switch to night mode'}
+      title={isDark ? 'Night mode — switch to light' : 'Light mode — switch to night'}
+      className={`theme-switch relative flex shrink-0 items-center justify-between rounded-full border border-slate-700 bg-slate-900/90 px-2 transition-all duration-300 hover:border-cyan-500/50 hover:shadow-md hover:shadow-cyan-500/10 active:scale-95 ${trackSize}`}
+    >
+      <span
+        aria-hidden="true"
+        className={`absolute left-2 top-1/2 z-0 -translate-y-1/2 rounded-full bg-gradient-to-br shadow-lg transition-transform duration-300 ease-out ${knobSize} ${knobShift} ${knobTint}`}
+      />
+      <Sun
+        size={compact ? 12 : 13}
+        className={`relative z-10 transition-colors duration-300 ${isDark ? 'text-slate-500' : 'text-slate-900'}`}
+      />
+      <Moon
+        size={compact ? 12 : 13}
+        className={`relative z-10 transition-colors duration-300 ${isDark ? 'text-slate-900' : 'text-slate-500'}`}
+      />
+    </button>
+  );
+}
+
 export default function Navbar({ 
   activeTab, 
   setActiveTab, 
@@ -30,6 +70,7 @@ export default function Navbar({
   const { user, isAuthenticated, openAuthModal, logout, updateUserProfile } = useAuth();
   const { messages, unreadCount, markMessagesRead } = useSocket();
   const { t } = useLanguage();
+  const { isDark, toggleTheme } = useTheme();
 
   // Dropdown states
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -49,6 +90,16 @@ export default function Navbar({
   const profileRef = useRef(null);
   const walletRef = useRef(null);
   const searchInputRef = useRef(null);
+
+  // Only one nav popover may be open at a time. Without this the Workspaces,
+  // Explore 3D and search popovers can stack on top of each other.
+  const closeNavMenus = () => {
+    setServicesDropdownOpen(false);
+    setExploreDropdownOpen(false);
+    setPortalsDropdownOpen(false);
+    setProfileDropdownOpen(false);
+    setWalletDropdownOpen(false);
+  };
 
   // Close dropdowns on outside click or Escape
   useEffect(() => {
@@ -82,6 +133,11 @@ export default function Navbar({
       // Ctrl+K or Cmd+K opens quick search modal
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
+        setServicesDropdownOpen(false);
+        setExploreDropdownOpen(false);
+        setPortalsDropdownOpen(false);
+        setProfileDropdownOpen(false);
+        setWalletDropdownOpen(false);
         setSearchModalOpen(prev => !prev);
       }
     };
@@ -153,7 +209,7 @@ export default function Navbar({
         <div className="pointer-events-none absolute inset-x-0 -bottom-px h-px bg-gradient-to-r from-transparent via-cyan-500/70 to-transparent" />
         <div className="pointer-events-none absolute inset-x-0 -bottom-2 h-2 bg-gradient-to-r from-transparent via-cyan-500/10 to-transparent blur-sm" />
         <div className="max-w-7xl 2xl:max-w-[1480px] mx-auto px-3 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 sm:h-18 gap-2 sm:gap-4">
+          <div className="flex items-center justify-start h-16 sm:h-18 gap-2 sm:gap-4">
             
             {/* ========================================================= */}
             {/* 1. BRAND LOGO & LIVE CITY TELEMETRY */}
@@ -172,11 +228,11 @@ export default function Navbar({
               </div>
               <div>
                 <div className="flex items-center gap-1.5">
-                  <span className="text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-400 bg-clip-text text-transparent group-hover:to-cyan-300 transition-colors">
+                  <span className="whitespace-nowrap text-xl sm:text-2xl font-black tracking-tight bg-gradient-to-r from-white via-cyan-100 to-emerald-400 bg-clip-text text-transparent group-hover:to-cyan-300 transition-colors">
                     YatraGo
                   </span>
                 </div>
-                <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-semibold font-mono">
+                <div className="hidden min-[1650px]:flex items-center gap-1.5 whitespace-nowrap text-[10px] text-slate-400 font-semibold font-mono">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                   <span>RIDE • SHARE • EXPLORE</span>
                 </div>
@@ -186,12 +242,12 @@ export default function Navbar({
             {/* ========================================================= */}
             {/* 2. DESKTOP INTERACTIVE NAVIGATION BAR WITH MEGA DROPDOWNS */}
             {/* ========================================================= */}
-            <nav className="hidden lg:flex items-center space-x-1 xl:space-x-1.5">
+            <nav className="hidden xl:flex shrink-0 flex-nowrap items-center gap-0.5 2xl:gap-1 ml-1 2xl:ml-2">
               
               {/* Home */}
               <button
                 onClick={() => setActiveTab('home')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 2xl:px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeTab === 'home'
                     ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                     : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
@@ -205,10 +261,10 @@ export default function Navbar({
               <div ref={servicesRef} className="relative">
                 <button
                   onClick={() => {
+                    closeNavMenus();
                     setServicesDropdownOpen(!servicesDropdownOpen);
-                    setExploreDropdownOpen(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 2xl:px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                     ['book', 'stranger'].includes(activeTab) || servicesDropdownOpen
                       ? 'bg-gradient-to-r from-cyan-500/20 to-emerald-500/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                       : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
@@ -224,7 +280,7 @@ export default function Navbar({
 
                 {/* Services Mega Menu Popover */}
                 {servicesDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-80 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2.5 z-50 animate-fadeIn space-y-1">
+                  <div className="absolute left-0 top-full z-[60] mt-2 max-h-[calc(100dvh-6rem)] w-80 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-700/80 bg-slate-900/95 p-2.5 shadow-2xl backdrop-blur-2xl animate-fadeIn space-y-1">
                     <div className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/80 mb-1 flex items-center justify-between">
                       <span>YatraGo Mobility Suites</span>
                       <span className="text-emerald-400">Upfront Rates</span>
@@ -372,7 +428,7 @@ export default function Navbar({
               {/* Split Fare Tab */}
               <button
                 onClick={() => setActiveTab('cost-split')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 2xl:px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeTab === 'cost-split'
                     ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                     : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
@@ -385,7 +441,7 @@ export default function Navbar({
               {/* Business & Promo Hub */}
               <button
                 onClick={() => setActiveTab('business')}
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 2xl:px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                   activeTab === 'business'
                     ? 'bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 text-emerald-300 border border-emerald-500/40 shadow-sm'
                     : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
@@ -393,30 +449,32 @@ export default function Navbar({
                 title="Partner hotels, shops & restaurants with traveller promo codes"
               >
                 <Store size={15} className={activeTab === 'business' ? 'text-emerald-400' : 'text-slate-400'} />
-                <span>{t('nav.business')}</span>
+                <span className="hidden 2xl:inline">{t('nav.business')}</span>
+                <span className="2xl:hidden">{t('nav.businessShort')}</span>
               </button>
 
               {/* Explore 3D & Guiders Dropdown */}
               <div ref={exploreRef} className="relative">
                 <button
                   onClick={() => {
+                    closeNavMenus();
                     setExploreDropdownOpen(!exploreDropdownOpen);
-                    setServicesDropdownOpen(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 2xl:px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                     ['preview-3d', 'guiders'].includes(activeTab) || exploreDropdownOpen
                       ? 'bg-gradient-to-r from-purple-500/20 to-cyan-500/20 text-purple-300 border border-purple-500/40 shadow-sm'
                       : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
                   }`}
                 >
                   <Globe size={15} className={['preview-3d', 'guiders'].includes(activeTab) ? 'text-purple-400' : 'text-slate-400'} />
-                  <span>{t('nav.explore')}</span>
+                  <span className="hidden 2xl:inline">{t('nav.explore')}</span>
+                  <span className="2xl:hidden">{t('nav.exploreShort')}</span>
                   <ChevronDown size={13} className={`transition-transform duration-200 text-slate-400 ${exploreDropdownOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Explore Menu Popover */}
                 {exploreDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2.5 z-50 animate-fadeIn space-y-1">
+                  <div className="absolute left-0 top-full z-[60] mt-2 max-h-[calc(100dvh-6rem)] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-700/80 bg-slate-900/95 p-2.5 shadow-2xl backdrop-blur-2xl animate-fadeIn space-y-1">
                     <div
                       onClick={() => {
                         setActiveTab('preview-3d', { viewMode: 'google3d' });
@@ -492,11 +550,10 @@ export default function Navbar({
               <div ref={portalsRef} className="relative">
                 <button
                   onClick={() => {
+                    closeNavMenus();
                     setPortalsDropdownOpen(!portalsDropdownOpen);
-                    setServicesDropdownOpen(false);
-                    setExploreDropdownOpen(false);
                   }}
-                  className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                  className={`flex shrink-0 items-center gap-1.5 whitespace-nowrap px-2.5 2xl:px-3 py-2 rounded-xl text-xs font-bold transition-all ${
                     ['driver', 'admin', 'guide-portal'].includes(activeTab) || portalsDropdownOpen
                       ? 'bg-gradient-to-r from-cyan-500/20 to-blue-600/20 text-cyan-300 border border-cyan-500/40 shadow-sm'
                       : 'text-slate-300 hover:text-white hover:bg-slate-900 border border-transparent'
@@ -509,7 +566,7 @@ export default function Navbar({
                 </button>
 
                 {portalsDropdownOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-72 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2.5 z-50 animate-fadeIn space-y-1">
+                  <div className="absolute right-0 top-full z-[60] mt-2 max-h-[calc(100dvh-6rem)] w-72 max-w-[calc(100vw-2rem)] overflow-y-auto overscroll-contain rounded-2xl border border-slate-700/80 bg-slate-900/95 p-2.5 shadow-2xl backdrop-blur-2xl animate-fadeIn space-y-1">
                     <div className="px-2.5 py-1 text-[10px] font-mono font-bold uppercase tracking-wider text-slate-400 border-b border-slate-800/80 mb-1 flex items-center justify-between">
                       <span>Role-Specific Portals</span>
                       <span className="text-cyan-400 font-mono font-bold">Verified</span>
@@ -586,10 +643,13 @@ export default function Navbar({
             {/* ========================================================= */}
             {/* 3. QUICK SEARCH CAPSULE (SHORTCUT: ⌘K / CTRL+K) */}
             {/* ========================================================= */}
-            <div className="hidden xl:flex items-center shrink-0">
+            <div className="hidden min-[1800px]:flex items-center shrink-0 ml-auto">
               <button
-                onClick={() => setSearchModalOpen(true)}
-                className="flex items-center justify-between gap-2.5 w-36 lg:w-48 xl:w-60 h-9 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 transition-all shadow-inner whitespace-nowrap overflow-hidden group cursor-pointer shrink-0"
+                onClick={() => {
+                  closeNavMenus();
+                  setSearchModalOpen(true);
+                }}
+                className="flex items-center justify-between gap-2.5 w-56 h-9 px-3 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 text-xs text-slate-400 hover:text-slate-200 transition-all shadow-inner whitespace-nowrap overflow-hidden group cursor-pointer shrink-0"
                 title="Search routes or airports (Ctrl+K)"
               >
                 <div className="flex items-center gap-2 min-w-0">
@@ -605,24 +665,43 @@ export default function Navbar({
             {/* ========================================================= */}
             {/* 4. RIGHT ACTION PILLS: WALLET, SOS, CHAT, USER */}
             {/* ========================================================= */}
-            <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
+            <div className="flex flex-nowrap items-center gap-1.5 sm:gap-2.5 shrink-0 ml-auto min-[1800px]:ml-0">
+
+              {/* Compact search trigger when the wide capsule is hidden */}
+              <button
+                onClick={() => {
+                  closeNavMenus();
+                  setSearchModalOpen(true);
+                }}
+                className="hidden min-[1400px]:flex min-[1800px]:hidden h-9 w-9 items-center justify-center rounded-xl border border-slate-800 bg-slate-900/90 text-slate-300 transition-all hover:border-cyan-500/40 hover:bg-slate-800 hover:text-white active:scale-95"
+                title="Search routes (Ctrl+K)"
+                aria-label="Search routes"
+              >
+                <Search size={16} className="text-cyan-400" />
+              </button>
+
+              {/* Dark / Light appearance switch */}
+              <ThemeSwitch isDark={isDark} onToggle={toggleTheme} />
               
               {/* Interactive Wallet Balance Pill & Quick Top-Up (Only when authenticated) */}
               {user && (
                 <div ref={walletRef} className="relative">
                   <button
-                    onClick={() => setWalletDropdownOpen(!walletDropdownOpen)}
+                    onClick={() => {
+                      closeNavMenus();
+                      setWalletDropdownOpen(!walletDropdownOpen);
+                    }}
                     className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-cyan-500/40 text-xs font-mono font-bold text-white transition-all shadow-sm cursor-pointer"
                     title="YatraGo In-App Mobility Wallet"
                   >
                     <Wallet size={14} className="text-emerald-400 shrink-0" />
                     <span className="text-emerald-400 font-extrabold">₹{user.walletBalance ? Number(user.walletBalance).toFixed(0) : '1,500'}</span>
-                    <Plus size={11} className="text-cyan-400 hidden sm:inline" />
+                    <Plus size={11} className="hidden text-cyan-400 sm:inline" />
                   </button>
 
                   {/* Quick Wallet Dropdown */}
                   {walletDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-4 z-50 animate-fadeIn space-y-3">
+                    <div className="absolute right-0 top-full z-[70] mt-2 w-72 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-700/80 bg-slate-900/95 p-4 shadow-2xl backdrop-blur-2xl animate-fadeIn space-y-3">
                       <div className="flex items-center justify-between border-b border-slate-800 pb-2">
                         <span className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
                           <Wallet size={14} className="text-emerald-400" />
@@ -717,11 +796,14 @@ export default function Navbar({
               {user ? (
                 <div ref={profileRef} className="relative">
                   <button
-                    onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                    onClick={() => {
+                      closeNavMenus();
+                      setProfileDropdownOpen(!profileDropdownOpen);
+                    }}
                     className="flex items-center gap-2 p-1 pl-2 sm:pl-2.5 rounded-xl bg-slate-900/90 hover:bg-slate-800 border border-slate-800 hover:border-slate-700 transition-all group"
                     title="Account & Profile Settings"
                   >
-                    <div className="flex flex-col items-end hidden md:flex">
+                    <div className="hidden flex-col items-end min-[1650px]:flex">
                       <div className="flex items-center gap-1 text-xs font-extrabold text-white">
                         <span className="max-w-[90px] truncate">{user.name?.split(' ')[0] || 'User'}</span>
                         {user.isVerified && <VerificationBadge type={user.verificationBadgeType || 'Government ID'} size="sm" />}
@@ -741,7 +823,7 @@ export default function Navbar({
 
                   {/* Profile Dropdown Menu */}
                   {profileDropdownOpen && (
-                    <div className="absolute top-full right-0 mt-2 w-64 rounded-2xl bg-slate-900/95 border border-slate-700/80 shadow-2xl backdrop-blur-2xl p-2.5 z-50 animate-fadeIn space-y-1">
+                    <div className="absolute right-0 top-full z-[70] mt-2 w-64 max-w-[calc(100vw-1.5rem)] rounded-2xl border border-slate-700/80 bg-slate-900/95 p-2.5 shadow-2xl backdrop-blur-2xl animate-fadeIn space-y-1">
                       <div className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 flex items-center gap-2.5 mb-1">
                         <UserAvatar
                           user={user}
@@ -868,8 +950,11 @@ export default function Navbar({
 
               {/* Mobile Drawer Hamburger Button */}
               <button
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                className="lg:hidden p-2 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 hover:border-slate-700"
+                onClick={() => {
+                  closeNavMenus();
+                  setMobileMenuOpen(!mobileMenuOpen);
+                }}
+                className="xl:hidden p-2 rounded-xl bg-slate-900 text-slate-200 border border-slate-800 hover:border-slate-700"
                 aria-label="Toggle navigation menu"
                 aria-expanded={mobileMenuOpen}
                 aria-controls="mobile-nav-drawer"
@@ -886,7 +971,7 @@ export default function Navbar({
         {/* 5. RESPONSIVE MOBILE DRAWER */}
         {/* ========================================================= */}
         {mobileMenuOpen && (
-          <div id="mobile-nav-drawer" className="lg:hidden bg-slate-950/95 border-b border-slate-800 px-4 pt-3 pb-5 space-y-3 backdrop-blur-2xl animate-slideDown max-h-[85vh] overflow-y-auto">
+          <div id="mobile-nav-drawer" className="xl:hidden bg-slate-950/95 border-b border-slate-800 px-4 pt-3 pb-5 space-y-3 backdrop-blur-2xl animate-slideDown max-h-[85vh] overflow-y-auto">
             
             {/* Quick Search on Mobile */}
             <div className="relative">
@@ -957,6 +1042,18 @@ export default function Navbar({
               </div>
             )}
 
+            {/* Appearance switch (mobile drawer) */}
+            <div className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-3.5 py-2.5">
+              <span className="flex items-center gap-2 text-xs font-bold text-slate-300">
+                {isDark ? <Moon size={14} className="text-cyan-300" /> : <Sun size={14} className="text-amber-400" />}
+                <span>App appearance</span>
+                <span className="rounded-md bg-slate-800 px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-slate-400">
+                  {isDark ? 'Night' : 'Light'}
+                </span>
+              </span>
+              <ThemeSwitch isDark={isDark} onToggle={toggleTheme} compact />
+            </div>
+
             {/* Primary Mobile Nav Links */}
             <div className="space-y-1 pt-1">
               {[
@@ -1015,7 +1112,7 @@ export default function Navbar({
       {searchModalOpen && (
         <div 
           onClick={() => setSearchModalOpen(false)}
-          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-start justify-center p-4 pt-20 animate-fadeIn"
+          className="fixed inset-0 z-[80] bg-slate-950/80 backdrop-blur-md flex items-start justify-center p-4 pt-20 animate-fadeIn"
         >
           <div 
             onClick={(e) => e.stopPropagation()}

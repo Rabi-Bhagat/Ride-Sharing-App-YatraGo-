@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { Store, Hotel, UtensilsCrossed, ShoppingBag, Tag, Search, MapPin, Percent, BadgeCheck, Star, ArrowRight, X, Check, TrendingUp, Handshake, Briefcase, Loader2, Sparkles, Phone, Mail, ShieldCheck, Code, Megaphone, UserRound, BedDouble, ArrowUpRight, Clock } from 'lucide-react';
 import { PARTNER_SEED } from '../data/partnerSeed';
 import { formatINR } from '../utils/receipt';
@@ -48,6 +49,13 @@ const MANAGER_ROLES = [
   }
 ];
 
+// Where a listing request is routed once the business owner picks a handler.
+const MANAGER_CONTACTS = {
+  admin: { name: 'YatraGo Admin Desk', sms: '+977 98•••• 1001', email: 'admin@yatrago.com' },
+  developer: { name: 'YatraGo Developer Team', sms: '+977 98•••• 2002', email: 'developers@yatrago.com' },
+  promoter: { name: 'YatraGo Promoter Network', sms: '+977 98•••• 3003', email: 'promoters@yatrago.com' }
+};
+
 const formatPercent = (value) => `${Number(value) || 0}%`;
 
 export default function BusinessPromoHub({ onNavigate }) {
@@ -76,6 +84,16 @@ export default function BusinessPromoHub({ onNavigate }) {
   });
   const [applyState, setApplyState] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Lock background scrolling while the application dialog is open.
+  useEffect(() => {
+    if (!showApply) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [showApply]);
 
   useEffect(() => {
     let cancelled = false;
@@ -197,31 +215,40 @@ export default function BusinessPromoHub({ onNavigate }) {
     managedBy: 'admin'
   };
 
+  const successState = (submitted, message) => ({
+    ok: true,
+    message,
+    businessName: submitted.name.trim(),
+    category: submitted.category,
+    managedBy: submitted.managedBy,
+    manager: MANAGER_CONTACTS[submitted.managedBy] || MANAGER_CONTACTS.admin,
+    listedBy: submitted.listedBy
+  });
+
   // Keeps the listing usable when the backend is unreachable.
-  const applyLocally = () => {
+  const applyLocally = (submitted = application) => {
     const localPartner = {
       _id: 'prt_local_' + Date.now(),
-      name: application.name.trim(),
-      category: application.category,
-      city: application.city || 'Kathmandu',
-      area: application.area,
+      name: submitted.name.trim(),
+      category: submitted.category,
+      city: submitted.city || 'Kathmandu',
+      area: submitted.area,
       description: 'Newly submitted partner — awaiting admin verification.',
-      promoCode: String(application.promoCode || '').toUpperCase() || null,
-      discountPercent: Math.max(0, Math.min(90, Number(application.discountPercent) || 0)),
+      promoCode: String(submitted.promoCode || '').toUpperCase() || null,
+      discountPercent: Math.max(0, Math.min(90, Number(submitted.discountPercent) || 0)),
       commissionPercent: 10,
       tier: 'starter',
       rating: 0,
       reviewCount: 0,
       isVerified: false,
-      listedBy: application.listedBy,
-      managedBy: application.managedBy,
+      listedBy: submitted.listedBy,
+      managedBy: submitted.managedBy,
       status: 'pending'
     };
     setPartners((prev) => [localPartner, ...prev]);
-    setApplyState({
-      ok: true,
-      message: 'Partnership request saved locally. It will sync once the server is reachable.'
-    });
+    setApplyState(
+      successState(submitted, 'Partnership request saved locally. It will sync once the server is reachable.')
+    );
     setApplication(emptyApplication);
   };
 
@@ -232,30 +259,36 @@ export default function BusinessPromoHub({ onNavigate }) {
       return;
     }
 
+    const submitted = { ...application };
     setIsSubmitting(true);
     setApplyState(null);
     try {
       const res = await fetch('/api/partners/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(application)
+        body: JSON.stringify(submitted)
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        setApplyState({ ok: true, message: data.message });
+        setApplyState(successState(submitted, data.message));
         if (data.partner) setPartners((prev) => [data.partner, ...prev]);
         setApplication(emptyApplication);
       } else if (res.status === 400) {
         setApplyState({ ok: false, message: data.message || 'Application could not be submitted.' });
       } else {
-        applyLocally();
+        applyLocally(submitted);
       }
     } catch (error) {
-      applyLocally();
+      applyLocally(submitted);
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const appliedManagerMeta = applyState?.ok
+    ? MANAGER_ROLES.find((role) => role.id === applyState.managedBy) || MANAGER_ROLES[0]
+    : null;
+  const AppliedManagerIcon = appliedManagerMeta?.icon || ShieldCheck;
 
   return (
     <div className="space-y-5 animate-fadeIn">
@@ -613,10 +646,11 @@ export default function BusinessPromoHub({ onNavigate }) {
         </p>
       </div>
 
-      {/* Application modal */}
-      {showApply && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md animate-fadeIn">
-          <div className="glass-panel relative max-h-[92vh] w-full max-w-lg space-y-4 overflow-y-auto rounded-3xl border border-slate-800 p-6 shadow-2xl animate-modalRise">
+      {/* Application modal — portaled to <body> so page transforms cannot
+          offset the fixed overlay or push the dialog downward. */}
+      {showApply && typeof document !== 'undefined' && createPortal(
+        <div className="modal-overlay fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md animate-fadeIn">
+          <div className="glass-panel relative max-h-[92dvh] w-[calc(100vw-1.5rem)] max-w-2xl space-y-4 overflow-y-auto overscroll-contain rounded-3xl border border-slate-800 p-5 shadow-2xl animate-modalRise sm:p-6">
             <button
               onClick={() => setShowApply(false)}
               className="absolute right-4 top-4 rounded-xl bg-slate-900 p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
@@ -636,15 +670,73 @@ export default function BusinessPromoHub({ onNavigate }) {
             </div>
 
             {applyState?.ok ? (
-              <div className="space-y-3 rounded-2xl border border-emerald-500/40 bg-emerald-500/10 p-4 text-center animate-fadeIn">
-                <BadgeCheck size={26} className="mx-auto text-emerald-400" />
-                <p className="text-sm font-black text-emerald-200">{applyState.message}</p>
-                <p className="text-[11px] text-emerald-300/80">
-                  Our admin team reviews new partners before the listing and promo code go live.
-                </p>
+              <div className="space-y-4 animate-fadeIn">
+                <div className="relative overflow-hidden rounded-2xl border border-emerald-500/40 bg-gradient-to-br from-emerald-500/15 via-slate-900 to-slate-950 p-5 text-center">
+                  <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-emerald-500/20 blur-2xl" />
+                  <div className="relative mx-auto mb-2 flex h-14 w-14 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-4 ring-emerald-500/15">
+                    <BadgeCheck size={28} />
+                  </div>
+                  <h4 className="relative text-base font-black text-white">Listing request submitted</h4>
+                  <p className="relative mt-0.5 text-xs font-semibold text-emerald-300">
+                    {applyState.businessName}
+                    <span className="ml-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 font-mono text-[10px] uppercase">
+                      {applyState.category}
+                    </span>
+                  </p>
+                  <p className="relative mt-2 text-[11px] leading-relaxed text-slate-300">{applyState.message}</p>
+                </div>
+
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/70 p-4">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="flex items-center gap-1.5 font-mono text-[10px] font-bold uppercase tracking-wider text-cyan-300">
+                      <Phone size={11} /> SMS request dispatched
+                    </span>
+                    <span className="flex items-center gap-1 rounded-full border border-emerald-500/40 bg-emerald-500/15 px-2 py-0.5 text-[10px] font-black text-emerald-300">
+                      <Check size={10} /> Delivered
+                    </span>
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900/80 p-3">
+                    <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border ${appliedManagerMeta?.tile || 'border-cyan-500/40 bg-cyan-500/15 text-cyan-300'}`}>
+                      <AppliedManagerIcon size={16} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <strong className="block truncate text-xs font-black text-white">{applyState.manager?.name}</strong>
+                      <span className="block font-mono text-[10px] text-slate-400">{applyState.manager?.sms} • {applyState.manager?.email}</span>
+                    </div>
+                    <span className="shrink-0 rounded-lg border border-slate-700 bg-slate-950 px-2 py-1 text-[9px] font-bold uppercase tracking-wide text-slate-300">
+                      {applyState.managedBy}
+                    </span>
+                  </div>
+
+                  <ol className="mt-3 space-y-2">
+                    {[
+                      { label: 'Request received by YatraGo', done: true },
+                      { label: `SMS + email sent to ${applyState.manager?.name}`, done: true },
+                      { label: `${appliedManagerMeta?.label || 'Admin'} verifying listing details`, done: false, active: true },
+                      { label: 'Promo code goes live for travellers', done: false }
+                    ].map((step) => (
+                      <li key={step.label} className="flex items-center gap-2.5 text-[11px]">
+                        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border ${
+                          step.done
+                            ? 'border-emerald-500 bg-emerald-500 text-slate-950'
+                            : step.active
+                              ? 'border-cyan-400 bg-cyan-500/20 text-cyan-300'
+                              : 'border-slate-700 bg-slate-900 text-slate-500'
+                        }`}>
+                          {step.done ? <Check size={10} /> : step.active ? <Clock size={9} /> : null}
+                        </span>
+                        <span className={step.done ? 'text-slate-400 line-through decoration-slate-600' : step.active ? 'font-bold text-cyan-300' : 'text-slate-500'}>
+                          {step.label}
+                        </span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+
                 <button
                   onClick={() => setShowApply(false)}
-                  className="w-full rounded-xl bg-cyan-500 py-2.5 text-xs font-black text-slate-950 transition-colors hover:bg-cyan-400"
+                  className="w-full rounded-xl bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 py-2.5 text-xs font-black text-slate-950 transition-all hover:scale-[1.01] active:scale-[0.99]"
                 >
                   Done
                 </button>
@@ -798,6 +890,9 @@ export default function BusinessPromoHub({ onNavigate }) {
                           <span className={`text-[10px] leading-snug ${isActive ? 'opacity-80' : 'text-slate-400'}`}>
                             {blurb}
                           </span>
+                          <span className={`mt-1 flex items-center gap-1 font-mono text-[9px] ${isActive ? 'opacity-80' : 'text-slate-500'}`}>
+                            <Phone size={8} /> SMS → {MANAGER_CONTACTS[id]?.sms}
+                          </span>
                         </button>
                       );
                     })}
@@ -840,7 +935,8 @@ export default function BusinessPromoHub({ onNavigate }) {
               </form>
             )}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Hotel / partner booking flow */}

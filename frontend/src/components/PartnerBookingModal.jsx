@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, Star, BadgeCheck, BedDouble, Users, Utensils, Wifi, Car, Calendar, ChevronLeft, ChevronRight, Check, Tag, Receipt, Download, ShieldCheck, Loader2, Building2, Sparkles, AlertCircle } from 'lucide-react';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 import { downloadReceipt, shareReceipt, printReceipt, formatINR } from '../utils/receipt';
@@ -50,6 +51,25 @@ export default function PartnerBookingModal({ partner, onClose, onViewPromo }) {
   const [payError, setPayError] = useState('');
   const [confirmation, setConfirmation] = useState(null);
   const [activeImage, setActiveImage] = useState(0);
+  const panelRef = useRef(null);
+
+  // Lock the page behind the modal and start the panel at the top. Without this
+  // the booking screen can appear scrolled down on top of a still-scrolling page.
+  useEffect(() => {
+    const { body } = document;
+    const previousOverflow = body.style.overflow;
+    const previousPaddingRight = body.style.paddingRight;
+    const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+
+    body.style.overflow = 'hidden';
+    if (scrollbarWidth > 0) body.style.paddingRight = `${scrollbarWidth}px`;
+    if (panelRef.current) panelRef.current.scrollTop = 0;
+
+    return () => {
+      body.style.overflow = previousOverflow;
+      body.style.paddingRight = previousPaddingRight;
+    };
+  }, []);
 
   const rooms = partner?.rooms || [];
   const images = partner?.images?.length ? partner.images : [];
@@ -159,8 +179,8 @@ export default function PartnerBookingModal({ partner, onClose, onViewPromo }) {
 
   // Guard: only businesses with real room inventory can be booked.
   if (!partner.rooms?.length) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/88 p-4 backdrop-blur-md animate-fadeIn">
+    return typeof document !== 'undefined' ? createPortal(
+      <div className="modal-overlay fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/88 p-4 backdrop-blur-md animate-fadeIn">
         <div className="glass-panel w-full max-w-sm space-y-3 rounded-3xl border border-slate-800 p-6 text-center shadow-2xl">
           <Building2 size={28} className="mx-auto text-slate-500" />
           <h3 className="text-sm font-black text-white">Booking not available</h3>
@@ -174,13 +194,17 @@ export default function PartnerBookingModal({ partner, onClose, onViewPromo }) {
             Close
           </button>
         </div>
-      </div>
-    );
+      </div>,
+      document.body
+    ) : null;
   }
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/88 p-3 backdrop-blur-md animate-fadeIn sm:p-6">
-      <div className="glass-panel relative max-h-[94vh] w-full max-w-4xl overflow-y-auto rounded-3xl border border-slate-800 shadow-2xl animate-modalRise">
+  return typeof document !== 'undefined' ? createPortal(
+    <div className="modal-overlay fixed inset-0 z-[90] flex items-start justify-center overflow-y-auto bg-slate-950/88 p-2 backdrop-blur-md animate-fadeIn sm:items-center sm:p-6">
+      <div
+        ref={panelRef}
+        className="glass-panel relative my-auto flex max-h-[calc(100dvh-1rem)] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-800 shadow-2xl animate-modalRise sm:max-h-[calc(100dvh-3rem)]"
+      >
         <button
           onClick={onClose}
           className="absolute right-4 top-4 z-10 rounded-xl bg-slate-950/80 p-2 text-slate-400 backdrop-blur transition-colors hover:bg-slate-800 hover:text-white"
@@ -191,7 +215,7 @@ export default function PartnerBookingModal({ partner, onClose, onViewPromo }) {
 
         {confirmation ? (
           /* ---------------- Confirmation ---------------- */
-          <div className="space-y-5 p-6 animate-fadeIn sm:p-8">
+          <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain p-5 animate-fadeIn sm:p-8">
             <div className="flex items-center justify-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-400 ring-4 ring-emerald-500/25">
                 <Check size={24} />
@@ -256,7 +280,7 @@ export default function PartnerBookingModal({ partner, onClose, onViewPromo }) {
         ) : (
           <>
             {/* ---------------- Gallery ---------------- */}
-            <div className="relative h-56 w-full overflow-hidden bg-slate-900 sm:h-72">
+            <div className="relative h-52 w-full shrink-0 overflow-hidden bg-slate-900 sm:h-72">
               {images.length > 0 ? (
                 <img
                   src={images[activeImage]}
@@ -307,7 +331,7 @@ export default function PartnerBookingModal({ partner, onClose, onViewPromo }) {
               )}
             </div>
 
-            <div className="space-y-5 p-5 sm:p-6">
+            <div className="flex-1 space-y-5 overflow-y-auto overscroll-contain p-4 sm:p-6">
               <p className="text-xs leading-relaxed text-slate-400">{partner.description}</p>
 
               {/* Amenities */}
@@ -525,6 +549,7 @@ export default function PartnerBookingModal({ partner, onClose, onViewPromo }) {
           </>
         )}
       </div>
-    </div>
-  );
+    </div>,
+    document.body
+  ) : null;
 }

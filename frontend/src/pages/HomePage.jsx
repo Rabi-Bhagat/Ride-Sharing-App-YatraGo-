@@ -71,9 +71,12 @@ export default function HomePage({ onNavigate, user }) {
       {/* ======================================================== */}
       <section className="relative overflow-hidden">
         
-        {/* Background Ambient Glow */}
-        <div className="absolute -top-12 -left-12 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
-        <div className="absolute top-1/2 -right-12 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        {/* Layer 1: engineering grid + animated ambient glows */}
+        <div className="pointer-events-none absolute inset-0 hero-grid opacity-70"></div>
+        <div className="animate-hero-glow absolute -top-12 -left-12 w-80 h-80 sm:w-96 sm:h-96 bg-cyan-500/15 rounded-full blur-3xl pointer-events-none"></div>
+        <div className="animate-hero-glow absolute top-1/2 -right-12 w-80 h-80 sm:w-96 sm:h-96 bg-emerald-500/15 rounded-full blur-3xl pointer-events-none" style={{ animationDelay: '1.8s' }}></div>
+        <div className="animate-spin-slow absolute top-10 right-1/3 w-24 h-24 rounded-full border border-dashed border-cyan-500/20 pointer-events-none hidden lg:block"></div>
+        <div className="animate-float-slow absolute bottom-6 left-1/3 w-16 h-16 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 backdrop-blur pointer-events-none hidden xl:block"></div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch relative z-10">
           
@@ -111,7 +114,7 @@ export default function HomePage({ onNavigate, user }) {
             </div>
 
             {/* Professional Framed Map */}
-            <div className="relative flex-1 min-h-[320px] sm:min-h-[460px] lg:min-h-[520px] rounded-3xl overflow-hidden border border-slate-700/70 bg-slate-950 shadow-2xl ring-1 ring-cyan-500/10">
+            <div className="relative flex-1 min-h-[320px] sm:min-h-[460px] lg:min-h-[520px] rounded-3xl overflow-hidden border border-slate-700/70 bg-slate-950 shadow-2xl ring-1 ring-cyan-500/10 transition-all duration-500 hover:ring-cyan-400/40 hover:shadow-cyan-500/20">
               {/* Inner bezel accent */}
               <div className="absolute inset-0 pointer-events-none rounded-3xl ring-1 ring-inset ring-white/5 z-20"></div>
               {/* Corner brackets */}
@@ -143,6 +146,25 @@ export default function HomePage({ onNavigate, user }) {
 
       </section>
 
+      {/* Live network stat strip */}
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {[
+          { value: '120K+', label: 'Verified riders', tint: 'text-cyan-300', ring: 'hover:border-cyan-400/50' },
+          { value: '45+', label: 'Cities live', tint: 'text-emerald-300', ring: 'hover:border-emerald-400/50' },
+          { value: '44%', label: 'Average pool savings', tint: 'text-amber-300', ring: 'hover:border-amber-400/50' },
+          { value: '24/7', label: 'SOS safety cover', tint: 'text-rose-300', ring: 'hover:border-rose-400/50' }
+        ].map((stat, index) => (
+          <div
+            key={stat.label}
+            style={{ animationDelay: `${index * 70}ms` }}
+            className={`animate-stagger-in rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3 text-center backdrop-blur transition-all duration-300 hover:-translate-y-1 ${stat.ring}`}
+          >
+            <strong className={`block text-xl font-black tracking-tight sm:text-2xl ${stat.tint}`}>{stat.value}</strong>
+            <span className="mt-0.5 block font-mono text-[10px] uppercase tracking-wider text-slate-400">{stat.label}</span>
+          </div>
+        ))}
+      </section>
+
       {/* ======================================================== */}
       {/* 1.1 SCENIC ROUTES GALLERY (SEPARATE, COMPACT SECTION)    */}
       {/* ======================================================== */}
@@ -166,7 +188,7 @@ export default function HomePage({ onNavigate, user }) {
             <span className="text-xs font-mono font-bold text-cyan-400 uppercase">YatraGo Offerings</span>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            Explore What You Can Do with YatraGo
+            Explore What You Can Do with <span className="gradient-text">YatraGo</span>
           </h2>
           <p className="text-xs sm:text-sm text-slate-400 mt-1">
             Smart urban transit solutions engineered for individuals, friends, and corporate teams.
@@ -178,7 +200,7 @@ export default function HomePage({ onNavigate, user }) {
           {/* Card 1: Daily Ride */}
           <div
             onClick={() => onNavigate('book')}
-            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-cyan-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+            className="animate-stagger-in tilt-card card-shine p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-cyan-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -202,7 +224,7 @@ export default function HomePage({ onNavigate, user }) {
           {/* Card 2: Stranger Pooling */}
           <div
             onClick={() => onNavigate('stranger')}
-            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-emerald-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+            className="animate-stagger-in tilt-card card-shine p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-emerald-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -226,7 +248,7 @@ export default function HomePage({ onNavigate, user }) {
           {/* Card 3: Reserve in Advance */}
           <div
             onClick={() => onNavigate('book')}
-            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-amber-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+            className="animate-stagger-in tilt-card card-shine p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-amber-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-amber-500/10 text-amber-400 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -250,7 +272,7 @@ export default function HomePage({ onNavigate, user }) {
           {/* Card 4: YatraGo Moto */}
           <div
             onClick={() => onNavigate('book')}
-            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-cyan-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+            className="animate-stagger-in tilt-card card-shine p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-cyan-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-cyan-500/10 text-cyan-400 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -274,7 +296,7 @@ export default function HomePage({ onNavigate, user }) {
           {/* Card 5: Courier Services */}
           <div
             onClick={() => onNavigate('book')}
-            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-blue-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+            className="animate-stagger-in tilt-card card-shine p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-blue-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -298,7 +320,7 @@ export default function HomePage({ onNavigate, user }) {
           {/* Card 6: Local Guiders */}
           <div
             onClick={() => onNavigate('guiders')}
-            className="p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-violet-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
+            className="animate-stagger-in tilt-card card-shine p-5 rounded-3xl bg-slate-900/70 hover:bg-slate-800 border border-slate-800 hover:border-violet-400 cursor-pointer transition-all duration-300 group flex flex-col justify-between space-y-4"
           >
             <div className="flex items-center justify-between">
               <div className="w-12 h-12 rounded-2xl bg-violet-500/10 text-violet-400 flex items-center justify-center group-hover:scale-110 transition-transform">

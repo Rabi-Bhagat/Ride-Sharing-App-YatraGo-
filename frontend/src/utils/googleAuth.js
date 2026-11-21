@@ -83,6 +83,23 @@ export function preloadGoogleAuth() {
 
 // Opens Google's real account chooser and resolves with an access token for whichever
 // Google account the person picked. Rejects if they close the popup or Google errors.
+const describeGoogleError = (rawMessage) => {
+  const raw = String(rawMessage || '');
+  if (/origin_mismatch|origin.*not.*allowed|not.*allowed.*origin|redirect_uri_mismatch/i.test(raw)) {
+    return new GoogleAuthError(
+      `Google sign-in is not authorised for ${window.location.origin}. Add this origin to "Authorized JavaScript origins" in Google Cloud Console, then retry.`,
+      'origin_mismatch'
+    );
+  }
+  if (/invalid_client|client_id|unauthorized_client/i.test(raw)) {
+    return new GoogleAuthError(
+      'The configured Google Client ID is invalid for this site. Check GOOGLE_CLIENT_ID and the authorised origins.',
+      'invalid_client'
+    );
+  }
+  return null;
+};
+
 export async function requestGoogleAccessToken() {
   const clientId = await getGoogleClientId();
   await loadGoogleScript();
@@ -108,7 +125,8 @@ export async function requestGoogleAccessToken() {
           } else if (response?.error === 'access_denied') {
             settle(reject, new GoogleAuthError('Google sign-in was cancelled.', 'cancelled'));
           } else {
-            settle(reject, new GoogleAuthError('Google did not return a session. Please try again.', 'no_token'));
+            const described = describeGoogleError(response?.error || response?.error_description);
+            settle(reject, described || new GoogleAuthError('Google did not return a session. Please try again.', 'no_token'));
           }
         },
         error_callback: (err) => {
@@ -118,7 +136,8 @@ export async function requestGoogleAccessToken() {
           } else if (err?.type === 'popup_failed_to_open') {
             settle(reject, new GoogleAuthError('Your browser blocked the Google popup. Allow popups and retry.', 'popup_blocked'));
           } else {
-            settle(reject, new GoogleAuthError(err?.message || 'Google sign-in failed. Please try again.', 'popup_error'));
+            const described = describeGoogleError(err?.message);
+            settle(reject, described || new GoogleAuthError(err?.message || 'Google sign-in failed. Please try again.', 'popup_error'));
           }
         }
       });

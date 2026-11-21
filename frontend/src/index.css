@@ -122,7 +122,9 @@
 /* Animations */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(6px); }
-  to { opacity: 1; transform: translateY(0); }
+  /* End with `none` so the finished animation never leaves a transform that
+     would trap position:fixed modals inside this element. */
+  to { opacity: 1; transform: none; }
 }
 
 .animate-fadeIn {
@@ -187,8 +189,8 @@
   }
   100% {
     opacity: 1;
-    transform: scale(1) translateY(0);
-    filter: blur(0);
+    transform: none;
+    filter: none;
   }
 }
 
@@ -325,9 +327,247 @@
   .animate-aiOrbit,
   .animate-aiGlowPulse,
   .animate-aiShimmer,
-  .animate-aiCaret {
+  .animate-aiCaret,
+  .animate-float,
+  .animate-float-slow,
+  .animate-spin-slow {
     animation: none !important;
   }
+  .tilt-card:hover {
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   LIGHT THEME
+   The app is authored with dark slate utility classes. Rather than
+   rewrite every page, the .light scope remaps the slate/white palette
+   so every screen inherits a coherent light theme automatically.
+   ============================================================ */
+html.light body,
+html.light .app-shell {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+html.light [class*="bg-slate-950"] {
+  background-color: #f8fafc !important;
+}
+html.light [class*="bg-slate-900"] {
+  background-color: #ffffff !important;
+}
+html.light [class*="bg-slate-800"] {
+  background-color: #f1f5f9 !important;
+}
+html.light [class*="bg-slate-700"] {
+  background-color: #e2e8f0 !important;
+}
+
+html.light [class*="text-white"] {
+  color: #0f172a !important;
+}
+html.light [class*="text-slate-100"] {
+  color: #1e293b !important;
+}
+html.light [class*="text-slate-200"] {
+  color: #334155 !important;
+}
+html.light [class*="text-slate-300"] {
+  color: #475569 !important;
+}
+html.light [class*="text-slate-400"] {
+  color: #64748b !important;
+}
+html.light [class*="text-slate-500"] {
+  color: #94a3b8 !important;
+}
+
+html.light [class*="border-slate-800"],
+html.light [class*="border-slate-700"],
+html.light [class*="border-slate-800/"],
+html.light [class*="border-slate-700/"] {
+  border-color: #e2e8f0 !important;
+}
+html.light [class*="divide-slate-800"] > :not([hidden]) ~ :not([hidden]),
+html.light [class*="divide-slate-700"] > :not([hidden]) ~ :not([hidden]) {
+  border-color: #e2e8f0 !important;
+}
+
+/* Gradient hero sections keep their composition but use light tints */
+html.light [class*="from-slate-950"] { --tw-gradient-from: #f8fafc !important; }
+html.light [class*="via-slate-950"] { --tw-gradient-via: #f8fafc !important; }
+html.light [class*="to-slate-950"] { --tw-gradient-to: #f1f5f9 !important; }
+html.light [class*="from-slate-900"] { --tw-gradient-from: #ffffff !important; }
+html.light [class*="via-slate-900"] { --tw-gradient-via: #ffffff !important; }
+html.light [class*="to-slate-900"] { --tw-gradient-to: #f8fafc !important; }
+html.light [class*="from-cyan-950"] { --tw-gradient-from: #ecfeff !important; }
+html.light [class*="to-cyan-950"] { --tw-gradient-to: #ecfeff !important; }
+html.light [class*="from-emerald-950"] { --tw-gradient-from: #ecfdf5 !important; }
+html.light [class*="to-emerald-950"] { --tw-gradient-to: #ecfdf5 !important; }
+html.light [class*="via-emerald-950"] { --tw-gradient-via: #ecfdf5 !important; }
+html.light [class*="from-blue-950"] { --tw-gradient-from: #eff6ff !important; }
+html.light [class*="to-blue-950"] { --tw-gradient-to: #eff6ff !important; }
+/* The brand wordmark uses a white→cyan→emerald clipped gradient */
+html.light [class*="from-white"] { --tw-gradient-from: #0f172a !important; }
+html.light [class*="via-cyan-100"] { --tw-gradient-via: #0891b2 !important; }
+html.light [class*="to-emerald-400"] { --tw-gradient-to: #059669 !important; }
+
+/* Keep modal backdrops dim in light mode even though slate-950 becomes light */
+html.light .modal-overlay {
+  background-color: rgba(15, 23, 42, 0.62) !important;
+}
+
+html.light .glass-panel {
+  background: rgba(255, 255, 255, 0.9);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+html.light .glass-card {
+  background: rgba(255, 255, 255, 0.78);
+  border-color: rgba(15, 23, 42, 0.07);
+}
+html.light .glass-pill {
+  background: rgba(15, 23, 42, 0.04);
+  border-color: rgba(15, 23, 42, 0.08);
+}
+
+html.light input,
+html.light select,
+html.light textarea {
+  color-scheme: light;
+}
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: #e2e8f0;
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: #94a3b8;
+}
+
+/* Leaflet: light theme reads better with natural tiles and white popups */
+html.light .leaflet-tile {
+  filter: none !important;
+}
+html.light .leaflet-container {
+  background-color: #e2e8f0 !important;
+}
+html.light .leaflet-popup-content-wrapper,
+html.light .leaflet-popup-tip {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-color: rgba(15, 23, 42, 0.1);
+}
+
+/* ============================================================
+   MOTION & 3D EFFECT UTILITIES
+   ============================================================ */
+@keyframes floatY {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-14px); }
+}
+
+.animate-float {
+  animation: floatY 6s ease-in-out infinite;
+}
+
+.animate-float-slow {
+  animation: floatY 9s ease-in-out infinite;
+}
+
+@keyframes spinSlow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-spin-slow {
+  animation: spinSlow 22s linear infinite;
+}
+
+/* Gradient headline text */
+.gradient-text {
+  background-image: linear-gradient(120deg, #22d3ee 0%, #3b82f6 45%, #10b981 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Card that tilts in 3D on hover */
+.tilt-card {
+  transform-style: preserve-3d;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s ease, border-color 0.3s ease;
+  will-change: transform;
+}
+.tilt-card:hover {
+  transform: perspective(1000px) rotateX(3.5deg) rotateY(-3.5deg) translateY(-6px) scale(1.012);
+  box-shadow: 0 28px 60px -18px rgba(6, 182, 212, 0.45);
+}
+.tilt-card .tilt-pop {
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  transform: translateZ(18px);
+}
+
+/* Sweeping light shine across cards on hover */
+.card-shine {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+.card-shine::after {
+  content: '';
+  position: absolute;
+  inset: -150% auto auto -60%;
+  width: 55%;
+  height: 400%;
+  transform: rotate(24deg) translateX(-140%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transition: transform 0.75s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+  z-index: 1;
+}
+.card-shine:hover::after {
+  transform: rotate(24deg) translateX(330%);
+}
+
+@keyframes heroGlow {
+  0%, 100% { opacity: 0.35; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.08); }
+}
+.animate-hero-glow {
+  animation: heroGlow 7s ease-in-out infinite;
+}
+
+@keyframes borderRun {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+.animated-border {
+  background-image: linear-gradient(90deg, rgba(34, 211, 238, 0.55), rgba(59, 130, 246, 0.25), rgba(16, 185, 129, 0.55), rgba(34, 211, 238, 0.55));
+  background-size: 300% 100%;
+  animation: borderRun 8s linear infinite;
+}
+
+/* Faint engineering grid used behind the hero */
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.07) 1px, transparent 1px);
+  background-size: 44px 44px;
+  -webkit-mask-image: radial-gradient(ellipse at center, black 35%, transparent 78%);
+  mask-image: radial-gradient(ellipse at center, black 35%, transparent 78%);
+}
+html.light .hero-grid {
+  background-image:
+    linear-gradient(rgba(15, 23, 42, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(15, 23, 42, 0.06) 1px, transparent 1px);
+}
+
+/* Satellite tiles should not get the dark-map filter */
+.map-satellite .leaflet-tile {
+  filter: none !important;
 }
 
 

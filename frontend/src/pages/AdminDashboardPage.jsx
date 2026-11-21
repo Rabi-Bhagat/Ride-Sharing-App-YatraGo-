@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, Car, IndianRupee, TrendingUp, AlertTriangle, CheckCircle2, XCircle, Sliders, FileText, Award, Search, Check, Activity, Trash2, Lock, KeyRound } from 'lucide-react';
 import VerificationBadge from '../components/VerificationBadge';
+import { apiFetch } from '../utils/api';
 
 export default function AdminDashboardPage() {
   const [activeSubTab, setActiveSubTab] = useState('verifications'); // 'verifications', 'fares', 'disputes', 'analytics'
@@ -25,7 +26,7 @@ export default function AdminDashboardPage() {
     setAdminAuthError('');
 
     try {
-      const res = await fetch('/api/auth/verify-admin', {
+      const res = await apiFetch('/api/auth/verify-admin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ adminKey: adminKeyInput.trim() })

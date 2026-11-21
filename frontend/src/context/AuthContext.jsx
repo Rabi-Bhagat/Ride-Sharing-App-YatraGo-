@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import { requestGoogleAccessToken } from '../utils/googleAuth';
+import { apiFetch, apiUrl } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -99,7 +100,7 @@ export const AuthProvider = ({ children }) => {
           headers['Authorization'] = `Bearer ${currentToken}`;
         }
         const email = user?.email || 'alex.rivera@yatrago.com';
-        const res = await fetch(`/api/auth/me?email=${encodeURIComponent(email)}`, { headers });
+        const res = await apiFetch(`/api/auth/me?email=${encodeURIComponent(email)}`, { headers });
         const data = await res.json();
         if (data.success && data.user) {
           setUser(prev => ({ ...(prev || {}), ...data.user }));
@@ -146,14 +147,14 @@ export const AuthProvider = ({ children }) => {
       ...(options.headers || {}),
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     };
-    return fetch(url, { ...options, headers });
+    return fetch(apiUrl(url), { ...options, headers });
   };
 
   // 1. SIGN IN (Email/Phone + Password)
   const login = async (emailOrPhone, password, remember = true) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/login', {
+      const res = await apiFetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: emailOrPhone, password })
@@ -200,7 +201,7 @@ export const AuthProvider = ({ children }) => {
   const register = async (formData) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
+      const res = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(formData)
@@ -331,7 +332,7 @@ export const AuthProvider = ({ children }) => {
     }
 
     try {
-      const res = await fetch('/api/auth/google', {
+      const res = await apiFetch('/api/auth/google', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ accessToken, role: selectedRole })
@@ -436,7 +437,7 @@ export const AuthProvider = ({ children }) => {
   const forgotPassword = async (email, previousCode, newPassword) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/forgot-password', {
+      const res = await apiFetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, previousCode, newPassword })
@@ -456,7 +457,7 @@ export const AuthProvider = ({ children }) => {
   // 6.5 SEND RESET VERIFICATION CODE
   const sendResetCode = async (email) => {
     try {
-      const res = await fetch('/api/auth/send-reset-code', {
+      const res = await apiFetch('/api/auth/send-reset-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email })
@@ -474,7 +475,7 @@ export const AuthProvider = ({ children }) => {
   // 6.6 VERIFY RESET CODE (gate the new-password step behind a valid code)
   const verifyResetCode = async (email, code) => {
     try {
-      const res = await fetch('/api/auth/verify-reset-code', {
+      const res = await apiFetch('/api/auth/verify-reset-code', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, code })
@@ -493,7 +494,7 @@ export const AuthProvider = ({ children }) => {
   const changePassword = async (currentPassword, newPassword) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/change-password', {
+      const res = await apiFetch('/api/auth/change-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -519,7 +520,7 @@ export const AuthProvider = ({ children }) => {
     const updated = { ...(user || {}), ...partialData };
     setUser(updated);
     try {
-      const res = await fetch('/api/auth/me', {
+      const res = await apiFetch('/api/auth/me', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...partialData, email: user?.email })
@@ -542,7 +543,7 @@ export const AuthProvider = ({ children }) => {
     setUser(updated);
 
     try {
-      const res = await fetch('/api/auth/upload-avatar', {
+      const res = await apiFetch('/api/auth/upload-avatar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ avatar: photoDataUrl, email: user?.email })
@@ -562,7 +563,7 @@ export const AuthProvider = ({ children }) => {
     if (!user) return;
     const updated = { ...user, isVerified: !user.isVerified };
     setUser(updated);
-    fetch('/api/auth/me', {
+    apiFetch('/api/auth/me', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ isVerified: !user.isVerified, email: user.email })
@@ -573,7 +574,7 @@ export const AuthProvider = ({ children }) => {
     if (!user) return;
     const updated = { ...user, role: newRole };
     setUser(updated);
-    fetch('/api/auth/me', {
+    apiFetch('/api/auth/me', {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ role: newRole, email: user.email })

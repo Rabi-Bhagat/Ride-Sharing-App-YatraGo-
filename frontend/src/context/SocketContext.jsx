@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { io } from 'socket.io-client';
+import { apiFetch, SOCKET_URL } from '../utils/api';
 
 const SocketContext = createContext();
 
@@ -55,7 +56,7 @@ export const SocketProvider = ({ children }) => {
     // Connect to Socket server with polling fallback and graceful error handling.
     // Keeps retrying indefinitely so a backend that boots after the UI (common in
     // dev, and on cold serverless starts) is picked up without a page refresh.
-    const newSocket = io(window.location.origin, {
+    const newSocket = io(SOCKET_URL || window.location.origin, {
       transports: ['polling', 'websocket'],
       reconnection: true,
       reconnectionAttempts: Infinity,
@@ -79,7 +80,7 @@ export const SocketProvider = ({ children }) => {
     });
 
     // Load persisted chat history from MongoDB
-    fetch('/api/rides/ride_101/messages')
+    apiFetch('/api/rides/ride_101/messages')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.messages && data.messages.length > 0) {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { apiFetch } from '../utils/api';
 import { Store, Hotel, UtensilsCrossed, ShoppingBag, Tag, Search, MapPin, Percent, BadgeCheck, Star, ArrowRight, X, Check, TrendingUp, Handshake, Briefcase, Loader2, Sparkles, Phone, Mail, ShieldCheck, Code, Megaphone, UserRound, BedDouble, ArrowUpRight, Clock } from 'lucide-react';
 import { PARTNER_SEED } from '../data/partnerSeed';
 import { formatINR } from '../utils/receipt';
@@ -107,7 +108,7 @@ export default function BusinessPromoHub({ onNavigate }) {
         return seed ? { ...seed, ...partner, rooms: seed.rooms, images: seed.images, amenities: seed.amenities } : partner;
       });
 
-    fetch('/api/partners')
+    apiFetch('/api/partners')
       .then((res) => res.json())
       .then((data) => {
         if (cancelled) return;
@@ -182,7 +183,7 @@ export default function BusinessPromoHub({ onNavigate }) {
     setIsRedeeming(true);
     setRedeemState(null);
     try {
-      const res = await fetch('/api/partners/redeem', {
+      const res = await apiFetch('/api/partners/redeem', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code })
@@ -263,7 +264,7 @@ export default function BusinessPromoHub({ onNavigate }) {
     setIsSubmitting(true);
     setApplyState(null);
     try {
-      const res = await fetch('/api/partners/register', {
+      const res = await apiFetch('/api/partners/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(submitted)

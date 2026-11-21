@@ -1,3 +1,5 @@
+import { apiFetch } from './api';
+
 const GIS_SCRIPT_SRC = 'https://accounts.google.com/gsi/client';
 const GIS_SCRIPT_ID = 'yatrago-google-identity';
 
@@ -57,7 +59,7 @@ function loadGoogleScript() {
 
 export async function getGoogleClientId() {
   if (!configPromise) {
-    configPromise = fetch('/api/auth/google/config')
+    configPromise = apiFetch('/api/auth/google/config')
       .then(res => res.json())
       .catch(() => null);
   }

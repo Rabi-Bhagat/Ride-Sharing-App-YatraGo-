@@ -25,6 +25,7 @@ import { SocketProvider, useSocket } from './context/SocketContext';
 import { LanguageProvider } from './i18n/LanguageContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Sparkles } from 'lucide-react';
+import { apiFetch } from './utils/api';
 
 function MainApp() {
   const { user, authModalOpen, closeAuthModal, openAuthModal } = useAuth();
@@ -174,7 +175,7 @@ function MainApp() {
 
   // Fetch the live active ride for tracking (does not pre-fill the search fields)
   React.useEffect(() => {
-    fetch('/api/rides/active')
+    apiFetch('/api/rides/active')
       .then(res => res.json())
       .then(data => {
         if (data.success && data.ride) {
@@ -189,7 +190,7 @@ function MainApp() {
       openAuthModal('login', 'book');
       return;
     }
-    fetch('/api/rides/book', {
+    apiFetch('/api/rides/book', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({

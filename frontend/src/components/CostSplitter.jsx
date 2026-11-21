@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import yatraGoLogo from '../logo/yatrago-logo.webp';
 import { openRazorpayCheckout } from '../utils/razorpayCheckout';
 import { downloadReceipt, shareReceipt, printReceipt } from '../utils/receipt';
+import { apiFetch } from '../utils/api';
 
 const round2 = (value) => Math.round((Number(value) || 0) * 100) / 100;
 
@@ -96,7 +97,7 @@ export default function CostSplitter({ ride }) {
   }, [ride?._id, ride?.id]);
 
   useEffect(() => {
-    fetch('/api/config')
+    apiFetch('/api/config')
       .then((res) => res.json())
       .then((data) => {
         if (data?.success && data.key_id) setGatewayKeyId(data.key_id);

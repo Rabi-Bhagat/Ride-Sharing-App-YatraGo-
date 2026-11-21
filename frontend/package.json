@@ -22,7 +22,8 @@
     "react-leaflet": "^4.2.1",
     "socket.io-client": "^4.7.5",
     "tailwind-merge": "^2.3.0",
-    "three": "^0.164.1"
+    "three": "^0.164.1",
+    "yatrago-ride-sharing": "file:.."
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

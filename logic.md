@@ -347,7 +347,14 @@ All API responses use `{ success: boolean, ... }`. Users are always returned thr
 
 ## 18. Environment & Commands
 
-Key variables: `MONGO_URI`, `JWT_SECRET`, `ADMIN_ACCESS_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `SMTP_*`, `GOOGLE_CLIENT_ID`, `VITE_GOOGLE_MAPS_API_KEY`.
+Backend variables: `MONGO_URI`, `JWT_SECRET`, `ADMIN_ACCESS_KEY`, `RAZORPAY_KEY_ID`, `RAZORPAY_KEY_SECRET`, `SMTP_*`, `GOOGLE_CLIENT_ID`, `PORT` (Railway injects it).
+
+Frontend build variables (Vite inlines them at build time):
+- `VITE_API_BASE_URL` — Railway backend URL. Empty in local dev so `/api` uses the Vite proxy.
+- `VITE_SOCKET_URL` — Socket.io backend URL; defaults to `VITE_API_BASE_URL`.
+- `VITE_GOOGLE_MAPS_API_KEY` — browser Maps key injected into `index.html`.
+
+All frontend network calls go through `frontend/src/utils/api.js` (`apiFetch`/`apiUrl`), and sockets connect to `SOCKET_URL || window.location.origin`. This is what makes split hosting (Cloudflare Pages + Railway) work. Deployment steps live in `DEPLOYMENT.md`.
 
 ```powershell
 npm run dev                         # backend :5000 + Vite :3000

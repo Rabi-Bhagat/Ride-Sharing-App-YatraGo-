@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Sparkles, MapPin, Percent, UserCheck } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
 import { useSocket } from '../context/SocketContext';
+import { apiFetch } from '../utils/api';
 
 export default function StrangerMatcher({ onCombineSuccess }) {
   const [matches, setMatches] = useState([]);
@@ -10,7 +11,7 @@ export default function StrangerMatcher({ onCombineSuccess }) {
   const { socket } = useSocket();
 
   useEffect(() => {
-    fetch('/api/rides/stranger-matches')
+    apiFetch('/api/rides/stranger-matches')
       .then(res => res.json())
       .then(data => {
         if (data.success) {
@@ -24,7 +25,7 @@ export default function StrangerMatcher({ onCombineSuccess }) {
   const handleCombine = (match) => {
     setCombiningId(match.matchId);
     
-    fetch('/api/rides/combine-stranger', {
+    apiFetch('/api/rides/combine-stranger', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ matchId: match.matchId })

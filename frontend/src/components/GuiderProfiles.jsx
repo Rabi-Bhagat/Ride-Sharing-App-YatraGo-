@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Compass, Star, Languages, CheckCircle2, MapPin, ArrowRight } from 'lucide-react';
 import VerificationBadge from './VerificationBadge';
+import { apiFetch } from '../utils/api';
 
 export default function GuiderProfiles({ onSelectGuider, selectedGuider }) {
   const [guiders, setGuiders] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/guiders')
+    apiFetch('/api/guiders')
       .then(res => res.json())
       .then(data => {
         if (data.success) {

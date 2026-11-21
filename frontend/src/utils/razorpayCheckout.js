@@ -6,6 +6,8 @@
  * on backend (/api/verify-payment).
  */
 
+import { apiFetch } from './api';
+
 // Helper to ensure Razorpay SDK script is loaded
 export function loadRazorpayScript() {
   return new Promise((resolve) => {
@@ -62,7 +64,7 @@ export async function openRazorpayCheckout({
     const amountInPaise = Math.max(100, Math.round(amountInRupeesNumber * 100));
 
     // 2. Call Backend API to create an order
-    const orderResponse = await fetch('/api/create-order', {
+    const orderResponse = await apiFetch('/api/create-order', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -132,7 +134,7 @@ export async function openRazorpayCheckout({
 
         try {
           // 4. Send payment details & signature to backend for verification
-          const verifyResponse = await fetch('/api/verify-payment', {
+          const verifyResponse = await apiFetch('/api/verify-payment', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
